@@ -1,0 +1,78 @@
+{
+  "test": "Salut le monde !",
+  "testCode": "Vérification en cours",
+  "theme": {
+    "triggerLabel": "Changer le thème",
+    "options": {
+      "system": "Système",
+      "light": "Clair",
+      "dark": "Sombre"
+    }
+  },
+  "language": {
+    "triggerLabel": "Changer la langue",
+    "options": {
+      "system": "Système",
+      "french": "Français",
+      "english":  "English"
+    }
+  },
+  "error404": {
+    "notFound": "Page introuvable",
+    "text": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "back": "Retour",
+    "home": "Accueil"
+  },
+  "pageLoader": {
+    "text": "Chargement"
+  },
+  "authFooter": {
+    "reserved": "Tous droits réservés",
+    "terms": "Conditions d'utilisation",
+    "policy": "Politique de confidentialité"
+  },
+  "login": {
+    "title": "Connexion",
+    "text": "Entrez vos identifiants pour vous connecter",
+    "fields": {
+      "email": "Email",
+      "holderEmail": "utilisateur@email.com",
+      "password": "Mot de passe",
+      "holderPassword": "votre-motdepasse-sécurisé"
+    },
+    "forgotPassword": "Mot de passe oublié",
+    "signIn": "Se connecter",
+    "register": "Créer un compte",
+    "error" : "Identifiants invalides ou absents"
+  },
+  "register": {
+    "title": "Créer un compte",
+    "text": "Entrez vos identifiants pour votre compte",
+    "fields": {
+      "email": "Email",
+      "holderEmail": "utilisateur@email.com",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmation",
+      "holderPassword": "votre-motdepasse-sécurisé"
+    },
+    "already": "Vous avez déjà un compte",
+    "signUp": "Connectez-vous",
+    "login": "Se connecter",
+    "error": "Email déjà utilisé sur la plateforme",
+    "verifyTitle": "Vérification Email",
+    "verifyText": "Un code a été envoyé à <1>{{email}}</1>.<2/>Veuillez entrer ici le code envoyé pour vérifier votre adresse mail.",
+    "verifyError": "Code incorrect",
+    "verifyReturn" : "Retourner au formulaire de création"
+  },
+  "forgotPassword": {
+    "title": "Mot de passe oublié ?",
+    "text": "Entrez l'adresse email de votre compte",
+    "fields": {
+      "email": "Email",
+      "holderEmail": "utilisateur@email.com"
+    },
+    "validate": "Valider",
+    "login": "Revenir à la page de connexion",
+    "error" : "Adresse email invalide"
+  }
+}

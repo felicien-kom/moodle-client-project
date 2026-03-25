@@ -1,0 +1,78 @@
+{
+  "test": "Hello World !",
+  "testCode": "Verification in progress",
+  "theme": {
+    "triggerLabel": "Change the theme",
+    "options": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
+  },
+  "language": {
+    "triggerLabel": "Change the language",
+    "options": {
+      "system": "System",
+      "french": "Français",
+      "english":  "English"
+    }
+  },
+  "error404": {
+    "notFound": "Page not found",
+    "text": "The page you are searching does not exist or has been moved.",
+    "back": "Go Back",
+    "home": "Home"
+  },
+  "pageLoader": {
+    "text": "Loading"
+  },
+  "authFooter": {
+    "reserved": "All rights reserved",
+    "terms": "Terms of use",
+    "policy": "Privacy policy"
+  },
+  "login": {
+    "title": "Login",
+    "text": "Enter your credentials to sign in",
+    "fields": {
+      "email": "Email",
+      "holderEmail": "user@email.com",
+      "password": "Password",
+      "holderPassword": "your-secure-password"
+    },
+    "forgotPassword": "Forgot password",
+    "signIn": "Login",
+    "register": "Create an account",
+    "error" : "Invalid or missing credentials"
+  },
+  "register": {
+    "title": "Create an account",
+    "text": "Enter your credentials for your account",
+    "fields": {
+      "email": "Email",
+      "holderEmail": "utilisateur@email.com",
+      "password": "Password",
+      "confirmPassword": "Confirm",
+      "holderPassword": "votre-motdepasse-sécurisé"
+    },
+    "already": "Already having an account",
+    "signUp": "Sign Up",
+    "login": "Sign In",
+    "error" : "Email already used on the platform",
+    "verifyTitle": "Email Verification",
+    "verifyText": "A code has been sent to <1>{{email}}</1>.<2/>Enter that code here to verify your email address.",
+    "verifyError": "Incorrect code",
+    "verifyReturn" : "Return to the register form"
+  },
+  "forgotPassword": {
+    "title": "Forgot your password?",
+    "text": "Enter your account email address",
+    "fields": {
+      "email": "Email",
+      "holderEmail": "utilisateur@email.com"
+    },
+    "validate": "Validate",
+    "login": "Go back to the login page",
+    "error" : "Invalid email address"
+  }
+}
