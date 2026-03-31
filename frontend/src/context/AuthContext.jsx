@@ -15,8 +15,17 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user,      setUser]      = useState(null);
   const [isLoading, setIsLoading] = useState(true); // true le temps de vérifier le token initial
-  const navigate = useNavigate();
-
+  const navigate = useNavigate(); 
+  const STATIC_USERS = [
+      {
+        id: 1,
+        email: "user@gmail.com",
+        password: "Password123!",
+        name: "user",
+        role: "student",
+        avatar: null,
+      },
+    ];
   const isAuthenticated = user !== null;
 
   // --- Vérification initiale au montage ---
@@ -30,6 +39,8 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    /* 
+    // Commenté pour le développement frontend
     apiClient.get("/auth/me")
       .then(setUser)
       .catch(() => {
@@ -38,6 +49,10 @@ export function AuthProvider({ children }) {
         setUser(null);
       })
       .finally(() => setIsLoading(false));
+    */
+
+    // Simulation pour le frontend : vérifier si le token correspond à un utilisateur statique
+    setIsLoading(false);
   }, []);
 
   // --- Réaction à la session expirée (émis par apiClient après échec du refresh) ---
@@ -54,25 +69,33 @@ export function AuthProvider({ children }) {
   // --- Actions ---
 
   const login = useCallback(async ({ email, password }) => {
-    const data = await apiClient.post("/auth/login", {
-      body:     { email, password },
-      withAuth: false, // pas de token à ce stade
-    });
+    // Vérification avec les utilisateurs statiques
+    const staticUser = STATIC_USERS.find(
+      user => user.email === email && user.password === password
+    );
 
-    setTokens({
-      accessToken:  data.accessToken,
-      refreshToken: data.refreshToken,
-    });
+    if (!staticUser) {
+      throw new Error("Email ou mot de passe incorrect");
+    }
 
-    setUser(data.user);
+    // Simulation de tokens pour le développement frontend
+    const mockTokens = {
+      accessToken: "mock-access-token-" + Date.now(),
+      refreshToken: "mock-refresh-token-" + Date.now(),
+    };
+    setTokens(mockTokens);
+    setUser(staticUser);
 
-    return data; // l'appelant peut en avoir besoin (redirection, etc.)
+    return { user: staticUser, ...mockTokens }; // l'appelant peut en avoir besoin (redirection, etc.)
   }, []);
 
   const logout = useCallback(async () => {
     try {
+      /* 
+      // Commenté pour le développement frontend
       // Informe le backend (révocation du refresh token)
       await apiClient.post("/auth/logout");
+      */
     } catch {
       // On continue même si le backend est inaccessible
     } finally {

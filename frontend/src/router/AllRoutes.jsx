@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import { publicRoutes, authRoutes, appRoutes } from "./routes";
-// import AuthGuard from "./guards/AuthGuard";
+import AuthGuard from "./guards/AuthGuard";
 
 // Layouts
 import PublicLayout from "@/layouts/PublicLayout";   // header + footer site
@@ -33,13 +33,13 @@ function AllRoutes() {
         </Route>
 
         {/* Zone app — protégée, layout dashboard */}
-        {/* <Route element={<AuthGuard />}> */}
+        <Route element={<AuthGuard />}> {/* protège toutes les routes enfants */}
           <Route element={<AppLayout />}>
             {appRoutes.map((route) => (
               <Route key={route.path} path={route.path} element={route.element} />
             ))}
           </Route>
-        {/* </Route> */}
+         </Route> 
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

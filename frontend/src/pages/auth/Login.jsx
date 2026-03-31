@@ -1,23 +1,35 @@
 import { Eye, EyeOff, Info, Lock, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { PATHS } from '@/router/paths';
+import { useAuth } from '@/context/AuthContext';
 
 function Login(){
     const { t } = useTranslation();
+    const { login } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [errorAuth, setErrorAuth] = useState(true);
+    const [errorAuth, setErrorAuth] = useState(false);
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if(email && password && email !== "" && password !== "") {
-            alert(`Email : ${email}\nPassword : ${password}`);
-        } else{
-            alert('Hum...');
+        setErrorAuth(false);
+        
+        if (email === "" || password === "") {
+            setErrorAuth(true);
+            return;
+        }
+        
+        try {
+            await login({ email, password });
+            navigate(PATHS.app.dashboard);
+        } catch (error) {
+            setErrorAuth(true);
         }
     }
-
     return (
         <>
             <form method='get' action='#' className='flex flex-col gap-1 pt-4' onSubmit={handleSubmit}>
