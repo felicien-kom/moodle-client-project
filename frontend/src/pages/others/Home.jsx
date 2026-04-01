@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, ArrowRight } from "lucide-react";
+import { CheckCircle2, ArrowRight, Sparkles, BookOpen } from "lucide-react";
 
 // ─── Données ────────────────────────────────────────────────
 
@@ -71,44 +71,135 @@ function Avatar({ name }) {
 // ════════════════════════════════════════════════════════════
 //  SECTION 1 — Hero
 // ════════════════════════════════════════════════════════════
-function HeroSection() {
+export function HeroSection() {
   return (
-    <section className="relative bg-gradient-to-br from-slate-50 via-indigo-50/60 to-slate-100 overflow-hidden">
-      {/* Décoration coins */}
-      <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-100/40 rounded-bl-full pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-100/30 rounded-tr-full pointer-events-none" />
-
-      <div className="relative max-w-4xl mx-auto px-6 py-28 text-center">
-        <h1 className="text-5xl md:text-6xl font-black text-gray-900 leading-tight mb-4 tracking-tight">
-          Le savoir de demain,
-        </h1>
-        <h1 className="text-5xl md:text-6xl font-black text-indigo-900 leading-tight mb-6 tracking-tight">
-          accessible aujourd'hui.
-        </h1>
-        <p className="text-gray-500 text-lg max-w-xl mx-auto mb-10 leading-relaxed">
-          Plongez dans un univers de connaissances avec des cours interactifs,
-          des experts passionnés et une communauté dynamique.
-        </p>
-        <div className="flex items-center justify-center gap-4 flex-wrap">
-          <Button
-            size="lg"
-            className="bg-indigo-900 hover:bg-indigo-800 text-white font-semibold px-8 py-3 rounded-xl text-base h-auto"
-          >
-            Explorer les Cours
-          </Button>
-          <Button
-            size="lg"
-            variant="secondary"
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-8 py-3 rounded-xl text-base h-auto"
-          >
-            Découvrir plus
-          </Button>
+    <section className="relative bg-gray-100 overflow-hidden min-h-[520px] flex items-center">
+ 
+      {/* ── Décoration fond ── */}
+      {/* Cercle flou haut-gauche */}
+      <div className="absolute -top-16 -left-16 w-80 h-80 rounded-full bg-indigo-900/10 blur-3xl pointer-events-none" />
+      {/* Cercle flou bas-droite */}
+      <div className="absolute -bottom-20 -right-10 w-96 h-96 rounded-full bg-indigo-900/8 blur-3xl pointer-events-none" />
+      {/* Grille de points */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-25"
+        style={{
+          backgroundImage: "radial-gradient(circle, #c7d2fe 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+        }}
+      />
+      {/* Barre accent verticale gauche */}
+      <div className="absolute left-0 top-1/4 w-1.5 h-32 bg-indigo-900 rounded-r-full" />
+ 
+      {/* ── Contenu ── */}
+      <div className="relative max-w-5xl mx-auto px-8 py-24 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-12 items-center">
+ 
+          {/* ── Colonne texte ── */}
+          <div>
+ 
+            {/* Pill badge */}
+            <span className="inline-flex items-center gap-1.5 bg-indigo-900/10 text-indigo-900
+                             text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+              <Sparkles className="w-3 h-3" />
+              Nouvelle saison de formations disponible
+            </span>
+ 
+            {/* Titre */}
+            <h1 className="text-5xl md:text-6xl font-black text-gray-900
+                           leading-[1.1] tracking-tight mb-2">
+              Maîtrisez les
+            </h1>
+            <h1 className="text-5xl md:text-6xl font-black leading-[1.1] tracking-tight mb-6">
+              <span className="text-indigo-900">compétences</span>
+              <span className="text-gray-900"> qui comptent.</span>
+            </h1>
+ 
+            {/* Sous-titre */}
+            <p className="text-gray-500 text-lg max-w-lg leading-relaxed mb-10">
+              Des parcours structurés, des formateurs de terrain et des
+              certifications reconnues — tout ce qu'il faut pour progresser
+              vite et durablement.
+            </p>
+ 
+            {/* Boutons */}
+            <div className="flex items-center gap-4 flex-wrap">
+              <Button
+                size="lg"
+                className="bg-indigo-900 hover:bg-indigo-800 text-white font-semibold
+                           px-8 py-3 rounded-xl text-sm h-auto
+                           shadow-md shadow-indigo-900/20 transition-all"
+                asChild
+              >
+                <a href="/login" className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Démarrer ma formation
+                </a>
+              </Button>
+ 
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-gray-300 bg-white hover:bg-gray-50 text-gray-700
+                           font-semibold px-8 py-3 rounded-xl text-sm h-auto transition-all"
+              >
+                Voir le catalogue
+              </Button>
+            </div>
+ 
+            {/* Mini stats */}
+            <div className="flex items-center gap-6 mt-9 flex-wrap">
+              {[
+                { val: "50+",  txt: "formations" },
+                { val: "10k+", txt: "apprenants actifs" },
+                { val: "4.9★", txt: "note moyenne" },
+              ].map(({ val, txt }) => (
+                <div key={txt} className="flex items-baseline gap-1.5">
+                  <span className="text-base font-extrabold text-indigo-900">{val}</span>
+                  <span className="text-xs text-gray-400">{txt}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+ 
+          {/* ── Colonne visuelle : 2 cartes flottantes ── */}
+          <div className="hidden md:flex flex-col gap-3 w-56">
+ 
+            {/* Carte module actif */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-indigo-900 flex items-center justify-center mb-4">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                Module actif
+              </p>
+              <p className="text-sm font-bold text-gray-900 leading-snug">
+                Développement Web Full-Stack
+              </p>
+              {/* Barre de progression */}
+              <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full w-[60%] bg-indigo-900 rounded-full" />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1.5">60% complété</p>
+            </div>
+ 
+            {/* Carte prochaine session */}
+            <div className="bg-indigo-900 rounded-2xl p-5 text-white shadow-md shadow-indigo-900/25">
+              <p className="text-[10px] font-semibold text-indigo-300 uppercase tracking-wider mb-1">
+                Prochaine session
+              </p>
+              <p className="text-sm font-bold leading-snug">
+                Design de systèmes distribués
+              </p>
+              <p className="text-indigo-300 text-xs mt-2">Commence dans 3 jours</p>
+            </div>
+ 
+          </div>
         </div>
       </div>
     </section>
   );
 }
-
 // ════════════════════════════════════════════════════════════
 //  SECTION 2 — Stats / Pourquoi nous
 // ════════════════════════════════════════════════════════════

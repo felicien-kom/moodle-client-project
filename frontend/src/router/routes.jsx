@@ -3,7 +3,7 @@ import { PATHS } from "./paths";
 // Lazy loading : les pages ne sont chargées que si la zone est visitée
 import { lazy } from "react";
 
-const Home      = lazy(() => import("@/pages/public/Home"));
+const Home      = lazy(() => import("@/pages/others/Home"));
 const About     = lazy(() => import("@/pages/public/About"));
 const Contact   = lazy(() => import("@/pages/public/Contact"));
 const Services  = lazy(() => import("@/pages/public/Services"));
