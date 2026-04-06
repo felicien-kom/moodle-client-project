@@ -5,9 +5,9 @@
 **/*.db
 **/*.db-journal
 **/prisma/generated/
+**/prisma/*/generated/
 **/uploads/
 **/coverage/
-
 
 # Frontend
 

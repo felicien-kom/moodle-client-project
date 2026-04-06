@@ -1,0 +1,28 @@
+// prisma/master/schema.prisma
+// Base centrale — un seul fichier master.db
+// Contient uniquement le registre des profils locaux
+// Aucune donnée métier Moodle ici
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "sqlite"
+  // Pas d'url ici — Prisma 7 interdit url dans le schéma
+  // La connexion est configurée dans prisma.config.js via l'adapter libsql
+}
+
+// Registre des profils — un enregistrement par utilisateur ayant créé un profil local
+// MOODLE_URL et MOODLE_SERVICE sont dans .env — fixes pour toute l'instance
+model Profile {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique  // email fourni par l'utilisateur à la création
+  username    String    @unique  // username Moodle (identifiant de connexion)
+  name        String
+  role        String    @default("STUDENT")  // STUDENT | TEACHER | ADMIN
+  dbPath      String    // chemin absolu vers la base SQLite de cet utilisateur
+  createdAt   DateTime  @default(now())
+  lastLoginAt DateTime?
+}
