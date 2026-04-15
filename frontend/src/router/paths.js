@@ -1,3 +1,5 @@
+import Assignment from "@/pages/app/Assignment";
+
 export const PATHS = {
 
   // Zone publique (avec header/footer site)
@@ -21,6 +23,7 @@ export const PATHS = {
     dashboard: "/app",
     profile:   "/app/profile",
     settings:  "/app/settings",
+    assignment: "/app/assignment",
     // Ex: sous-module
     // users: {
     //   list:   "/app/users",

@@ -1,5 +1,6 @@
 // components/Navbar.tsx
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { PATHS } from "@/router/paths";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -18,20 +19,26 @@ import { RefreshCw, Mail, HelpCircle, Settings, ChevronDown } from "lucide-react
 
 export function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Fonctions de navigation
-  const goToHome = () => navigate("/");
+  const goToHome = () => navigate(PATHS.public.home);
   const goToCourses = () => navigate("/courses");
-  const goToEvaluations = () => navigate("/evaluations");
-  const goToDashboard = () => navigate("/app");
-  const goToProfile = () => navigate("/app/profile");
-  const goToLogin = () => navigate("/login");
+  const goToEvaluations = () => navigate(PATHS.app.assignment);
+  const goToDashboard = () => navigate(PATHS.app.dashboard);
+  const goToProfile = () => navigate(PATHS.app.profile);
+  const goToLogin = () => navigate(PATHS.auth.login);
+
+  // Détection de la route actuelle
+  const isActiveRoute = (path) => {
+    return location.pathname === path;
+  };
 
   return (
     <nav className="w-full bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
       {/* Logo + Liens */}
       <div className="flex items-center gap-8">
-        <div className="flex items-center gap-2 cursor-pointer" >
+        <div className="flex items-center gap-2 cursor-pointer" onClick={goToHome}>
           <span className="text-[#f98012] font-bold text-xl">moodle</span>
           <span className="text-xs text-gray-500 border-l pl-2">Client</span>
           <span className="font-semibold text-gray-800 ml-1">LearnPlatform</span>
@@ -42,8 +49,11 @@ export function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuLink
                 onClick={goToHome}
-                className="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 
-                           hover:bg-gray-100 rounded-md cursor-pointer transition-colors"
+                className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${
+                  isActiveRoute(PATHS.public.home)
+                    ? "text-white bg-indigo-900"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                }`}
               >
                 Accueil
               </NavigationMenuLink>
@@ -51,8 +61,11 @@ export function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuLink
                 onClick={goToCourses}
-                className="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 
-                           hover:bg-gray-100 rounded-md cursor-pointer transition-colors"
+                className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${
+                  isActiveRoute("/courses")
+                    ? "text-white bg-indigo-900"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                }`}
               >
                 Cours
               </NavigationMenuLink>
@@ -60,8 +73,11 @@ export function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuLink
                 onClick={goToEvaluations}
-                className="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 
-                           hover:bg-gray-100 rounded-md cursor-pointer transition-colors"
+                className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${
+                  isActiveRoute(PATHS.app.assignment)
+                    ? "text-white bg-indigo-900"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                }`}
               >
                 Évaluations
               </NavigationMenuLink>
@@ -69,8 +85,11 @@ export function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuLink
                 onClick={goToDashboard}
-                className="px-3 py-2 text-sm text-white bg-indigo-900 
-                           rounded-md cursor-pointer hover:bg-indigo-800 transition-colors"
+                className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${
+                  isActiveRoute(PATHS.app.dashboard)
+                    ? "text-white bg-indigo-900"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                }`}
               >
                 Tableau de bord
               </NavigationMenuLink>
