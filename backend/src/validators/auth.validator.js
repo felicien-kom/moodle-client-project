@@ -23,9 +23,9 @@ export const validateCreateProfile = ({ email, username, serverPassword, clientP
   return { errors };
 };
 
-export const validateLogin = ({ username, clientPassword }) => {
+export const validateLogin = ({ username, email, clientPassword }) => {
   const errors = [];
-  if (!username?.trim()) errors.push("username (or email) is required");
+  if (!username?.trim() && !email?.trim()) errors.push("username (or email) is required");
   if (!clientPassword) errors.push("clientPassword is required");
   return { errors };
 };

@@ -2,36 +2,30 @@ import { API_CONFIG } from "@/config/api.config";
 
 const { storage } = API_CONFIG;
 
-// --- Gestion des tokens ---
+// --- Token unique ---
 
-export function getAccessToken() {
-  return localStorage.getItem(storage.accessToken);
+export function getToken() {
+  return localStorage.getItem(storage.token);
 }
 
-export function getRefreshToken() {
-  return localStorage.getItem(storage.refreshToken);
+export function setToken(token) {
+  localStorage.setItem(storage.token, token);
 }
 
-export function setTokens({ accessToken, refreshToken }) {
-  localStorage.setItem(storage.accessToken,  accessToken);
-  localStorage.setItem(storage.refreshToken, refreshToken);
+export function clearToken() {
+  localStorage.removeItem(storage.token);
 }
 
-export function clearTokens() {
-  localStorage.removeItem(storage.accessToken);
-  localStorage.removeItem(storage.refreshToken);
-}
-
-// --- Construction des headers ---
+// --- Headers ---
 
 /**
- * @param {boolean} withAuth - Si false, n'ajoute pas le header Authorization
+ * @param {boolean} withAuth - false pour les routes publiques (login, register)
  */
 export function buildHeaders(withAuth = true) {
   const headers = { ...API_CONFIG.headers };
 
   if (withAuth) {
-    const token = getAccessToken();
+    const token = getToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
   }
 
@@ -40,25 +34,17 @@ export function buildHeaders(withAuth = true) {
 
 // --- Normalisation des erreurs ---
 
-/**
- * Transforme n'importe quelle erreur en objet structuré cohérent.
- * Tous les appelants reçoivent toujours la même forme d'erreur.
- */
 export function normalizeError(error) {
-  // Erreur HTTP structurée (venant de apiClient)
   if (error?.isApiError) return error;
 
-  // Timeout ou abort
   if (error?.name === "AbortError") {
     return { isApiError: true, status: 408, message: "La requête a expiré.", data: null };
   }
 
-  // Réseau inaccessible
   if (!navigator.onLine || error?.message === "Failed to fetch") {
     return { isApiError: true, status: 0, message: "Pas de connexion réseau.", data: null };
   }
 
-  // Fallback générique
   return {
     isApiError: true,
     status:     error?.status  ?? null,

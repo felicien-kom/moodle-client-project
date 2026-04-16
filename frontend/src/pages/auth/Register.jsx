@@ -13,7 +13,7 @@ function Register(){
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errorAuth, setErrorAuth] = useState(true);
-    const [verify, setVerify] = useState(true);
+    const [verify, setVerify] = useState(false);
     const [code, setCode] = useState("");
     const [isCodeLoading, setIsCodeLoading] = useState(false);
     const [isCodeCorrect, setIsCodeCorrect] = useState(null);
