@@ -23,10 +23,13 @@ export const createProfile = async (req, res) => {
 
 // POST /api/auth/login — Connexion locale (fonctionne hors ligne)
 export const login = async (req, res) => {
-  const { username, clientPassword } = req.body;
+  const { username: userUsername, email: userEmail, clientPassword } = req.body;
 
-  const { errors } = validateLogin({ username, clientPassword });
+  const { errors } = validateLogin({ username: userUsername, email: userEmail, clientPassword });
   if (errors.length) return res.status(400).json({ errors });
+
+  const username = userUsername ?? userEmail;
+  // console.log(`Username or email : ${usernameOrEmail}`);
 
   const result = await authService.login({ username, clientPassword });
   res.json(result);
