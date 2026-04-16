@@ -23,11 +23,12 @@ export function Navbar() {
 
   // Fonctions de navigation
   const goToHome = () => navigate(PATHS.public.home);
-  const goToCourses = () => navigate("/courses");
+ // const goToCourses = () => navigate("/courses");
   const goToEvaluations = () => navigate(PATHS.app.assignment);
   const goToDashboard = () => navigate(PATHS.app.dashboard);
   const goToProfile = () => navigate(PATHS.app.profile);
   const goToLogin = () => navigate(PATHS.auth.login);
+  const goToCourse = () => navigate(PATHS.app.course);
 
   // Détection de la route actuelle
   const isActiveRoute = (path) => {
@@ -60,9 +61,9 @@ export function Navbar() {
             </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink
-                onClick={goToCourses}
+                onClick={goToCourse}
                 className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${
-                  isActiveRoute("/courses")
+                  isActiveRoute(PATHS.app.course)
                     ? "text-white bg-indigo-900"
                     : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                 }`}
