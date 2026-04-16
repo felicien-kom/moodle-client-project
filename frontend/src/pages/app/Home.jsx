@@ -166,7 +166,6 @@ export function HeroSection() {
           <div className="hidden md:flex flex-col gap-3 w-56">
  
             {/* Carte module actif */}
-            
             <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
               <div className="w-10 h-10 rounded-xl bg-indigo-900 flex items-center justify-center mb-4">
                 <BookOpen className="w-5 h-5 text-white" />
@@ -183,8 +182,6 @@ export function HeroSection() {
               </div>
               <p className="text-[10px] text-gray-400 mt-1.5">60% complété</p>
             </div>
-            
-            
  
             {/* Carte prochaine session */}
             <div className="bg-indigo-900 rounded-2xl p-5 text-white shadow-md shadow-indigo-900/25">
