@@ -7,55 +7,39 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "@/client/apiClient";
-import { clearTokens, getAccessToken, setTokens } from "@/utils/api.utils";
+import { clearToken, getToken, setToken } from "@/utils/api.utils";
+import { API_CONFIG } from "@/config/api.config";
 import { PATHS } from "@/router/paths";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user,      setUser]      = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // true le temps de vérifier le token initial
-  const navigate = useNavigate(); 
-  const STATIC_USERS = [
-      {
-        id: 1,
-        email: "user@gmail.com",
-        password: "Password123!",
-        name: "user",
-        role: "student",
-        avatar: null,
-      },
-    ];
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
   const isAuthenticated = user !== null;
 
-  // --- Vérification initiale au montage ---
-  // Si un token existe en storage, on tente de récupérer le profil utilisateur.
-  // C'est ce qui permet de rester connecté après un refresh de page.
+  // --- Vérification initiale : token en storage → récupérer le profil ---
   useEffect(() => {
-    const token = getAccessToken();
+    const token = getToken();
 
     if (!token) {
       setIsLoading(false);
       return;
     }
 
-    /* 
-    // Commenté pour le développement frontend
-    apiClient.get("/auth/me")
+    apiClient
+      .get(API_CONFIG.endpoints.me)
       .then(setUser)
       .catch(() => {
-        // Token invalide ou expiré sans refresh possible → on nettoie
-        clearTokens();
+        clearToken();
         setUser(null);
       })
       .finally(() => setIsLoading(false));
-    */
-
-    // Simulation pour le frontend : vérifier si le token correspond à un utilisateur statique
-    setIsLoading(false);
   }, []);
 
-  // --- Réaction à la session expirée (émis par apiClient après échec du refresh) ---
+  // --- Session expirée émise par apiClient (401) ---
   useEffect(() => {
     const handleExpired = () => {
       setUser(null);
@@ -66,43 +50,39 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("auth:session-expired", handleExpired);
   }, [navigate]);
 
-  // --- Actions ---
-
+  // --- Login ---
   const login = useCallback(async ({ email, password }) => {
-    // Vérification avec les utilisateurs statiques
-    const staticUser = STATIC_USERS.find(
-      user => user.email === email && user.password === password
-    );
+    const data = await apiClient.post(API_CONFIG.endpoints.login, {
+      body:     { email, clientPassword: password },
+      withAuth: false,
+    });
 
-    if (!staticUser) {
-      throw new Error("Email ou mot de passe incorrect");
-    }
+    // Adaptez selon ce que renvoie votre backend :
+    // { access: "...", user: {...} }  ou  { token: "...", user: {...} }
+    const token = data.token ?? data.access;
+    if (!token) throw { isApiError: true, status: 500, message: "Token absent dans la réponse.", data };
 
-    // Simulation de tokens pour le développement frontend
-    const mockTokens = {
-      accessToken: "mock-access-token-" + Date.now(),
-      refreshToken: "mock-refresh-token-" + Date.now(),
-    };
-    setTokens(mockTokens);
-    setUser(staticUser);
+    setToken(token);
 
-    return { user: staticUser, ...mockTokens }; // l'appelant peut en avoir besoin (redirection, etc.)
+    // Si le backend renvoie le profil dans la réponse de login, on l'utilise directement.
+    // Sinon on le récupère via /auth/me.
+    const profile = data.user ?? await apiClient.get(API_CONFIG.endpoints.me);
+    setUser(profile);
+
+    return profile;
   }, []);
 
+  // --- Logout ---
   const logout = useCallback(async () => {
-    try {
-      /* 
-      // Commenté pour le développement frontend
-      // Informe le backend (révocation du refresh token)
-      await apiClient.post("/auth/logout");
-      */
-    } catch {
-      // On continue même si le backend est inaccessible
-    } finally {
-      clearTokens();
+    // try {
+    //   await apiClient.post(API_CONFIG.endpoints.logout);
+    // } catch {
+    //   // On déconnecte côté client même si le backend est inaccessible
+    // } finally {
+      clearToken();
       setUser(null);
       navigate(PATHS.auth.login, { replace: true });
-    }
+    // }
   }, [navigate]);
 
   return (

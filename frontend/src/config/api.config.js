@@ -1,21 +1,21 @@
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1",
-  timeout: 15_000, // ms
+  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:5000/api/v1",
+  timeout: 15_000,
 
   endpoints: {
-    login: "/auth/login/",
-    register: "/auth/register/",
-    logout: "/auth/logout/",
-    refresh: "/auth/token/refresh/",
+    login:    "/auth/login/",
+    register: "/auth/profiles/",
+    profiles: "/auth/profiles/",
+    logout:   "/auth/logout/",
+    me:       "/auth/me/",
   },
 
   storage: {
-    accessToken: "access_token",
-    refreshToken: "refresh_token",
+    token: "access_token",
   },
 
   headers: {
     "Content-Type": "application/json",
-    Accept: "application/json",
+    Accept:         "application/json",
   },
 };

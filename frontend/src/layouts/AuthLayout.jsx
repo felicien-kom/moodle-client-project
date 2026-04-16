@@ -1,7 +1,7 @@
 import LanguagePicker from '@/components/simple/LanguagePicker';
 import ThemePicker from '@/components/simple/ThemePicker';
 import { Outlet } from 'react-router-dom';
-import grokImage from '@/assets/img/grok.jpg';
+import bannerImage from '@/assets/img/img02.jpg';
 import { useTranslation } from 'react-i18next';
 import MainLogo from '@/components/custom/MainLogo';
 
@@ -24,7 +24,7 @@ function AuthLayout() {
                                 <LanguagePicker />
                             </div>
                             <div className="text-center text-xs text-my-text-muted leading-relaxed">
-                                <span>&copy;2026 Orafi HelpDesk. {t("authFooter.reserved")}.</span>
+                                <span>&copy;2026 Moodle Client. {t("authFooter.reserved")}.</span>
                                 <span>&nbsp;&bull;&nbsp;</span>
                                 <a href="/terms" className='hover:text-brand'>{t("authFooter.terms")}</a>
                                 <span>&nbsp;&bull;&nbsp;</span>
@@ -35,7 +35,7 @@ function AuthLayout() {
                 </div>
                 <div 
                     className='hidden lg:block w-1/2 bg-cover bg-center bg-no-repeat rounded-bl-[10rem]' 
-                    style={{ backgroundImage: `url(${grokImage})` }}
+                    style={{ backgroundImage: `url(${bannerImage})` }}
                 >
                 </div>
             </div>

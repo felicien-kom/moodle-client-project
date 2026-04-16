@@ -11,23 +11,24 @@ function Login(){
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [errorAuth, setErrorAuth] = useState(false);
+    const [errorAuth, setErrorAuth] = useState(null);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setErrorAuth(false);
+        setErrorAuth(null);
         
         if (email === "" || password === "") {
-            setErrorAuth(true);
+            setErrorAuth("Veuillez remplir le formulaire.");
             return;
         }
         
         try {
             await login({ email, password });
             navigate(PATHS.app.dashboard);
-        } catch (error) {
-            setErrorAuth(true);
+        } catch (err) {
+            console.log(err?.data?.error);
+            setErrorAuth(err?.data?.error);
         }
     }
     return (
@@ -43,7 +44,7 @@ function Login(){
                     <p className="bg-danger-foreground text-danger border border-danger flex items-center gap-2 p-2 rounded-xs mt-2">
                         <Info />
                         <span className="flex-center-center">
-                            {t("login.error")}
+                            {errorAuth}
                         </span>
                     </p>
                 )}

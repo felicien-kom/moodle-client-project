@@ -1,5 +1,6 @@
 {
   "watch": ["src"],
   "ext": "js,json",
-  "ignore": ["src/**/*.test.js"]
+  "ignore": ["data/", "prisma/*/generated/", "src/**/*.test.js"],
+  "exec": "node src/server.js"
 }
