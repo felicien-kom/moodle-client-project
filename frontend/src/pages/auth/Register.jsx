@@ -1,31 +1,60 @@
+import apiClient from '@/client/apiClient';
 import InputOTPBox from '@/components/simple/InputOTPBox';
-import { Eye, EyeOff, Info, Lock, Mail } from 'lucide-react';
+import { API_CONFIG } from '@/config/api.config';
+import { PATHS } from '@/router/paths';
+import { Eye, EyeOff, Info, Lock, Mail, User2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 const CORRECT_CODE = "142536";
 
 function Register(){
     const { t } = useTranslation();
-    const [email, setEmail] = useState("toto@gmail.com");
+    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
+    const [serverPassword, setServerPassword] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [errorAuth, setErrorAuth] = useState(true);
+    const [showServerPassword, setShowServerPassword] = useState(false);
+    const [errorAuth, setErrorAuth] = useState(null);
+    const [loadingAuth, setLoadingAuth] = useState(false);
     const [verify, setVerify] = useState(false);
     const [code, setCode] = useState("");
     const [isCodeLoading, setIsCodeLoading] = useState(false);
     const [isCodeCorrect, setIsCodeCorrect] = useState(null);
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if(!(email && password && confirmPassword && email !== "" && password !== "")) return;
+        setLoadingAuth(true);
+        setErrorAuth(null);
+
+        if(!(email && password && confirmPassword && email !== "" && password !== "")) {
+            setLoadingAuth(false);
+            setErrorAuth("Veuillez remplir le formulaire.");
+            return;
+        };
+
+        if(password !== confirmPassword) {
+            setLoadingAuth(false);
+            setErrorAuth("Confirmez votre mot de passe.");
+            return;
+        };
         
-        if(password === confirmPassword){
-            setVerify(true);
-        } else{
-            alert("La confirmation n'est pas identique.");
+        try {
+            const response = await apiClient.post(API_CONFIG.endpoints.register, {
+                body:     { username, email, serverPassword, clientPassword: password },
+                withAuth: false,
+            });
+            navigate(PATHS.auth.login);
+        } catch (err) {
+            console.log(err);
+            console.log(err?.data?.error || err?.data?.errors[0]);
+            setErrorAuth(err?.data?.error || err?.data?.errors[0] || err?.message);
+            setLoadingAuth(false);
         }
     }
 
@@ -70,7 +99,7 @@ function Register(){
                     <p className="bg-danger-foreground text-danger border border-danger flex items-center gap-2 p-2 rounded-xs mt-2">
                         <Info />
                         <span className="flex-center-center">
-                            {t("register.error")}
+                            {errorAuth}
                         </span>
                     </p>
                 )}
@@ -139,6 +168,47 @@ function Register(){
                         </button>
                     </div>
                 </div>
+                <div className='mt-3'>
+                    <label htmlFor="username">{t("register.fields.username")}</label>
+                    <div className="mt-2 group ring-0 ring-brand hover:not-focus-within:ring-1 focus-within:ring-2 flex items-center gap-3 border rounded-xs h-10 pl-2">
+                        <span className='flex-center-center text-my-text-muted'>
+                            <User2 />
+                        </span>
+                        <input 
+                            type="text" 
+                            name="username" 
+                            id="username" 
+                            placeholder={t("register.fields.holderUsername")} 
+                            className='flex-1 h-full flex items-center'
+                            onChange={(e) => setUsername(e.target.value)}
+                            required={true}
+                        />
+                    </div>
+                </div>
+                <div className='mt-3'>
+                    <label htmlFor="serverPassword">{t("register.fields.serverPassword")}</label>
+                    <div className="mt-2 group ring-0 ring-brand hover:not-focus-within:ring-1 focus-within:ring-2 flex items-center gap-3 border rounded-xs h-10 px-2">
+                        <span className='flex-center-center text-my-text-muted'>
+                            <Lock />
+                        </span>
+                        <input 
+                            type={(showPassword) ? "text" : "password"} 
+                            name="serverPassword" 
+                            id="serverPassword" 
+                            placeholder={t("register.fields.holderMoodle")} 
+                            className='flex-1 h-full flex items-center'
+                            onChange={(e) => setServerPassword(e.target.value)}
+                            required={true}
+                        />
+                        <button 
+                        type="button" 
+                        className="flex-center-center"
+                        onClick={() => {setShowServerPassword(prev => !prev)}}
+                        >
+                            {showServerPassword ? (<Eye />) : (<EyeOff />)}
+                        </button>
+                    </div>
+                </div>
                 {/* <div className="text-right mt-3">
                     <a href="/forgot-password" className='text-brand'>
                         {t("login.forgotPassword")}&nbsp;?
@@ -146,7 +216,8 @@ function Register(){
                 </div> */}
                 <button 
                     type="submit" 
-                    className="mt-6 flex-center-center rounded-4xl h-11 text-white bg-brand font-bold text-lg"
+                    className="mt-6 flex-center-center rounded-4xl h-11 text-white bg-brand font-bold text-lg disabled:bg-my-bg-dark"
+                    disabled={loadingAuth}
                 >
                     {t("register.signUp")}
                 </button>

@@ -1,6 +1,6 @@
 export const API_CONFIG = {
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:5000/api/v1",
-  timeout: 15_000,
+  timeout: 90_000,
 
   endpoints: {
     login:    "/auth/login/",
@@ -12,6 +12,7 @@ export const API_CONFIG = {
 
   storage: {
     token: "access_token",
+    moodleUser: "moodle_user",
   },
 
   headers: {
