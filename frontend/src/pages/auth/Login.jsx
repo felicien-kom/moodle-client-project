@@ -12,10 +12,12 @@ function Login(){
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [errorAuth, setErrorAuth] = useState(null);
+    const [loadingAuth, setLoadingAuth] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoadingAuth(true);
         setErrorAuth(null);
         
         if (email === "" || password === "") {
@@ -28,7 +30,8 @@ function Login(){
             navigate(PATHS.app.dashboard);
         } catch (err) {
             console.log(err?.data?.error);
-            setErrorAuth(err?.data?.error);
+            setErrorAuth(err?.data?.error || err?.message);
+            setLoadingAuth(false);
         }
     }
     return (
@@ -96,7 +99,8 @@ function Login(){
                 </div>
                 <button 
                     type="submit" 
-                    className="mt-3 flex-center-center rounded-4xl h-11 text-white bg-brand font-bold text-lg"
+                    className="mt-3 flex-center-center rounded-4xl h-11 text-white bg-brand font-bold text-lg disabled:bg-my-bg-dark"
+                    disabled={loadingAuth}
                 >
                     {t("login.signIn")}
                 </button>

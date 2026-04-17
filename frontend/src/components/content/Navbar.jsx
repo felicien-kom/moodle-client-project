@@ -8,7 +8,6 @@ import {
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +15,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RefreshCw, Mail, HelpCircle, Settings, ChevronDown } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import DynamicAvatar from "./DynamicAvatar";
+import { getLocalUser } from "@/utils/api.utils";
 
 export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
+  const user = getLocalUser();
 
   // Fonctions de navigation
   const goToHome = () => navigate(PATHS.public.home);
@@ -113,10 +117,8 @@ export function Navbar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 text-sm text-gray-700">
-              Etudiant Un
-              <Avatar className="h-7 w-7 bg-indigo-900 text-white text-xs">
-                <AvatarFallback className="bg-indigo-900 text-white text-xs">ET</AvatarFallback>
-              </Avatar>
+              {user.name}
+              <DynamicAvatar name={user.name} />
               <ChevronDown className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
@@ -124,7 +126,7 @@ export function Navbar() {
             <DropdownMenuItem onClick={goToProfile}>
               Profil
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={goToLogin}>
+            <DropdownMenuItem onClick={() => {logout(); goToLogin();}}>
               Déconnexion
             </DropdownMenuItem>
           </DropdownMenuContent>

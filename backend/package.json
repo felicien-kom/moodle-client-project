@@ -14,6 +14,7 @@
     "db:migrate:user":    "cross-env PRISMA_TARGET=user prisma migrate dev",
     "db:push:master":     "prisma db push",
     "db:push:user":       "cross-env PRISMA_TARGET=user prisma db push",
+    "db:studio": "prisma studio",
     "db:setup":           "npm run db:migrate:master && npm run db:generate:master && npm run db:migrate:user && npm run db:generate:user"
   },
   "dependencies": {
