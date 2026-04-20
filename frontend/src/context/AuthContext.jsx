@@ -7,7 +7,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "@/client/apiClient";
-import { clearToken, getToken, setToken } from "@/utils/api.utils";
+import { clearToken, getToken, setLocalUser, setToken } from "@/utils/api.utils";
 import { API_CONFIG } from "@/config/api.config";
 import { PATHS } from "@/router/paths";
 
@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
       .get(API_CONFIG.endpoints.me)
       .then(setUser)
       .catch(() => {
-        clearToken();
+        // clearToken();
         setUser(null);
       })
       .finally(() => setIsLoading(false));
@@ -68,6 +68,7 @@ export function AuthProvider({ children }) {
     // Sinon on le récupère via /auth/me.
     const profile = data.user ?? await apiClient.get(API_CONFIG.endpoints.me);
     setUser(profile);
+    setLocalUser(profile);
 
     return profile;
   }, []);
@@ -81,6 +82,7 @@ export function AuthProvider({ children }) {
     // } finally {
       clearToken();
       setUser(null);
+      setLocalUser(null);
       navigate(PATHS.auth.login, { replace: true });
     // }
   }, [navigate]);

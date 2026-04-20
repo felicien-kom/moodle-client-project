@@ -53,7 +53,11 @@
       "holderEmail": "utilisateur@email.com",
       "password": "Password",
       "confirmPassword": "Confirm",
-      "holderPassword": "votre-motdepasse-sécurisé"
+      "holderPassword": "votre-motdepasse-sécurisé",
+      "username": "Moodle username",
+      "serverPassword": "Moodle password",
+      "holderUsername": "your-moodle-username",
+      "holderMoodle": "your-moodle-password"
     },
     "already": "Already having an account",
     "signUp": "Sign Up",

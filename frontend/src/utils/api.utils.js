@@ -16,6 +16,18 @@ export function clearToken() {
   localStorage.removeItem(storage.token);
 }
 
+export function getLocalUser() {
+  return JSON.parse(localStorage.getItem(storage.moodleUser));
+}
+
+export function setLocalUser(localUser) {
+  localStorage.setItem(storage.moodleUser, JSON.stringify(localUser));
+}
+
+export function clearLocalUser() {
+  localStorage.removeItem(storage.moodleUser);
+}
+
 // --- Headers ---
 
 /**
