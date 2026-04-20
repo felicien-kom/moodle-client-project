@@ -1,0 +1,30 @@
+PLAN DE COMPREHENSION ET DE MAITRISE DU BACKEND
+
+Consulter le fichier structure_backend.txt pour avoir la structure globale du backend.
+(Ignorez le dossier docs pour l'instant)
+
+Pour chaque element, se servir d'une IA efficace et disponible en lui envoyant comme contexte global la structure complete du backend (donc le fichier structure_backend.txt) afin qu'elle se fasse déjà une idée des relations entre les fichiers et le but du projet.
+
+De plus, toujours comme contexte global, lui décrire l'objectif du projet (moodle client, offline-first, objectif app electron basé sur un front react et un back express, etc).
+
+Suivre l'ordre suivant en fournissant à chaque fois le contenu des fichiers par groupe pour comprendre le role, et le fonctionnement de chaque fichier, le flow general au sein du projet et son fonctionnement.
+[En suivant ces etapes, le reste ne sera que la compréhension technique du code javascript mais le fonctionnement de chacue fichier et meme de chaque fontion ou utilitaire sera dejà maitrisé.]
+
+Lot 1 : nodemon.json, package.json : elements simples pour nodejs et le dev
+Lot 2 : .env.example et config/env.js
+Lot 3 : prisma.config.js et config/db.js
+Lot 4 : config/moodleApi.js et middlewares/errorHandler.js
+Lot 5 : prisma/master/shema et prisma/user/schema
+Lot 6 : utils, validators, middlewares/authenticate et middleware/authorize
+Lot 7 : cors.js, app.js et server.js et routes/index
+Lot 8 : routes/auth, controllers/auth et services/auth et surtout scripts/migrate-user
+Lot 9 : Tout le coeur de la synchro, le dossier sync, les index de push et pull (pas forcement toutes les occurences, mais au moins une par cas) et bien comprendre le engine
+Lot 10 : utilisation sync en commande : scripts/sync.js
+Lot 11 : Synchro via http et SSE : routes/index, routes/sync, controller/sync
+
+Je crois que c'est tout, ensuite vous pourrez demander tout autre element souhaité ou non mentionné ici et enfin demander un résumé complet de tout le projet backend, de ses particularités et fonctionnement/flow d'exécution.
+
+Le code est déjà très bien organisé et modulaire. Donc il est très accessible tout en étant efficace.
+L'objectif ici est que chacun comprenne et maitrise aussi bien de manière fonctionnelle que technique le backend et puisse intervenir sur ce dernier (code, consigne, docu, etc) de manière sure, efficace et maitrisée afin que le projet puisse avancer au mieux, et même au meilleur.
+
+Après tout ca, vous pourez poser des questions détaillées ou des remarques sur n'importe quel sujet à l'IA pour plus de détails et on pourra continuer ou mieux expliquer/détailler aisément en présentiel en groupe.
