@@ -16,90 +16,108 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-// ─── Données mockées ──────────────────────────────────────────────────────────
+// ─── Données mockées (alignées sur schema.prisma) ────────────────────────────
 const devoirsData = [
   {
     id: 1,
-    titre: "Examen final",
-    cours: "Machine Learning (ML)",
-    coursCode: "ML",
-    echeance: "20/04/2026",
-    statut: "Ouvert",
-    points: 20,
-    fichier: "examen_final_ml.pdf",
-    description:
-      "Examen final du cours Machine Learning. Durée : 2h. Couvre les chapitres 1 à 8.",
-    soumissions: [
+    name: "Examen final",
+    intro: "Examen final du cours Machine Learning. Durée : 2h. Couvre les chapitres 1 à 8.",
+    dueDate: 1713590400, // 20/04/2026
+    cutoffDate: 1713676800, // 21/04/2026
+    allowedTypes: "file",
+    maxFileSize: 10485760, // 10MB
+    visible: true,
+    courseId: 2,
+    course: {
+      title: "Machine Learning",
+      shortName: "ML"
+    },
+    submissions: [
       {
         id: 1,
-        initiales: "AM",
-        nom: "Alice Martin",
-        date: "14/04/2026 09:30",
-        note: 16,
-        sur: 30,
-        statut: "corrige",
-        fichier: "examen_alice.pdf",
-        commentaire: "Très bon travail, bonne maîtrise des concepts.",
+        submissionText: null,
+        filePath: "/uploads/examen_alice.pdf",
+        fileName: "examen_alice.pdf",
+        state: "GRADED",
+        grade: 16.0,
+        gradedAt: 1713244800,
+        feedback: "Très bon travail, bonne maîtrise des concepts.",
+        studentName: "Alice Martin",
+        studentInitials: "AM",
+        submittedAt: 1713081600
       },
       {
         id: 2,
-        initiales: "BN",
-        nom: "Bob Nguyen",
-        date: "14/04/2026 10:15",
-        note: null,
-        sur: 30,
-        statut: "acorriger",
-        fichier: "examen_bob.pdf",
-        commentaire: "",
+        submissionText: null,
+        filePath: "/uploads/examen_bob.pdf",
+        fileName: "examen_bob.pdf",
+        state: "SUBMITTED",
+        grade: null,
+        gradedAt: null,
+        feedback: null,
+        studentName: "Bob Nguyen",
+        studentInitials: "BN",
+        submittedAt: 1713085200
       },
     ],
   },
   {
     id: 2,
-    titre: "TP Régression linéaire",
-    cours: "Statistiques avancées",
-    coursCode: "STAT",
-    echeance: "15/04/2026",
-    statut: "Ouvert",
-    points: 15,
-    fichier: "tp_regression.pdf",
-    description:
-      "Travail pratique sur la régression linéaire simple et multiple.",
-    soumissions: [
+    name: "TP Régression linéaire",
+    intro: "Travail pratique sur la régression linéaire simple et multiple.",
+    dueDate: 1713504000, // 15/04/2026
+    cutoffDate: 1713590400, // 16/04/2026
+    allowedTypes: "both",
+    maxFileSize: 5242880, // 5MB
+    visible: true,
+    courseId: 3,
+    course: {
+      title: "Statistiques avancées",
+      shortName: "STAT"
+    },
+    submissions: [
       {
         id: 3,
-        initiales: "JD",
-        nom: "Julie Dupont",
-        date: "12/04/2026 14:00",
-        note: 14,
-        sur: 15,
-        statut: "corrige",
-        fichier: "tp_julie.pdf",
-        commentaire: "Excellent travail, graphiques bien expliqués.",
+        submissionText: "Voici mon TP sur la régression linéaire.",
+        filePath: "/uploads/tp_julie.pdf",
+        fileName: "tp_julie.pdf",
+        state: "GRADED",
+        grade: 14.0,
+        gradedAt: 1712918400,
+        feedback: "Excellent travail, graphiques bien expliqués.",
+        studentName: "Julie Dupont",
+        studentInitials: "JD",
+        submittedAt: 1712755200
       },
     ],
   },
   {
     id: 3,
-    titre: "Quizz — Réseaux de neurones",
-    cours: "Deep Learning",
-    coursCode: "DL",
-    echeance: "18/04/2026",
-    statut: "Ouvert",
-    points: 10,
-    fichier: "quizz_reseaux.pdf",
-    description: "Quizz portant sur les architectures CNN, RNN et Transformer.",
-    soumissions: [
+    name: "Quizz — Réseaux de neurones",
+    intro: "Quizz portant sur les architectures CNN, RNN et Transformer.",
+    dueDate: 1713676800, // 18/04/2026
+    cutoffDate: 1713763200, // 19/04/2026
+    allowedTypes: "text",
+    maxFileSize: 1048576, // 1MB
+    visible: true,
+    courseId: 4,
+    course: {
+      title: "Deep Learning",
+      shortName: "DL"
+    },
+    submissions: [
       {
         id: 4,
-        initiales: "BN",
-        nom: "Brice Nguyen",
-        date: "10/04/2026 11:00",
-        note: 8,
-        sur: 10,
-        statut: "corrige",
-        fichier: "quizz_brice.pdf",
-        commentaire: "Quelques erreurs sur la backpropagation.",
+        submissionText: "Réponses au quizz sur les réseaux de neurones.",
+        filePath: "/uploads/quizz_brice.pdf",
+        fileName: "quizz_brice.pdf",
+        state: "GRADED",
+        grade: 8.0,
+        gradedAt: 1712572800,
+        feedback: "Quelques erreurs sur la backpropagation.",
+        studentName: "Brice Nguyen",
+        studentInitials: "BN",
+        submittedAt: 1712400000
       },
     ],
   },
@@ -131,15 +149,15 @@ function Avatar({ initiales }) {
 }
 
 // ─── Badge Statut ─────────────────────────────────────────────────────────────
-function StatutBadge({ statut }) {
-  if (statut === "corrige") {
+function StatutBadge({ state }) {
+  if (state === "GRADED") {
     return (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
         Corrigée
       </span>
     );
   }
-  if (statut === "acorriger") {
+  if (state === "SUBMITTED") {
     return (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">
         À corriger
@@ -193,14 +211,14 @@ function ListeDevoirs({ onVoirDevoir }) {
 
 // ─── Carte devoir (dans la liste) ─────────────────────────────────────────────
 function DevoirCard({ devoir, onVoir }) {
-  const nbSoumissions = devoir.soumissions.length;
-  const notesCorrigees = devoir.soumissions.filter(
-    (s) => s.statut === "corrige"
+  const nbSoumissions = devoir.submissions.length;
+  const notesCorrigees = devoir.submissions.filter(
+    (s) => s.state === "GRADED"
   );
   const noteMoy =
     notesCorrigees.length > 0
       ? (
-          notesCorrigees.reduce((a, s) => a + s.note, 0) /
+          notesCorrigees.reduce((a, s) => a + s.grade, 0) /
           notesCorrigees.length
         ).toFixed(1)
       : "—";
@@ -212,11 +230,13 @@ function DevoirCard({ devoir, onVoir }) {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-base font-semibold text-gray-900">
-              {devoir.titre}
+              {devoir.name}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">{devoir.cours}</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {devoir.course.title} ({devoir.course.shortName})
+            </p>
           </div>
-          <StatutBadge statut="ouvert" />
+          <StatutBadge state="ouvert" />
         </div>
 
         {/* Méta */}
@@ -226,7 +246,7 @@ function DevoirCard({ devoir, onVoir }) {
               Échéance
             </p>
             <p className="text-sm font-medium text-gray-800">
-              {devoir.echeance}
+              {devoir.dueDate ? new Date(devoir.dueDate * 1000).toLocaleDateString('fr-FR') : 'Non définie'}
             </p>
           </div>
           <div>
@@ -242,7 +262,7 @@ function DevoirCard({ devoir, onVoir }) {
               Note moy.
             </p>
             <p className="text-sm font-medium text-gray-800">
-              {noteMoy}/{notesCorrigees[0]?.sur ?? devoir.points}
+              {noteMoy}/20
             </p>
           </div>
         </div>
@@ -269,9 +289,9 @@ function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{devoir.titre}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{devoir.name}</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {devoir.cours} · Moodle
+              {devoir.course.title} ({devoir.course.shortName}) · Moodle
             </p>
           </div>
           <Button
@@ -289,9 +309,9 @@ function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
           <CardContent className="p-5">
             {/* Statut + points */}
             <div className="flex items-center gap-3 mb-5">
-              <StatutBadge statut="ouvert" />
+              <StatutBadge state="ouvert" />
               <span className="text-sm font-medium text-gray-700">
-                {devoir.points} points
+                20 points
               </span>
             </div>
 
@@ -301,7 +321,7 @@ function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
                 Description
               </p>
               <p className="text-sm text-gray-700 leading-relaxed">
-                {devoir.description}
+                {devoir.intro}
               </p>
             </div>
 
@@ -317,7 +337,7 @@ function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
                     Cours
                   </p>
                   <p className="text-sm font-medium text-gray-900">
-                    {devoir.coursCode}
+                    {devoir.course.shortName}
                   </p>
                 </div>
               </div>
@@ -330,7 +350,7 @@ function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
                     Fichier
                   </p>
                   <p className="text-sm font-medium text-slate-700 underline underline-offset-2 cursor-pointer">
-                    {devoir.fichier}
+                    Consigne.pdf
                   </p>
                 </div>
               </div>
@@ -343,7 +363,7 @@ function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
                     Échéance
                   </p>
                   <p className="text-sm font-medium text-gray-900">
-                    {devoir.echeance}
+                    {devoir.dueDate ? new Date(devoir.dueDate * 1000).toLocaleDateString('fr-FR') : 'Non définie'}
                   </p>
                 </div>
               </div>
@@ -357,26 +377,26 @@ function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
             <p className="text-sm font-semibold text-gray-800 mb-4">
               Soumissions{" "}
               <span className="font-normal text-gray-400">
-                ({devoir.soumissions.length})
+                ({devoir.submissions.length})
               </span>
             </p>
             <div className="flex flex-col divide-y divide-gray-100">
-              {devoir.soumissions.map((s) => (
+              {devoir.submissions.map((s) => (
                 <div
                   key={s.id}
                   className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
                 >
-                  <Avatar initiales={s.initiales} />
+                  <Avatar initiales={s.studentInitials} />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{s.nom}</p>
-                    <p className="text-xs text-gray-400">{s.date}</p>
+                    <p className="text-sm font-medium text-gray-900">{s.studentName}</p>
+                    <p className="text-xs text-gray-400">{s.submittedAt ? new Date(s.submittedAt * 1000).toLocaleDateString('fr-FR') : 'Non définie'}</p>
                   </div>
-                  {s.statut === "corrige" ? (
+                  {s.state === "GRADED" ? (
                     <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">
-                      {s.note} pts
+                      {s.grade} pts
                     </span>
                   ) : (
-                    <StatutBadge statut="acorriger" />
+                    <StatutBadge state="SUBMITTED" />
                   )}
                   <Button
                     onClick={() => onVoirSoumission(s)}
@@ -397,11 +417,11 @@ function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
 
 // ─── VUE 3 : Détail d'une soumission ─────────────────────────────────────────
 function DetailSoumission({ soumission, devoir, onRetour, onSauvegarder }) {
-  const [note, setNote] = useState(soumission.note ?? "");
-  const [commentaire, setCommentaire] = useState(soumission.commentaire);
+  const [note, setNote] = useState(soumission.grade ?? "");
+  const [commentaire, setCommentaire] = useState(soumission.feedback ?? "");
 
   function handleSave() {
-    onSauvegarder({ ...soumission, note: Number(note), commentaire, statut: "corrige" });
+    onSauvegarder({ ...soumission, grade: Number(note), feedback: commentaire, state: "GRADED" });
   }
 
   return (
@@ -411,10 +431,10 @@ function DetailSoumission({ soumission, devoir, onRetour, onSauvegarder }) {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {soumission.nom}
+              {soumission.studentName}
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {devoir.titre} · {devoir.coursCode}
+              {devoir.name} · {devoir.course.shortName}
             </p>
           </div>
           <Button
@@ -432,10 +452,10 @@ function DetailSoumission({ soumission, devoir, onRetour, onSauvegarder }) {
           <CardContent className="p-5">
             {/* Statut + date */}
             <div className="flex items-center gap-3 mb-5">
-              <StatutBadge statut={soumission.statut} />
+              <StatutBadge state={soumission.state} />
               <span className="text-xs text-gray-500 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
-                Envoyé le {soumission.date}
+                Envoyé le {soumission.submittedAt ? new Date(soumission.submittedAt * 1000).toLocaleDateString('fr-FR') : 'Non définie'}
               </span>
             </div>
 
@@ -450,7 +470,7 @@ function DetailSoumission({ soumission, devoir, onRetour, onSauvegarder }) {
                     Étudiant
                   </p>
                   <p className="text-sm font-medium text-gray-900">
-                    {soumission.nom}
+                    {soumission.studentName}
                   </p>
                 </div>
               </div>
@@ -463,7 +483,7 @@ function DetailSoumission({ soumission, devoir, onRetour, onSauvegarder }) {
                     Devoir
                   </p>
                   <p className="text-sm font-medium text-gray-900">
-                    {devoir.titre}
+                    {devoir.name}
                   </p>
                 </div>
               </div>
@@ -476,7 +496,7 @@ function DetailSoumission({ soumission, devoir, onRetour, onSauvegarder }) {
                     Fichier
                   </p>
                   <p className="text-sm font-medium text-slate-700 underline underline-offset-2 cursor-pointer">
-                    {soumission.fichier}
+                    {soumission.fileName}
                   </p>
                 </div>
               </div>
@@ -502,11 +522,11 @@ function DetailSoumission({ soumission, devoir, onRetour, onSauvegarder }) {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   min={0}
-                  max={soumission.sur}
+                  max={20}
                   className="w-20 h-10 text-base font-medium border-gray-300 rounded-lg focus:border-slate-800 focus:ring-slate-800"
                 />
                 <span className="text-sm text-gray-500 font-medium">
-                  / {soumission.sur}
+                  / 20
                 </span>
               </div>
             </div>

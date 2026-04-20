@@ -10,22 +10,22 @@ import {
 } from "lucide-react";
 import CourseDetail from "@/components/content/CourseDetail";
 
-// ─── Données mockées ──────────────────────────────────────────────────────────
+// ─── Données mockées (alignées sur schema.prisma) ────────────────────────────
 const coursData = {
   crees: [
-    { id: 10, nom: "Moodle", cat: "Catégorie 1", animateur: "ledoux segning", debut: null },
+    { id: 10, title: "Moodle", shortName: "MDL", categoryName: "Catégorie 1", startDate: 1736995200, visible: true },
   ],
   inscrits: [
-    { id: 1, nom: "Gestion de projet",    cat: "Catégorie 1", debut: "15/01/2026" },
-    { id: 2, nom: "Machine Learning",      cat: "Catégorie 1", debut: "16/01/2026" },
-    { id: 3, nom: "Analyse de données",    cat: "Catégorie 1", debut: "17/01/2026" },
-    { id: 4, nom: "Programmation WEB",     cat: "Catégorie 1", debut: "23/01/2026" },
+    { id: 1, title: "Gestion de projet",    shortName: "GP", categoryName: "Catégorie 1", startDate: 1736995200, visible: true },
+    { id: 2, title: "Machine Learning",      shortName: "ML", categoryName: "Catégorie 1", startDate: 1737081600, visible: true },
+    { id: 3, title: "Analyse de données",    shortName: "AD", categoryName: "Catégorie 1", startDate: 1737168000, visible: true },
+    { id: 4, title: "Programmation WEB",     shortName: "WEB", categoryName: "Catégorie 1", startDate: 1737676800, visible: true },
   ],
   explorer: [
-    { id: 5, nom: "test de cours",  cat: "Catégorie 1", debut: "22/01/2026" },
-    { id: 6, nom: "cours test2",    cat: "Catégorie 1", debut: "22/01/2026" },
-    { id: 7, nom: "test cours 3",   cat: "Catégorie 1", debut: "22/01/2026" },
-    { id: 8, nom: "test cours 4",   cat: "Catégorie 1", debut: "24/01/2026" },
+    { id: 5, title: "test de cours",  shortName: "TEST", categoryName: "Catégorie 1", startDate: 1737590400, visible: true },
+    { id: 6, title: "cours test2",    shortName: "T2", categoryName: "Catégorie 1", startDate: 1737590400, visible: true },
+    { id: 7, title: "test cours 3",   shortName: "T3", categoryName: "Catégorie 1", startDate: 1737590400, visible: true },
+    { id: 8, title: "test cours 4",   shortName: "T4", categoryName: "Catégorie 1", startDate: 1737763200, visible: true },
   ],
 };
 
@@ -156,13 +156,13 @@ function CourseCard({ cours, showMath, onClick }) {
         ? <MathBackground />
         : <div className="w-full h-32 bg-blue-100 flex items-center justify-center text-3xl">🖥️</div>}
       <CardContent className="p-4">
-        <p className="text-sm font-bold text-gray-900 mb-0.5">{cours.nom}</p>
-        <p className="text-xs text-gray-400 mb-2">{cours.cat}</p>
+        <p className="text-sm font-bold text-gray-900 mb-0.5">{cours.title}</p>
+        <p className="text-xs text-gray-400 mb-2">{cours.categoryName}</p>
         {/*
         {cours.debut && (
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <Calendar className="w-3 h-3" />
-            Début : {cours.debut}
+            Début : {cours.startDate ? new Date(cours.startDate * 1000).toLocaleDateString('fr-FR') : 'Non définie'}
           </div>
         )}
         
@@ -185,8 +185,8 @@ function EspaceCours({ onOuvrirCours }) {
   function filter(arr) {
     if (!query) return arr;
     return arr.filter(c =>
-      c.nom.toLowerCase().includes(query.toLowerCase()) ||
-      c.cat.toLowerCase().includes(query.toLowerCase())
+      c.title.toLowerCase().includes(query.toLowerCase()) ||
+      c.categoryName.toLowerCase().includes(query.toLowerCase())
     );
   }
 

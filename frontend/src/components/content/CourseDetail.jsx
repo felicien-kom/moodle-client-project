@@ -181,7 +181,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
             <ArrowLeft className="w-4 h-4" />
             Retour à l'espace cours
           </button>
-          <h1 className="text-xl font-extrabold mb-1.5">{cours.nom}</h1>
+          <h1 className="text-xl font-extrabold mb-1.5">{cours.title}</h1>
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <User className="w-3.5 h-3.5" />
             <span>Enseignant : {cours.animateur ?? "ledoux segning"}</span>
@@ -231,7 +231,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Nom court</p>
                   <p className="text-[15px] font-semibold text-gray-900">
-                    {cours.nomCourt ?? cours.nom.slice(0, 8)}
+                    {cours.shortName ?? cours.title?.slice(0, 8)}
                   </p>
                 </div>
                 <div>
@@ -243,13 +243,13 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Début</p>
                   <p className="text-[15px] font-semibold text-gray-900">
-                    {cours.debutLong ?? cours.debut ?? "Non définie"}
+                    {cours.startDate ? new Date(cours.startDate * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : "Non définie"}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Fin</p>
                   <p className="text-[15px] font-semibold text-gray-900">
-                    {cours.fin ?? "Non définie"}
+                    {cours.endDate ? new Date(cours.endDate * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : "Non définie"}
                   </p>
                 </div>
               </div>
@@ -259,7 +259,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
               <div>
                 <p className="text-xs text-gray-400 mb-1.5">Description</p>
                 <p className="text-sm text-gray-500 italic leading-relaxed">
-                  {cours.description ?? "Aucune description disponible."}
+                  {cours.summary ?? "Aucune description disponible."}
                 </p>
               </div>
             </CardContent>
@@ -290,14 +290,13 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
   );
 }
 
-// ─── Valeur par défaut si cours non fourni ────────────────────────────────────
+// ─── Valeur par défaut si cours non fourni (alignée sur schema.prisma) ────────
 const defaultCours = {
-  nom:         "Machine Learning",
-  nomCourt:    "ML",
-  cat:         "Catégorie 1",
-  animateur:   "ledoux segning",
-  debut:       "16/01/2026",
-  debutLong:   "16 January 2026",
-  fin:         "Non définie",
-  description: "Cours complet de Machine Learning couvrant les fondamentaux, les algorithmes classiques et les réseaux de neurones.",
+  title:       "Machine Learning",
+  shortName:   "ML",
+  categoryName: "Catégorie 1",
+  summary:     "Cours complet de Machine Learning couvrant les fondamentaux, les algorithmes classiques et les réseaux de neurones.",
+  startDate:   1737081600, // 16/01/2026
+  endDate:     null,
+  visible:     true,
 };
