@@ -1,4 +1,6 @@
 // src/sync/pull/pullQuizzes.js
+// Pull des quiz pour les cours inscrits avec syncEnabled.
+
 import { moodleFetch } from "../../config/moodleApi.js";
 import { diagnose, diagnoseNew, SyncCase } from "../diagnose.js";
 import { resolveConflict } from "../resolve.js";
@@ -16,9 +18,18 @@ export const pullQuizzes = async ({ prisma, token, cursor, emitter }) => {
     return { pulled: 0, conflicts: 0 };
   }
 
+  // Filtrer uniquement les cours avec syncEnabled
+  const enabledServerIds = await _getEnabledCourseServerIds(prisma);
+  const filteredCourses = localCourses.filter(c => enabledServerIds.includes(c.server_id));
+
+  if (filteredCourses.length === 0) {
+    emitter.emit("progress", { step: "PULL", entity: "quizzes", status: "done", pulled: 0 });
+    return { pulled: 0, conflicts: 0 };
+  }
+
   const { data: response } = await moodleFetch(
     "mod_quiz_get_quizzes_by_courses",
-    { courseids: localCourses.map((c) => c.server_id) },
+    { courseids: filteredCourses.map(c => c.server_id) },
     token
   );
 
@@ -27,8 +38,8 @@ export const pullQuizzes = async ({ prisma, token, cursor, emitter }) => {
   let conflicts = 0;
 
   for (const serverQuiz of serverQuizzes) {
-    const serverTimemodified = serverQuiz.timemodified;
-    const localCourse = localCourses.find((c) => c.server_id === serverQuiz.course);
+    const serverTimemodified = serverQuiz.timemodified ?? 0;
+    const localCourse = filteredCourses.find(c => c.server_id === serverQuiz.course);
     if (!localCourse) continue;
 
     const local = await prisma.quiz.findFirst({ where: { server_id: serverQuiz.id } });
@@ -39,14 +50,10 @@ export const pullQuizzes = async ({ prisma, token, cursor, emitter }) => {
     } else {
       if (local.sync_status === "SYNCED" && local.last_synced_at >= cursor) continue;
       action = diagnose(local, serverTimemodified, cursor);
-
       if (action === SyncCase.CONFLICT) {
         action = resolveConflict("quiz");
         conflicts++;
-        emitter.emit("progress", {
-          step: "CONFLICT", entity: "quiz",
-          id: serverQuiz.id, resolution: action,
-        });
+        emitter.emit("progress", { step: "CONFLICT", entity: "quiz", id: serverQuiz.id, resolution: action });
       }
     }
 
@@ -55,11 +62,12 @@ export const pullQuizzes = async ({ prisma, token, cursor, emitter }) => {
         where:  { server_id: serverQuiz.id },
         update: {
           name:                serverQuiz.name,
-          intro:               serverQuiz.intro ?? null,
-          timeLimit:           serverQuiz.timelimit ?? null,
-          maxAttempts:         serverQuiz.attempts ?? 0,
-          gradeMethod:         serverQuiz.grademethod ?? 1,
-          sumGrades:           serverQuiz.sumgrades ?? null,
+          intro:               serverQuiz.intro        ?? null,
+          timeLimit:           serverQuiz.timelimit    ?? null,
+          maxAttempts:         serverQuiz.attempts     ?? 0,
+          gradeMethod:         serverQuiz.grademethod  ?? 1,
+          sumGrades:           serverQuiz.sumgrades    ?? null,
+          grade:               serverQuiz.grade        ?? null,
           visible:             Boolean(serverQuiz.visible ?? 1),
           server_timemodified: serverTimemodified,
           sync_status:         "SYNCED",
@@ -67,14 +75,15 @@ export const pullQuizzes = async ({ prisma, token, cursor, emitter }) => {
         },
         create: {
           courseId:            localCourse.id,
-          name:                serverQuiz.name,
-          intro:               serverQuiz.intro ?? null,
-          timeLimit:           serverQuiz.timelimit ?? null,
-          maxAttempts:         serverQuiz.attempts ?? 0,
-          gradeMethod:         serverQuiz.grademethod ?? 1,
-          sumGrades:           serverQuiz.sumgrades ?? null,
-          visible:             Boolean(serverQuiz.visible ?? 1),
           server_id:           serverQuiz.id,
+          name:                serverQuiz.name,
+          intro:               serverQuiz.intro        ?? null,
+          timeLimit:           serverQuiz.timelimit    ?? null,
+          maxAttempts:         serverQuiz.attempts     ?? 0,
+          gradeMethod:         serverQuiz.grademethod  ?? 1,
+          sumGrades:           serverQuiz.sumgrades    ?? null,
+          grade:               serverQuiz.grade        ?? null,
+          visible:             Boolean(serverQuiz.visible ?? 1),
           server_timemodified: serverTimemodified,
           sync_status:         "SYNCED",
           last_synced_at:      serverTimemodified,
@@ -87,4 +96,12 @@ export const pullQuizzes = async ({ prisma, token, cursor, emitter }) => {
 
   emitter.emit("progress", { step: "PULL", entity: "quizzes", status: "done", pulled, conflicts });
   return { pulled, conflicts };
+};
+
+const _getEnabledCourseServerIds = async (prisma) => {
+  const enrollments = await prisma.courseEnrollment.findMany({
+    where:  { syncEnabled: true },
+    select: { courseServerId: true },
+  });
+  return enrollments.map(e => e.courseServerId);
 };

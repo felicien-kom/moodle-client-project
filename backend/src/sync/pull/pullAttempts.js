@@ -1,4 +1,7 @@
 // src/sync/pull/pullAttempts.js
+// Pull des tentatives de quiz de l'utilisateur.
+// Propriétaire CLIENT — on pull surtout pour récupérer les corrections et notes.
+
 import { moodleFetch } from "../../config/moodleApi.js";
 import { diagnose, diagnoseNew, SyncCase } from "../diagnose.js";
 import { resolveConflict } from "../resolve.js";
@@ -27,7 +30,7 @@ export const pullAttempts = async ({ prisma, token, cursor, emitter }) => {
     );
 
     for (const serverAttempt of response.attempts ?? []) {
-      const serverTimemodified = serverAttempt.timemodified;
+      const serverTimemodified = serverAttempt.timemodified ?? 0;
       const local = await prisma.quizAttempt.findFirst({ where: { server_id: serverAttempt.id } });
       let action;
 
@@ -36,14 +39,10 @@ export const pullAttempts = async ({ prisma, token, cursor, emitter }) => {
       } else {
         if (local.sync_status === "SYNCED" && local.last_synced_at >= cursor) continue;
         action = diagnose(local, serverTimemodified, cursor);
-
         if (action === SyncCase.CONFLICT) {
-          action = resolveConflict("quiz_attempt"); // CLIENT gagne
+          action = resolveConflict("quiz_attempt");
           conflicts++;
-          emitter.emit("progress", {
-            step: "CONFLICT", entity: "quiz_attempt",
-            id: serverAttempt.id, resolution: action,
-          });
+          emitter.emit("progress", { step: "CONFLICT", entity: "quiz_attempt", id: serverAttempt.id, resolution: action });
         }
       }
 
@@ -53,21 +52,21 @@ export const pullAttempts = async ({ prisma, token, cursor, emitter }) => {
           where:  { server_id: serverAttempt.id },
           update: {
             state,
-            timeStart:           serverAttempt.timestart ?? null,
+            timeStart:           serverAttempt.timestart  ?? null,
             timeFinish:          serverAttempt.timefinish ?? null,
-            sumGrades:           serverAttempt.sumgrades ?? null,
+            sumGrades:           serverAttempt.sumgrades  ?? null,
             server_timemodified: serverTimemodified,
             sync_status:         "SYNCED",
             last_synced_at:      serverTimemodified,
           },
           create: {
             quizId:              localQuiz.id,
+            server_id:           serverAttempt.id,
             attemptNumber:       serverAttempt.attempt,
             state,
-            timeStart:           serverAttempt.timestart ?? null,
+            timeStart:           serverAttempt.timestart  ?? null,
             timeFinish:          serverAttempt.timefinish ?? null,
-            sumGrades:           serverAttempt.sumgrades ?? null,
-            server_id:           serverAttempt.id,
+            sumGrades:           serverAttempt.sumgrades  ?? null,
             server_timemodified: serverTimemodified,
             sync_status:         "SYNCED",
             last_synced_at:      serverTimemodified,
@@ -86,7 +85,7 @@ export const pullAttempts = async ({ prisma, token, cursor, emitter }) => {
 const _mapAttemptState = (moodleState) => {
   switch (moodleState) {
     case "inprogress": return "IN_PROGRESS";
-    case "finished":   return "SUBMITTED";
+    case "finished":
     case "abandoned":  return "SUBMITTED";
     default:           return "IN_PROGRESS";
   }
