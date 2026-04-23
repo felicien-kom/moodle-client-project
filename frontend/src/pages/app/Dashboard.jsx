@@ -1,7 +1,10 @@
-function About(){
-    return (
-        <div>Dashboard Page</div>
-    );
+function Dashboard() {
+
+  return (
+    <div className="w-full min-h-screen">
+      {/* Page laissée vide conformément aux instructions */}
+    </div>
+  );
 }
 
-export default About;
+export default Dashboard;

@@ -1,27 +1,24 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import apiClient from "@/client/apiClient";
+import { AuthContext } from "./AuthContext.store";
+import { mockLogin } from "@/services/mockAuth";
 import { clearTokens, getAccessToken, setTokens } from "@/utils/api.utils";
 import { PATHS } from "@/router/paths";
 
-const AuthContext = createContext(null);
+const AUTH_USER_STORAGE_KEY = "auth_user";
 
 export function AuthProvider({ children }) {
   const [user,      setUser]      = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // true le temps de vérifier le token initial
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   const isAuthenticated = user !== null;
 
   // --- Vérification initiale au montage ---
-  // Si un token existe en storage, on tente de récupérer le profil utilisateur.
-  // C'est ce qui permet de rester connecté après un refresh de page.
   useEffect(() => {
     const token = getAccessToken();
 
@@ -30,34 +27,27 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    apiClient.get("/auth/me")
-      .then(setUser)
-      .catch(() => {
-        // Token invalide ou expiré sans refresh possible → on nettoie
+    try {
+      const storedUser = localStorage.getItem(AUTH_USER_STORAGE_KEY);
+
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      } else {
         clearTokens();
-        setUser(null);
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
-
-  // --- Réaction à la session expirée (émis par apiClient après échec du refresh) ---
-  useEffect(() => {
-    const handleExpired = () => {
+      }
+    } catch {
+      clearTokens();
       setUser(null);
-      navigate(PATHS.auth.login, { replace: true });
-    };
+    }
 
-    window.addEventListener("auth:session-expired", handleExpired);
-    return () => window.removeEventListener("auth:session-expired", handleExpired);
-  }, [navigate]);
+    setIsLoading(false);
+  }, []);
 
   // --- Actions ---
 
   const login = useCallback(async ({ email, password }) => {
-    const data = await apiClient.post("/auth/login", {
-      body:     { email, password },
-      withAuth: false, // pas de token à ce stade
-    });
+    // Utilise le mock local pour les tests
+    const data = await mockLogin(email, password);
 
     setTokens({
       accessToken:  data.accessToken,
@@ -65,18 +55,18 @@ export function AuthProvider({ children }) {
     });
 
     setUser(data.user);
-
-    return data; // l'appelant peut en avoir besoin (redirection, etc.)
+    localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(data.user));
+    return data;
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      // Informe le backend (révocation du refresh token)
-      await apiClient.post("/auth/logout");
+      // En production, appeler apiClient.post("/auth/logout")
     } catch {
       // On continue même si le backend est inaccessible
     } finally {
       clearTokens();
+      localStorage.removeItem(AUTH_USER_STORAGE_KEY);
       setUser(null);
       navigate(PATHS.auth.login, { replace: true });
     }
@@ -87,10 +77,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("[useAuth] doit être utilisé dans un <AuthProvider>");
-  return context;
 }

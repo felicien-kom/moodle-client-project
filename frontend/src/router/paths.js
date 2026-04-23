@@ -21,10 +21,13 @@ export const PATHS = {
     dashboard: "/app",
     profile:   "/app/profile",
     settings:  "/app/settings",
-    // Ex: sous-module
-    // users: {
-    //   list:   "/app/users",
-    //   detail: "/app/users/:id",
-    // },
+    
+    // Module Courses
+    courses: {
+      list:   "/app/courses",
+      create: "/app/courses/create",
+      detail: "/app/courses/:id",
+      edit:   "/app/courses/:id/edit",
+    },
   },
 };
