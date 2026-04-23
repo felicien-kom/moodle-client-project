@@ -1,3 +1,5 @@
+import Assignment from "@/pages/app/Assignment";
+
 export const PATHS = {
 
   // Zone publique (avec header/footer site)
@@ -21,13 +23,12 @@ export const PATHS = {
     dashboard: "/app",
     profile:   "/app/profile",
     settings:  "/app/settings",
-    
-    // Module Courses
-    courses: {
-      list:   "/app/courses",
-      create: "/app/courses/create",
-      detail: "/app/courses/:id",
-      edit:   "/app/courses/:id/edit",
-    },
+    assignment: "/app/assignment",
+    course:"/app/course"
+    // Ex: sous-module
+    // users: {
+    //   list:   "/app/users",
+    //   detail: "/app/users/:id",
+    // },
   },
 };

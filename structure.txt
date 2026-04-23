@@ -1,0 +1,114 @@
+frontend
+├── README.md
+├── components.json
+├── eslint.config.js
+├── index.html
+├── jsconfig.json
+├── package-lock.json
+├── package.json
+├── public
+│   ├── favicon.png
+│   └── support.png
+├── src
+│   ├── App.css
+│   ├── App.jsx
+│   ├── assets
+│   │   └── img
+│   │       ├── grok.jpg
+│   │       ├── img01.jpg
+│   │       ├── img02.jpg
+│   │       ├── img03.avif
+│   │       ├── img04.avif
+│   │       ├── img05.jpg
+│   │       ├── img06.jpg
+│   │       ├── img07.avif
+│   │       └── logo.png
+│   ├── client
+│   │   └── apiClient.js
+│   ├── components
+│   │   ├── content
+│   │   │   ├── Calender.jsx
+│   │   │   ├── Calendrier.jsx
+│   │   │   ├── Chronologie.jsx
+│   │   │   ├── EventModal.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   └── elements.jsx
+│   │   ├── custom
+│   │   │   ├── IconLabelPicker.jsx
+│   │   │   └── MainLogo.jsx
+│   │   ├── simple
+│   │   │   ├── ExampleCombobox.jsx
+│   │   │   ├── InputOTPBox.jsx
+│   │   │   ├── LanguagePicker.jsx
+│   │   │   └── ThemePicker.jsx
+│   │   └── ui
+│   │       ├── avatar.jsx
+│   │       ├── badge.jsx
+│   │       ├── button.jsx
+│   │       ├── card.jsx
+│   │       ├── combobox.jsx
+│   │       ├── dropdown-menu.jsx
+│   │       ├── input-group.jsx
+│   │       ├── input-otp.jsx
+│   │       ├── input.jsx
+│   │       ├── label.jsx
+│   │       ├── navigation-menu.jsx
+│   │       ├── scroll-area.jsx
+│   │       ├── select.jsx
+│   │       ├── separator.jsx
+│   │       └── textarea.jsx
+│   ├── config
+│   │   ├── api.config.js
+│   │   ├── i18n.config.js
+│   │   └── theme.config.js
+│   ├── context
+│   │   ├── AuthContext.jsx
+│   │   ├── LanguageContext.jsx
+│   │   └── ThemeContext.jsx
+│   ├── i18n
+│   │   ├── index.js
+│   │   └── locales
+│   │       ├── en.json
+│   │       └── fr.json
+│   ├── index.css
+│   ├── layouts
+│   │   ├── AppLayout.jsx
+│   │   ├── AuthLayout.jsx
+│   │   └── PublicLayout.jsx
+│   ├── lib
+│   │   └── utils.js
+│   ├── main.jsx
+│   ├── pages
+│   │   ├── app
+│   │   │   ├── Assignment.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Home.jsx
+│   │   │   ├── Profile.jsx
+│   │   │   └── Settings.jsx
+│   │   ├── auth
+│   │   │   ├── ForgotPassword.jsx
+│   │   │   ├── Login.jsx
+│   │   │   └── Register.jsx
+│   │   ├── others
+│   │   │   ├── NotFound.jsx
+│   │   │   └── PageLoader.jsx
+│   │   └── public
+│   │       ├── About.jsx
+│   │       ├── Contact.jsx
+│   │       ├── Home.jsx
+│   │       └── Services.jsx
+│   ├── providers
+│   │   └── AppProviders.jsx
+│   ├── router
+│   │   ├── AllRoutes.jsx
+│   │   ├── guards
+│   │   │   └── AuthGuard.jsx
+│   │   ├── paths.js
+│   │   └── routes.jsx
+│   ├── services
+│   │   └── auth.service.js
+│   └── utils
+│       ├── api.utils.js
+│       ├── i18n.utils.js
+│       └── theme.utils.js
+└── vite.config.js

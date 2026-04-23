@@ -1,15 +1,17 @@
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "./AuthContext.store";
-import { mockLogin } from "@/services/mockAuth";
-import { clearTokens, getAccessToken, setTokens } from "@/utils/api.utils";
+import apiClient from "@/client/apiClient";
+import { clearToken, getToken, setLocalUser, setToken } from "@/utils/api.utils";
+import { API_CONFIG } from "@/config/api.config";
 import { PATHS } from "@/router/paths";
 
-const AUTH_USER_STORAGE_KEY = "auth_user";
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user,      setUser]      = useState(null);
@@ -18,58 +20,71 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = user !== null;
 
-  // --- Vérification initiale au montage ---
+  // --- Vérification initiale : token en storage → récupérer le profil ---
   useEffect(() => {
-    const token = getAccessToken();
+    const token = getToken();
 
     if (!token) {
       setIsLoading(false);
       return;
     }
 
-    try {
-      const storedUser = localStorage.getItem(AUTH_USER_STORAGE_KEY);
-
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else {
-        clearTokens();
-      }
-    } catch {
-      clearTokens();
-      setUser(null);
-    }
-
-    setIsLoading(false);
+    apiClient
+      .get(API_CONFIG.endpoints.me)
+      .then(setUser)
+      .catch(() => {
+        // clearToken();
+        setUser(null);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  // --- Actions ---
-
-  const login = useCallback(async ({ email, password }) => {
-    // Utilise le mock local pour les tests
-    const data = await mockLogin(email, password);
-
-    setTokens({
-      accessToken:  data.accessToken,
-      refreshToken: data.refreshToken,
-    });
-
-    setUser(data.user);
-    localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(data.user));
-    return data;
-  }, []);
-
-  const logout = useCallback(async () => {
-    try {
-      // En production, appeler apiClient.post("/auth/logout")
-    } catch {
-      // On continue même si le backend est inaccessible
-    } finally {
-      clearTokens();
-      localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+  // --- Session expirée émise par apiClient (401) ---
+  useEffect(() => {
+    const handleExpired = () => {
       setUser(null);
       navigate(PATHS.auth.login, { replace: true });
-    }
+    };
+
+    window.addEventListener("auth:session-expired", handleExpired);
+    return () => window.removeEventListener("auth:session-expired", handleExpired);
+  }, [navigate]);
+
+  // --- Login ---
+  const login = useCallback(async ({ email, password }) => {
+    const data = await apiClient.post(API_CONFIG.endpoints.login, {
+      body:     { email, clientPassword: password },
+      withAuth: false,
+    });
+
+    // Adaptez selon ce que renvoie votre backend :
+    // { access: "...", user: {...} }  ou  { token: "...", user: {...} }
+    const token = data.token ?? data.access;
+    if (!token) throw { isApiError: true, status: 500, message: "Token absent dans la réponse.", data };
+
+    setToken(token);
+
+    // Si le backend renvoie le profil dans la réponse de login, on l'utilise directement.
+    // Sinon on le récupère via /auth/me.
+    const profile = data.user ?? await apiClient.get(API_CONFIG.endpoints.me);
+    setUser(profile);
+    setLocalUser(profile);
+
+    return profile;
+  }, []);
+
+  // --- Logout ---
+  const logout = useCallback(async () => {
+    // try {
+    //   await apiClient.post(API_CONFIG.endpoints.logout);
+    // } catch {
+    //   // On déconnecte côté client même si le backend est inaccessible
+    // } finally {
+      clearToken();
+      setUser(null);
+      setLocalUser(null);
+      navigate(PATHS.auth.login, { replace: true });
+    // }
   }, [navigate]);
 
   return (
@@ -77,4 +92,10 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("[useAuth] doit être utilisé dans un <AuthProvider>");
+  return context;
 }
