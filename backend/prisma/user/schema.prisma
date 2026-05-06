@@ -45,6 +45,13 @@ enum SubmissionState {
   GRADED
 }
 
+enum EventType {
+  CATEGORY
+  COURSE
+  USER
+  SITE
+}
+
 // ─────────────────────────────────────────────────────────────
 // AUTH LOCAL
 // Un seul enregistrement dans cette base — l'utilisateur propriétaire
@@ -126,6 +133,7 @@ model Course {
   modules     Module[]
   quizzes     Quiz[]
   assignments Assignment[]
+  events      Event[]
   annotations Annotation[]
 }
 
@@ -282,6 +290,36 @@ model AssignmentSubmission {
   last_synced_at      Int?
 
   assignment Assignment @relation(fields: [assignmentId], references: [id])
+}
+
+// ─────────────────────────────────────────────────────────────
+// ÉVÉNEMENTS
+// Pulled depuis Moodle — lecture seule pour étudiant
+// ─────────────────────────────────────────────────────────────
+
+model Event {
+  id           Int       @id @default(autoincrement())
+  name         String
+  description  String?
+  format       String?   // format de la description (HTML, markdown, etc.)
+  categoryId   Int?      // catégorie Moodle associée
+  courseId     Int?      // cours associé (null si global)
+  groupId      Int?      // groupe associé (null si global)
+  userId       Int?      // utilisateur créateur
+  eventType    EventType @default(SITE)
+  timestart    Int       // Unix timestamp de début
+  timeduration Int?      // durée en secondes (null = instantané)
+  visible      Boolean   @default(true)
+  location     String?   // lieu de l'événement
+  timemodified Int?      // Unix timestamp de dernière modification
+
+  server_id           Int?       @unique
+  sync_status         SyncStatus @default(SYNCED)
+  server_timemodified Int?
+  local_updated_at    DateTime   @updatedAt
+  last_synced_at      Int?
+
+  course Course? @relation(fields: [courseId], references: [id])
 }
 
 // ─────────────────────────────────────────────────────────────

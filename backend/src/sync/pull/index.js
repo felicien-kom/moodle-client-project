@@ -4,6 +4,7 @@
 
 import { pullProfile }     from "./pullProfile.js";
 import { pullCourses }     from "./pullCourses.js";
+import { pullEvents }      from "./pullEvents.js";
 import { pullQuizzes }     from "./pullQuizzes.js";
 import { pullAttempts }    from "./pullAttempts.js";
 import { pullAssignments } from "./pullAssignments.js";
@@ -14,6 +15,9 @@ export const pullAll = async (ctx) => {
 
   const r1 = await pullProfile(ctx);
   pulled += r1.pulled; conflicts += r1.conflicts;
+  
+  const r6 = await pullEvents(ctx);
+  pulled += r6.pulled; conflicts += r6.conflicts;
 
   const r2 = await pullCourses(ctx);
   pulled += r2.pulled; conflicts += r2.conflicts;

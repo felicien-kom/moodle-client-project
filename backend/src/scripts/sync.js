@@ -6,8 +6,8 @@
 //   node scripts/sync.js --list             → liste tous les profils disponibles
 
 import "dotenv/config";
-import { masterDb, getDb, disconnectAll } from "../src/config/db.js";
-import { SyncEngine } from "../src/sync/engine.js";
+import { masterDb, getDb, disconnectAll } from "../config/db.js";
+import { SyncEngine } from "../sync/engine.js";
 
 const STYLING_HYPHENS = 55;
 
