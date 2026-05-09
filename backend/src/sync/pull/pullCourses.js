@@ -84,16 +84,16 @@ const _fetchAllCourses = async (token, moodleUserId) => {
   let offset = 0;
 
   while (true) {
+    // Essayer avec l'API standard pour les cours
     const { data: page } = await moodleFetch(
       "core_enrol_get_users_courses",
-      { userid: moodleUserId, returnusercount: 0, limit: PAGE_SIZE, offset },
+      {userid:moodleUserId},  // Pas de filtres = tous les cours accessibles
       token
     );
 
     if (!Array.isArray(page) || page.length === 0) break;
     all.push(...page);
     if (page.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
   }
 
   return all;
