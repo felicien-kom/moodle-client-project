@@ -6,8 +6,6 @@ import { resolveConflict } from "../resolve.js";
 export const pullProfile = async ({ prisma, token, userId, cursor, emitter }) => {
   emitter.emit("progress", { step: "PULL", entity: "profile", status: "start" });
 
-  // core_webservice_get_site_info valide le token et retourne les infos utilisateur
-  // Le servertime vient du header Date de la réponse (déjà extrait par moodleFetch)
   const { data: siteInfo, servertime } = await moodleFetch(
     "core_webservice_get_site_info",
     {},
@@ -24,7 +22,7 @@ export const pullProfile = async ({ prisma, token, userId, cursor, emitter }) =>
   let conflicts = 0;
 
   if (action === SyncCase.CONFLICT) {
-    action = resolveConflict("profile"); // CLIENT gagne → PUSH, on ne pull pas
+    action = resolveConflict("profile"); // CLIENT gagne
     conflicts = 1;
     emitter.emit("progress", { step: "CONFLICT", entity: "profile", resolution: action });
   }
@@ -32,20 +30,26 @@ export const pullProfile = async ({ prisma, token, userId, cursor, emitter }) =>
   let pulled = 0;
 
   if (action === SyncCase.PULL) {
-    await prisma.localUser.update({
-      where: { id: userId },
-      data: {
-        name:                siteInfo.fullname,
-        moodleUserId:        siteInfo.userid,
-        server_id:           siteInfo.userid,
-        server_timemodified: servertime,
-        sync_status:         "SYNCED",
-        last_synced_at:      servertime,
-      },
-    });
-    pulled = 1;
+    // Éviter la réécriture si les informations fondamentales restent inchangées
+    const profileChanged = 
+      local.name !== siteInfo.fullname || 
+      local.moodleUserId !== siteInfo.userid;
+
+    if (profileChanged) {
+      await prisma.localUser.update({
+        where: { id: userId },
+        data: {
+          name:                siteInfo.fullname,
+          moodleUserId:        siteInfo.userid,
+          server_timemodified: servertime,
+          sync_status:         "SYNCED",
+          last_synced_at:      servertime,
+        },
+      });
+      pulled = 1;
+    }
   }
 
-  emitter.emit("progress", { step: "PULL", entity: "profile", status: "done", pulled });
+  emitter.emit("progress", { step: "PULL", entity: "profile", status: "done", pulled, conflicts });
   return { pulled, conflicts };
 };

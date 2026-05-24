@@ -71,6 +71,7 @@ export class SyncEngine extends EventEmitter {
       // 4. Curseur de la dernière sync
       const cursor = await getCursor(this.prisma, user.id);
       this.emit("progress", { step: "INIT", cursor, servertime: this.servertime });
+      // throw Error('Erreur volontaire');
 
       // 5. Contexte partagé passé aux fonctions pull/push
       // moodleSiteUrl absent : moodleFetch le lit depuis env.MOODLE_URL

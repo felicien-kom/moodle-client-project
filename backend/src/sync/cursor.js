@@ -9,6 +9,7 @@ export const getCursor = async (prisma, userId) => {
   const cursor = await prisma.syncCursor.findUnique({
     where: { userId },
   });
+  // console.log(cursor?.lastCursor ?? 0);
   return cursor?.lastCursor ?? 0;
 };
 
