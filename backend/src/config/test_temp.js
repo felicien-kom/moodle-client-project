@@ -2,7 +2,8 @@
 
 const parseServertime = (response) => {
   const dateHeader = response.headers.get("Date");
-  if (!dateHeader) return Math.floor(Date.now() / 1000);
+  // if (!dateHeader) return Math.floor(Date.now() / 1000);
+  if (!dateHeader) return null;// Verifier que l'API est dispo, et si c'est null, alors on a un prblemen avec la solution heure du serveur
   return Math.floor(new Date(dateHeader).getTime() / 1000);
 };
 

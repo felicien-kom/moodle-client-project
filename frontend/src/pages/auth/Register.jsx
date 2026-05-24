@@ -192,7 +192,7 @@ function Register(){
                             <Lock />
                         </span>
                         <input 
-                            type={(showPassword) ? "text" : "password"} 
+                            type={(showServerPassword) ? "text" : "password"} 
                             name="serverPassword" 
                             id="serverPassword" 
                             placeholder={t("register.fields.holderMoodle")} 
