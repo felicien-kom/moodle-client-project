@@ -10,7 +10,7 @@ import { moodleFetch } from "../../config/moodleApi.js";
 import { diagnoseLocalOnly, SyncCase } from "../diagnose.js";
 import { resolveConflict } from "../resolve.js";
 
-export const pushAssignments = async ({ prisma, token, emitter }) => {
+export const pushAssignments = async ({ prisma, token, moodleUserId, emitter }) => {
   emitter.emit("progress", { step: "PUSH", entity: "submissions", status: "start" });
 
   const pendingSubmissions = await prisma.assignmentSubmission.findMany({
@@ -46,8 +46,8 @@ export const pushAssignments = async ({ prisma, token, emitter }) => {
           token
         );
 
-        const serverSubmission = serverData.assignments?.[0]?.submissions
-          ?.find((s) => s.id === submission.server_id);
+        const serverSubmissions = serverData.assignments?.[0]?.submissions ?? [];
+        const serverSubmission = serverSubmissions.find(s => s.id === submission.server_id && s.userid === moodleUserId);
 
         if (serverSubmission) {
           const serverChanged = serverSubmission.timemodified > (submission.server_timemodified ?? 0);
@@ -97,7 +97,8 @@ export const pushAssignments = async ({ prisma, token, emitter }) => {
         token
       );
 
-      const moodleSubmission = updatedData.assignments?.[0]?.submissions?.[0];
+      const moodleSubmissions = updatedData.assignments?.[0]?.submissions ?? [];
+      const moodleSubmission = moodleSubmissions.find(s => s.userid === moodleUserId);
 
       await prisma.assignmentSubmission.update({
         where: { id: submission.id },

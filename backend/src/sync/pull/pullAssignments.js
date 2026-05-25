@@ -5,7 +5,7 @@ import { moodleFetch } from "../../config/moodleApi.js";
 import { diagnose, diagnoseNew, SyncCase } from "../diagnose.js";
 import { resolveConflict } from "../resolve.js";
 
-export const pullAssignments = async ({ prisma, token, cursor, emitter }) => {
+export const pullAssignments = async ({ prisma, token, moodleUserId, cursor, emitter }) => {
   emitter.emit("progress", { step: "PULL", entity: "assignments", status: "start" });
 
   const enabledServerIds = await _getEnabledCourseServerIds(prisma);
@@ -53,10 +53,10 @@ export const pullAssignments = async ({ prisma, token, cursor, emitter }) => {
         // Détecter le type de soumission autorisé
         const pluginTypes = serverAssign.configs
           ?.filter(c => c.plugin === "onlinetext" && c.subtype === "assignsubmission" && c.name === "enabled" && c.value === "1")
-          .length &gt; 0 ? "text" : null;
+          .length > 0 ? "text" : null;
         const filePlugin = serverAssign.configs
           ?.filter(c => c.plugin === "file" && c.subtype === "assignsubmission" && c.name === "enabled" && c.value === "1")
-          .length &gt; 0;
+          .length > 0;
         const allowedTypes = pluginTypes && filePlugin ? "both" : pluginTypes ? "text" : filePlugin ? "file" : null;
 
         await prisma.assignment.upsert({
@@ -98,6 +98,21 @@ export const pullAssignments = async ({ prisma, token, cursor, emitter }) => {
     select: { id: true, server_id: true },
   });
 
+  const assignmentServerIds = localAssignments.map(a => a.server_id);
+  
+  // RÃ©cupÃ©rer aussi les notes pour toutes ces soumissions !
+  let serverGrades = [];
+  if (assignmentServerIds.length > 0) {
+    try {
+      const { data: gradesResp } = await moodleFetch(
+        "mod_assign_get_grades",
+        { assignmentids: assignmentServerIds },
+        token
+      );
+      serverGrades = gradesResp.assignments ?? [];
+    } catch { /* Ignore les erreurs si pas de droit  */ }
+  }
+
   for (const localAssign of localAssignments) {
     try {
       const { data: submResp } = await moodleFetch(
@@ -106,10 +121,19 @@ export const pullAssignments = async ({ prisma, token, cursor, emitter }) => {
         token
       );
       const moodleSubmissions = submResp.assignments?.[0]?.submissions ?? [];
+      const userSubmission = moodleSubmissions.find(s => s.userid === moodleUserId);
 
-      for (const serverSub of moodleSubmissions) {
-        const serverTimemodified = serverSub.timemodified ?? 0;
-        const local = await prisma.assignmentSubmission.findFirst({ where: { server_id: serverSub.id } });
+      if (userSubmission) {
+        // RÃ©cupÃ©rer la note de ce devoir spÃ©cifique pour cet utilisateur
+        const assignGradeData = serverGrades.find(g => g.assignmentid === localAssign.server_id);
+        const userGrade = assignGradeData?.grades?.find(g => g.userid === moodleUserId);
+        const grade = userGrade && userGrade.grade !== "-1.00000" ? parseFloat(userGrade.grade) : null;
+        const gradedAt = userGrade ? userGrade.timemodified : null;
+
+        // La date de modification Moodle globale est le max entre la soumission et la note
+        const serverTimemodified = Math.max(userSubmission.timemodified ?? 0, gradedAt ?? 0);
+        
+        const local = await prisma.assignmentSubmission.findFirst({ where: { server_id: userSubmission.id } });
         let action = local ? diagnose(local, serverTimemodified, cursor) : diagnoseNew();
 
         if (action === SyncCase.CONFLICT) {
@@ -118,25 +142,31 @@ export const pullAssignments = async ({ prisma, token, cursor, emitter }) => {
         }
 
         if (action === SyncCase.PULL) {
-          const textPlugin = serverSub.plugins?.find(p => p.type === "onlinetext");
-          const submissionText = textPlugin?.editorfields?.[0]?.value ?? null;
-          const state = serverSub.status === "submitted" ? "SUBMITTED"
-            : serverSub.status === "graded"    ? "GRADED" : "DRAFT";
+          const textPlugin = userSubmission.plugins?.find(p => p.type === "onlinetext");
+          // Conserver le prÃ©cÃ©dent s'il existe (pour le hors-ligne d'un type non-texte par exemple)
+          const submissionText = textPlugin?.editorfields?.[0]?.value ?? local?.submissionText ?? null;
+          
+          const state = userSubmission.status === "submitted" ? "SUBMITTED"
+            : userSubmission.status === "graded" || userGrade ? "GRADED" : "DRAFT";
 
           await prisma.assignmentSubmission.upsert({
-            where:  { server_id: serverSub.id },
+            where:  { server_id: userSubmission.id },
             update: {
               submissionText,
               state,
+              grade,
+              gradedAt,
               server_timemodified: serverTimemodified,
               sync_status:         "SYNCED",
               last_synced_at:      serverTimemodified,
             },
             create: {
               assignmentId:        localAssign.id,
-              server_id:           serverSub.id,
+              server_id:           userSubmission.id,
               submissionText,
               state,
+              grade,
+              gradedAt,
               server_timemodified: serverTimemodified,
               sync_status:         "SYNCED",
               last_synced_at:      serverTimemodified,

@@ -75,7 +75,9 @@ export const flattenParams = (obj, prefix = "") => {
 //   data       → corps JSON de la réponse Moodle
 //   servertime → Unix timestamp UTC extrait du header "Date"
 
-export const moodleFetch = async (wsfunction, params = {}, token) => {
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const moodleFetch = async (wsfunction, params = {}, token, retries = 3) => {
   const url = `${env.MOODLE_URL}/webservice/rest/server.php`;
 
   const body = new URLSearchParams({
@@ -86,17 +88,27 @@ export const moodleFetch = async (wsfunction, params = {}, token) => {
   });
 
   let response;
-  try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-      signal: AbortSignal.timeout(CONTENT_TIMEOUT),
-    });
-  } catch (err) {
-    const networkErr = new Error(`Moodle server unreachable: ${err.message}`);
-    networkErr.isNetworkError = true;
-    throw networkErr;
+  let attempt = 0;
+
+  while (attempt < retries) {
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+        signal: AbortSignal.timeout(CONTENT_TIMEOUT),
+      });
+      break; // Success, exit retry loop
+    } catch (err) {
+      attempt++;
+      if (attempt >= retries) {
+        const networkErr = new Error(`Moodle server unreachable after ${retries} attempts: ${err.message}`);
+        networkErr.isNetworkError = true;
+        throw networkErr;
+      }
+      // Exponential backoff: 2s, 4s, 8s...
+      await sleep(1000 * Math.pow(2, attempt)); 
+    }
   }
 
   // Extraire servertime depuis le header AVANT de lire le body (stream consommé une seule fois)

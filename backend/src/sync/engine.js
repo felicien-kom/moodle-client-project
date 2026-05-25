@@ -10,7 +10,7 @@ import EventEmitter from "events";
 import { getDb, masterDb } from "../config/db.js";
 import { moodleFetch, checkMoodleReachable, isMoodleTokenError } from "../config/moodleApi.js";
 import { getCursor, saveCursor } from "./cursor.js";
-// import { pushAll } from "./push/index.js"; // PUSH désactivé pendant les tests pull
+import { pushAll } from "./push/index.js";
 import { pullAll } from "./pull/index.js";
 
 export class SyncEngine extends EventEmitter {
@@ -89,12 +89,11 @@ export class SyncEngine extends EventEmitter {
       let totalPulled = 0;
       let totalConflicts = 0;
 
-      // PUSH — désactivé temporairement pour tester uniquement le pull
-      // Décommenter quand le push sera implémenté et validé
-      // this.emit("progress", { step: "PHASE", phase: "PUSH" });
-      // const pushResult = await pushAll(ctx);
-      // totalPushed    += pushResult.pushed;
-      // totalConflicts += pushResult.conflicts;
+      // PUSH
+      this.emit("progress", { step: "PHASE", phase: "PUSH" });
+      const pushResult = await pushAll(ctx);
+      totalPushed    += pushResult.pushed;
+      totalConflicts += pushResult.conflicts;
 
       // PULL
       this.emit("progress", { step: "PHASE", phase: "PULL" });
