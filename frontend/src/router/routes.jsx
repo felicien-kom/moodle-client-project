@@ -16,6 +16,7 @@ const Assignment = lazy(() => import("@/pages/app/Assignment"));
 const Dashboard = lazy(() => import("@/pages/app/Dashboard"));
 const Profile   = lazy(() => import("@/pages/app/Profile"));
 const Settings  = lazy(() => import("@/pages/app/Settings"));
+const Course = lazy(() => import("@/pages/app/Course"));
 // const UserList  = lazy(() => import("@/pages/app/users/UserList"));
 // const UserDetail= lazy(() => import("@/pages/app/users/UserDetail"));
 
@@ -38,6 +39,7 @@ export const appRoutes = [
   { path: PATHS.app.dashboard,    element: <Dashboard />  },
   { path: PATHS.app.profile,      element: <Profile />    },
   { path: PATHS.app.settings,     element: <Settings />   },
-  // { path: PATHS.app.users.list,   element: <UserList />   },
+  { path: PATHS.app.course,   element: <Course />   },
+  //{ path: PATHS.app.users.list,   element: <UserList />   },
   // { path: PATHS.app.users.detail, element: <UserDetail /> },
 ];
