@@ -34,45 +34,39 @@ export const unenrollCourse = async (req, res) => {
 };
 
 // ─── OFFLINE ─────────────────────────────────────────────────
-
-// GET /api/courses
 export const getLocalCourses = async (req, res) => {
   const courses = await courseService.getLocalCourses(req.prisma);
   res.json({ courses });
 };
 
-// GET /api/courses/:id
 export const getLocalCourseById = async (req, res) => {
   const course = await courseService.getLocalCourseById(req.prisma, Number(req.params.id));
   res.json({ course });
 };
 
-// GET /api/courses/:id/quizzes
-export const getLocalQuizzes = async (req, res) => {
-  const quizzes = await courseService.getLocalQuizzesByCourse(req.prisma, Number(req.params.id));
-  res.json({ quizzes });
-};
-
-// GET /api/courses/:id/assignments
 export const getLocalAssignments = async (req, res) => {
   const assignments = await courseService.getLocalAssignmentsByCourse(req.prisma, Number(req.params.id));
   res.json({ assignments });
 };
 
-// GET /api/courses/:id/resources
-export const getLocalResources = async (req, res) => {
-  const resources = await courseService.getLocalResourcesByCourse(req.prisma, Number(req.params.id));
-  res.json({ resources });
+// Remplace getLocalResources
+export const getLocalFiles = async (req, res) => {
+  const files = await courseService.getLocalFilesByCourse(req.prisma, Number(req.params.id));
+  res.json({ files });
 };
 
-// GET /api/courses/:id/grades
 export const getLocalGrades = async (req, res) => {
   const grades = await courseService.getLocalGradesByCourse(req.prisma, Number(req.params.id));
   res.json({ grades });
 };
 
-// GET /api/courses/:id/sections
 export const getLocalSections = async (req, res) => {
   const sections = await courseService.getLocalSectionsByCourse(req.prisma, Number(req.params.id));
   res.json({ sections });
+};
+
+// Nouvel endpoint pour le calendrier
+export const getLocalEvents = async (req, res) => {
+  const events = await courseService.getLocalEventsByCourse(req.prisma, Number(req.params.id));
+  res.json({ events });
 };

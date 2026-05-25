@@ -31,7 +31,7 @@ export const pullFolderResources = async ({ prisma, token, cursor, servertime, e
     let action = local ? diagnose(local, serverTimemodified, cursor) : diagnoseNew();
 
     if (action === SyncCase.CONFLICT) {
-      action = resolveConflict("module"); // Le serveur gagne sur la structure (PULL)
+      action = resolveConflict("folder_resource"); // Le serveur gagne sur la structure (PULL)
       conflicts++;
     }
 

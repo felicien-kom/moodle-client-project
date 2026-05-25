@@ -24,7 +24,7 @@ export const pullExternalUrls = async ({ prisma, token, cursor, servertime, emit
     const local = await prisma.externalUrl.findFirst({ where: { server_id: urlData.id } });
     let action = local ? diagnose(local, serverTimemodified, cursor) : diagnoseNew();
 
-    if (action === SyncCase.CONFLICT) action = resolveConflict("module"); // SERVER gagne
+    if (action === SyncCase.CONFLICT) action = resolveConflict("external_url"); // SERVER gagne
 
     if (action === SyncCase.PULL) {
       await prisma.externalUrl.upsert({

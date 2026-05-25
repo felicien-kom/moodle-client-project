@@ -28,7 +28,7 @@ export const pullFileResources = async ({ prisma, token, cursor, servertime, emi
     let action = local ? diagnose(local, serverTimemodified, cursor) : diagnoseNew();
 
     if (action === SyncCase.CONFLICT) {
-      action = resolveConflict("module"); // SERVER gagne -> PULL
+      action = resolveConflict("file_resource"); // SERVER gagne -> PULL
       conflicts++;
     }
 
