@@ -32,6 +32,13 @@ enum SubmissionState {
   GRADED
 }
 
+enum EventType {
+  CATEGORY
+  COURSE
+  USER
+  SITE
+}
+
 // ─────────────────────────────────────────────────────────────
 // INFRASTRUCTURE DE SYNCHRONISATION ET AUTH LOCAL
 // ─────────────────────────────────────────────────────────────
