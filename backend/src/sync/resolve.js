@@ -9,6 +9,7 @@ import { SyncCase } from "./diagnose.js";
 const OWNER = {
   profile:                "CLIENT",  // l'utilisateur connaît son propre profil
   course:                 "SERVER",  // cours créés/modifiés par l'enseignant sur Moodle
+  event:                  "SERVER",  // evenements
   module:                 "SERVER",
   quiz:                   "SERVER",
   quiz_question:          "SERVER",
