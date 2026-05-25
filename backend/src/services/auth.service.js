@@ -211,18 +211,18 @@ export const listProfiles = async () => {
 
 // ─── deleteProfile ───────────────────────────────────────────
 
-export const deleteProfile = async (email) => {
-  const profile = await masterDb.profile.findUnique({ where: { email } });
-  if (!profile) {
-    const err = new Error("Profile not found");
-    err.statusCode = 404;
-    throw err;
-  }
+// export const deleteProfile = async (email) => {
+//   const profile = await masterDb.profile.findUnique({ where: { email } });
+//   if (!profile) {
+//     const err = new Error("Profile not found");
+//     err.statusCode = 404;
+//     throw err;
+//   }
 
-  await masterDb.profile.delete({ where: { email } });
+//   await masterDb.profile.delete({ where: { email } });
 
-  return { message: "Local profile deleted. Your Moodle account is unaffected." };
-};
+//   return { message: "Local profile deleted. Your Moodle account is unaffected." };
+// };
 
 // ─── Helper ──────────────────────────────────────────────────
 

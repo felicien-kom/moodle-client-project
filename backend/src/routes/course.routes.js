@@ -8,17 +8,21 @@ const router = Router();
 router.use(authenticate);
 
 // ── Online (nécessite connexion Moodle) ──────────────────────
-router.get("/catalogue",             course.getCatalogue);       // GET /api/courses/catalogue
-router.post("/:serverId/enroll",     course.enrollCourse);       // POST /api/courses/:serverId/enroll
-router.delete("/:serverId/enroll",   course.unenrollCourse);     // DELETE /api/courses/:serverId/enroll
+router.get("/catalogue",             course.getCatalogue);
+router.post("/:serverId/enroll",     course.enrollCourse);
+router.delete("/:serverId/enroll",   course.unenrollCourse);
 
 // ── Offline (lecture locale) ─────────────────────────────────
-router.get("/",                      course.getLocalCourses);    // GET /api/courses
-router.get("/:id",                   course.getLocalCourseById); // GET /api/courses/:id
-router.get("/:id/quizzes",           course.getLocalQuizzes);    // GET /api/courses/:id/quizzes
-router.get("/:id/assignments",       course.getLocalAssignments);// GET /api/courses/:id/assignments
-router.get("/:id/resources",         course.getLocalResources);  // GET /api/courses/:id/resources
-router.get("/:id/sections",          course.getLocalSections);   // GET /api/courses/:id/sections (sections + modules + resources)
-router.get("/:id/grades",            course.getLocalGrades);     // GET /api/courses/:id/grades
+router.get("/",                      course.getLocalCourses);
+router.get("/:id",                   course.getLocalCourseById);
+router.get("/:id/assignments",       course.getLocalAssignments);
+router.get("/:id/files",             course.getLocalFiles);   // Remplace /resources
+router.get("/:id/sections",          course.getLocalSections); // Le Super-Endpoint
+router.get("/:id/grades",            course.getLocalGrades);
+router.get("/:id/events",            course.getLocalEvents);  // Nouveau
+
+// ── Futures routes de téléchargement binaire ─────────────────
+// router.get("/:id/files/:fileId/download", file.downloadFromMoodle);
+// router.get("/:id/files/:fileId/serve",    file.serveLocalBlob);
 
 export default router;

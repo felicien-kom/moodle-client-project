@@ -28,6 +28,6 @@ router.patch("/me", authenticate, auth.updateMe);
 router.post("/server-token/refresh", authenticate, auth.refreshMoodleToken);
 
 // DELETE /api/auth/profile            → supprimer le profil local
-router.delete("/me", authenticate, auth.deleteProfile);
+// router.delete("/me", authenticate, auth.deleteProfile);
 
 export default router;

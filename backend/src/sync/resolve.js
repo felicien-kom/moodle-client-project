@@ -8,16 +8,28 @@ import { SyncCase } from "./diagnose.js";
 // CLIENT = l'utilisateur local fait autorité (données produites par l'étudiant)
 const OWNER = {
   profile:                "CLIENT",  // l'utilisateur connaît son propre profil
-  course:                 "SERVER",  // cours créés/modifiés par l'enseignant sur Moodle
-  event:                  "SERVER",  // evenements
-  module:                 "SERVER",
+  course:                 "SERVER",  // cours créés/modifiés par l'enseignant
+  section:                "SERVER",  // structure gérée par l'enseignant
+  module:                 "SERVER",  // enveloppe gérée par l'enseignant
+  event:                  "SERVER",  // événements du calendrier
+  
+  // Contenus spécifiques
+  file_resource:          "SERVER",
+  folder_resource:        "SERVER",
+  external_url:           "SERVER",
+  assignment:             "SERVER",
+  
+  // Quiz (Gérés par le prof, tentatives par l'étudiant)
   quiz:                   "SERVER",
   quiz_question:          "SERVER",
-  quiz_attempt:           "CLIENT",  // tentative = propriété exclusive étudiant
-  quiz_answer:            "CLIENT",  // réponses = propriété exclusive étudiant
-  assignment:             "SERVER",
+  quiz_attempt:           "CLIENT",
+  quiz_answer:            "CLIENT",
+  
+  // Rendu de devoir
   assignment_submission:  "CLIENT",  // devoir rendu = propriété exclusive étudiant
-  annotation:             "CLIENT",  // notes personnelles = TOUJOURS client gagne
+  
+  // Notes
+  grade:                  "SERVER",  // Les notes sont dictées par le prof/serveur
 };
 
 /**
