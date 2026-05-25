@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   ArrowLeft,
   Info,
@@ -171,7 +172,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
     <div className="min-h-screen bg-gray-100 flex flex-col">
 
       {/* ── Header sombre avec nom du cours + enseignant ── */}
-      <div className="bg-slate-800 text-white px-8 py-5">
+      {/*--<div className="bg-slate-800 text-white px-8 py-5">
         <div className="max-w-5xl mx-auto">
           <button
             onClick={onRetour}
@@ -188,10 +189,24 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
           </div>
         </div>
       </div>
-
+      */}
+      <Tabs defaultValue="cours" className="justify-center pt-10 w-full max-w-5xl mx-auto ">
+  <TabsList className=" justify-center">
+    <TabsTrigger value="cours">Contenu</TabsTrigger>
+    <TabsTrigger value="participants">Participants</TabsTrigger>
+    <TabsTrigger value="notes">Notes</TabsTrigger>
+  </TabsList>
+  <TabsContent value="cours">
+        <button
+            onClick={onRetour}
+            className="flex items-center gap-1.5 "
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour à l'espace cours
+          </button>
       {/* ── Layout principal : sidebar + contenu ── */}
       <div className="flex-1 max-w-5xl mx-auto w-full px-8 py-6 flex gap-6">
-
+        
         {/* Sidebar navigation */}
         <aside className="w-52 flex-shrink-0">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 px-1">
@@ -286,6 +301,11 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
 
         </main>
       </div>
+      </TabsContent>
+      <TabsContent value="participants">Change your password here.</TabsContent>
+  <TabsContent value="notes">Change your password here.</TabsContent>
+</Tabs>
+
     </div>
   );
 }
