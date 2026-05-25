@@ -6,7 +6,7 @@
   "scripts": {
     "dev":   "nodemon src/server.js",
     "start": "node src/server.js",
-    "sync":  "node scripts/sync.js",
+    "sync":  "node src/scripts/sync.js",
     "db:generate:master": "prisma generate",
     "db:generate:user":   "cross-env PRISMA_TARGET=user prisma generate",
     "db:generate":        "npm run db:generate:master && npm run db:generate:user",

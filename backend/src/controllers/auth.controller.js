@@ -70,7 +70,7 @@ export const listProfiles = async (req, res) => {
 };
 
 // DELETE /api/auth/profile — Supprime le profil local de l'utilisateur connecté
-export const deleteProfile = async (req, res) => {
-  const result = await authService.deleteProfile(req.user.email);
-  res.json(result);
-};
+// export const deleteProfile = async (req, res) => {
+//   const result = await authService.deleteProfile(req.user.email);
+//   res.json(result);
+// };

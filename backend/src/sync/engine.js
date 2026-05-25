@@ -10,7 +10,7 @@ import EventEmitter from "events";
 import { getDb, masterDb } from "../config/db.js";
 import { moodleFetch, checkMoodleReachable, isMoodleTokenError } from "../config/moodleApi.js";
 import { getCursor, saveCursor } from "./cursor.js";
-import { pushAll } from "./push/index.js";
+// import { pushAll } from "./push/index.js"; // PUSH désactivé pendant les tests pull
 import { pullAll } from "./pull/index.js";
 
 export class SyncEngine extends EventEmitter {
@@ -71,6 +71,7 @@ export class SyncEngine extends EventEmitter {
       // 4. Curseur de la dernière sync
       const cursor = await getCursor(this.prisma, user.id);
       this.emit("progress", { step: "INIT", cursor, servertime: this.servertime });
+      // throw Error('Erreur volontaire');
 
       // 5. Contexte partagé passé aux fonctions pull/push
       // moodleSiteUrl absent : moodleFetch le lit depuis env.MOODLE_URL
@@ -89,11 +90,12 @@ export class SyncEngine extends EventEmitter {
       let totalPulled = 0;
       let totalConflicts = 0;
 
-      // PUSH
-      this.emit("progress", { step: "PHASE", phase: "PUSH" });
-      const pushResult = await pushAll(ctx);
-      totalPushed    += pushResult.pushed;
-      totalConflicts += pushResult.conflicts;
+      // PUSH — désactivé temporairement pour tester uniquement le pull
+      // Décommenter quand le push sera implémenté et validé
+      // this.emit("progress", { step: "PHASE", phase: "PUSH" });
+      // const pushResult = await pushAll(ctx);
+      // totalPushed    += pushResult.pushed;
+      // totalConflicts += pushResult.conflicts;
 
       // PULL
       this.emit("progress", { step: "PHASE", phase: "PULL" });

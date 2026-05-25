@@ -1,6 +1,4 @@
 // prisma/user/schema.prisma
-// Base par utilisateur — ex: data/alice_univ_fr.db
-// Toutes les données Moodle de cet utilisateur + son auth locale
 
 generator client {
   provider = "prisma-client-js"
@@ -9,18 +7,13 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  // Pas d'url ici — Prisma 7 interdit url dans le schéma
-  // La connexion est configurée dans prisma.config.js via l'adapter libsql
+  // Pas d'url ici — la connexion est injectée dynamiquement via l'adapter libsql dans votre code
 }
 
 // ─────────────────────────────────────────────────────────────
-// ENUMS
+// ÉNUMÉRATIONS (Adaptées à votre moteur de diagnostic)
 // ─────────────────────────────────────────────────────────────
 
-// Statut de synchronisation — présent sur tous les modèles métier
-// PENDING_PUSH : modifié localement, pas encore envoyé au serveur
-// SYNCED       : en phase avec le serveur
-// CONFLICT     : modifié localement ET sur le serveur depuis la dernière sync
 enum SyncStatus {
   SYNCED
   PENDING_PUSH
@@ -31,12 +24,6 @@ enum UserRole {
   STUDENT
   TEACHER
   ADMIN
-}
-
-enum AttemptState {
-  IN_PROGRESS
-  SUBMITTED
-  GRADED
 }
 
 enum SubmissionState {
@@ -53,43 +40,37 @@ enum EventType {
 }
 
 // ─────────────────────────────────────────────────────────────
-// AUTH LOCAL
-// Un seul enregistrement dans cette base — l'utilisateur propriétaire
+// INFRASTRUCTURE DE SYNCHRONISATION ET AUTH LOCAL
 // ─────────────────────────────────────────────────────────────
 
 model LocalUser {
-  id                  Int       @id @default(autoincrement())
-  email               String    @unique
-  username            String    @unique
-  name                String
-  role                UserRole  @default(STUDENT)
-  clientPasswordHash  String    // hash bcrypt — vérifié hors ligne
-  moodleToken         String    // token Moodle en clair — utilisé dans les headers HTTP
-  moodleUserId        Int?      // userid retourné par core_webservice_get_site_info
-  // MOODLE_URL et MOODLE_SERVICE sont dans .env — fixes, pas stockés par profil
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                 Int        @id @default(autoincrement())
+  email              String     @unique
+  username           String     @unique
+  name               String
+  role               UserRole   @default(STUDENT)
+  clientPasswordHash String
+  moodleToken        String
+  moodleUserId       Int?
+  
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
-  // Colonnes sync sur le profil — le profil lui-même peut être modifié hors ligne
-  server_id           Int?      @unique   // userid Moodle officiel (= moodleUserId une fois synced)
-  sync_status         SyncStatus @default(SYNCED)  // SYNCED par défaut — le profil vient du serveur à la création
+  // Bloc des 5 champs techniques de synchronisation
+  server_id           Int?       @unique
+  sync_status         SyncStatus @default(SYNCED)
   server_timemodified Int?
-  local_updated_at    DateTime  @updatedAt
+  local_updated_at    DateTime   @updatedAt
   last_synced_at      Int?
 
-  // Relations
-  syncCursor  SyncCursor?
-  syncLogs    SyncLog[]
+  syncCursor SyncCursor?
+  syncLogs   SyncLog[]
 }
-
-// ─────────────────────────────────────────────────────────────
-// SYNC INFRASTRUCTURE
-// ─────────────────────────────────────────────────────────────
 
 model SyncCursor {
   id         Int       @id @default(autoincrement())
   userId     Int       @unique
-  lastCursor Int       @default(0)   // Unix timestamp — 0 si jamais synced
+  lastCursor Int       @default(0)
   updatedAt  DateTime  @updatedAt
   user       LocalUser @relation(fields: [userId], references: [id])
 }
@@ -99,7 +80,7 @@ model SyncLog {
   userId       Int
   startedAt    DateTime  @default(now())
   finishedAt   DateTime?
-  status       String    // "RUNNING" | "SUCCESS" | "PARTIAL" | "FAILED"
+  status       String
   pushed       Int       @default(0)
   pulled       Int       @default(0)
   conflicts    Int       @default(0)
@@ -108,47 +89,49 @@ model SyncLog {
 }
 
 // ─────────────────────────────────────────────────────────────
-// COURS
-// Pulled depuis Moodle — lecture seule pour étudiant
+// CENTRALISATION DES FICHIERS (Métadonnées & Téléchargement différé)
 // ─────────────────────────────────────────────────────────────
 
-model Course {
-  id           Int     @id @default(autoincrement())
-  title        String  // fullname Moodle
-  shortName    String? // shortname Moodle
-  summary      String?
-  categoryId   Int?
-  categoryName String?
-  startDate    Int?    // Unix timestamp
-  endDate      Int?    // Unix timestamp
-  visible      Boolean @default(true)
-  enrolledAt   Int?    // Unix timestamp d'inscription
+model LocalFile {
+  id          Int     @id @default(autoincrement())
+  filename    String
+  moodleUrl   String  @unique // URL absolue vers pluginfile.php sur Moodle
+  mimeType    String?
+  fileSize    Int?    
+  localPath   String? // NULL = Fichier non encore téléchargé (icône cloud à afficher)
 
-  server_id           Int?       @unique
-  sync_status         SyncStatus @default(PENDING_PUSH)
+  // Clés étrangères optionnelles pointant vers l'entité parente
+  fileResourceId   Int?
+  folderResourceId Int?
+  assignmentId     Int?
+  submissionId     Int?
+
+  server_id           Int?       @unique // ID unique du fichier ou hash Moodle
+  sync_status         SyncStatus @default(SYNCED)
   server_timemodified Int?
   local_updated_at    DateTime   @updatedAt
   last_synced_at      Int?
 
-  modules     Module[]
-  quizzes     Quiz[]
-  assignments Assignment[]
-  events      Event[]
-  annotations Annotation[]
+  // Relations
+  fileResource   FileResource?         @relation(fields: [fileResourceId], references: [id])
+  folderResource FolderResource?       @relation(fields: [folderResourceId], references: [id])
+  assignment     Assignment?           @relation(fields: [assignmentId], references: [id])
+  submission     AssignmentSubmission? @relation(fields: [submissionId], references: [id])
 }
 
 // ─────────────────────────────────────────────────────────────
-// MODULE — section/activité d'un cours
+// CARNET DE NOTES GLOBAL (Gradebook)
 // ─────────────────────────────────────────────────────────────
 
-model Module {
-  id        Int     @id @default(autoincrement())
-  courseId  Int
-  name      String
-  modType   String  // "quiz" | "assign" | "resource" | "url" | "forum" | ...
-  instance  Int?    // server_id de l'activité associée (quiz, devoir, etc.)
-  visible   Boolean @default(true)
-  sortOrder Int     @default(0)
+model Grade {
+  id           Int     @id @default(autoincrement())
+  courseId     Int
+  itemName     String  // Nom de l'activité évaluée
+  itemType     String  // "assign", "quiz", "course"
+  itemInstance Int?    // server_id de l'activité correspondante
+  grade        Float?
+  maxGrade     Float?  
+  percentage   Float?
 
   server_id           Int?       @unique
   sync_status         SyncStatus @default(SYNCED)
@@ -160,19 +143,98 @@ model Module {
 }
 
 // ─────────────────────────────────────────────────────────────
-// QUIZ
+// STRUCTURE DES COURS (Conteneurs)
+// Ordre de PULL logique : Course ──> Section ──> Module
 // ─────────────────────────────────────────────────────────────
 
-model Quiz {
+model CourseEnrollment {
+  id               Int      @id @default(autoincrement())
+  courseServerId   Int      @unique  
+  enrolledAt       DateTime @default(now())
+  enrolledOnServer Boolean  @default(true)  
+  syncEnabled      Boolean  @default(true)   
+}
+
+model Course {
+  id           Int     @id @default(autoincrement())
+  title        String
+  shortName    String?
+  summary      String?
+  categoryId   Int?
+  categoryName String?
+  startDate    Int?
+  endDate      Int?
+  visible      Boolean @default(true)
+  imageUrl     String?
+  format       String?
+
+  server_id           Int?       @unique
+  sync_status         SyncStatus @default(SYNCED)
+  server_timemodified Int?
+  local_updated_at    DateTime   @updatedAt
+  last_synced_at      Int?
+
+  sections    Section[]
+  modules     Module[]
+  events      CalendarEvent[]
+  assignments Assignment[]
+  grades      Grade[]
+}
+
+model Section {
+  id           Int     @id @default(autoincrement())
+  courseId     Int
+  name         String  
+  sectionIndex Int    
+  summary      String?
+  visible      Boolean @default(true)
+
+  server_id           Int?       @unique  
+  sync_status         SyncStatus @default(SYNCED)
+  server_timemodified Int?
+  local_updated_at    DateTime   @updatedAt
+  last_synced_at      Int?
+
+  course  Course   @relation(fields: [courseId], references: [id])
+  modules Module[]
+}
+
+model Module {
   id          Int     @id @default(autoincrement())
   courseId    Int
+  sectionId   Int?
   name        String
-  intro       String?
-  timeLimit   Int?    // secondes — null = pas de limite
-  maxAttempts Int     @default(0)   // 0 = illimité
-  gradeMethod Int     @default(1)   // 1=meilleur, 2=moyenne, 3=premier, 4=dernier
-  sumGrades   Float?
+  modType     String  // "assign" | "resource" | "url" | "folder"
+  instance    Int?    // server_id de l'instance cible (ex: id de l'Assignment)
   visible     Boolean @default(true)
+  sortOrder   Int     @default(0)
+  description String? 
+
+  server_id           Int?       @unique // ID unique Moodle du course_module (cmid)
+  sync_status         SyncStatus @default(SYNCED)
+  server_timemodified Int?
+  local_updated_at    DateTime   @updatedAt
+  last_synced_at      Int?
+
+  course   Course    @relation(fields: [courseId], references: [id])
+  section  Section?  @relation(fields: [sectionId], references: [id])
+  
+  fileResources   FileResource[]
+  folderResources FolderResource[]
+  externalUrls    ExternalUrl[]
+  assignments     Assignment[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// ACTIVITÉS SPÉCIFIQUES (Contenus)
+// ─────────────────────────────────────────────────────────────
+
+// Moodle "mod_resource" : Un fichier unique partagé par l'enseignant
+model FileResource {
+  id          Int     @id @default(autoincrement())
+  moduleId    Int?
+  name        String
+  intro       String? 
 
   server_id           Int?       @unique
   sync_status         SyncStatus @default(SYNCED)
@@ -180,19 +242,16 @@ model Quiz {
   local_updated_at    DateTime   @updatedAt
   last_synced_at      Int?
 
-  course    Course         @relation(fields: [courseId], references: [id])
-  questions QuizQuestion[]
-  attempts  QuizAttempt[]
+  module Module?     @relation(fields: [moduleId], references: [id])
+  files  LocalFile[] // Liste des fichiers associés (généralement 1 fichier + annexes éventuelles)
 }
 
-model QuizQuestion {
-  id           Int    @id @default(autoincrement())
-  quizId       Int
-  slot         Int    // position dans le quiz
-  qtype        String // "multichoice" | "truefalse" | "shortanswer" | "essay"
-  questionText String
-  maxMark      Float  @default(1)
-  answers      String? // JSON sérialisé — choix possibles selon le type
+// Moodle "mod_folder" : Un dossier contenant un ensemble de fichiers
+model FolderResource {
+  id          Int     @id @default(autoincrement())
+  moduleId    Int?
+  name        String
+  intro       String? 
 
   server_id           Int?       @unique
   sync_status         SyncStatus @default(SYNCED)
@@ -200,66 +259,39 @@ model QuizQuestion {
   local_updated_at    DateTime   @updatedAt
   last_synced_at      Int?
 
-  quiz      Quiz         @relation(fields: [quizId], references: [id])
-  responses QuizAnswer[]
+  module Module?     @relation(fields: [moduleId], references: [id])
+  files  LocalFile[] // Tous les fichiers présents dans ce dossier Moodle
 }
 
-// ─────────────────────────────────────────────────────────────
-// TENTATIVE DE QUIZ — propriété exclusive étudiant (CLIENT gagne)
-// ─────────────────────────────────────────────────────────────
-
-model QuizAttempt {
-  id            Int          @id @default(autoincrement())
-  quizId        Int
-  attemptNumber Int          @default(1)
-  state         AttemptState @default(IN_PROGRESS)
-  timeStart     Int?         // Unix timestamp
-  timeFinish    Int?         // Unix timestamp
-  sumGrades     Float?
-  gradedAt      Int?
+// Moodle "mod_url" : Un lien web externe
+model ExternalUrl {
+  id          Int     @id @default(autoincrement())
+  moduleId    Int?
+  name        String
+  externalUrl String  
+  description String?
 
   server_id           Int?       @unique
-  sync_status         SyncStatus @default(PENDING_PUSH)
+  sync_status         SyncStatus @default(SYNCED)
   server_timemodified Int?
   local_updated_at    DateTime   @updatedAt
   last_synced_at      Int?
 
-  quiz    Quiz         @relation(fields: [quizId], references: [id])
-  answers QuizAnswer[]
+  module Module? @relation(fields: [moduleId], references: [id])
 }
 
-model QuizAnswer {
-  id           Int    @id @default(autoincrement())
-  attemptId    Int
-  questionId   Int
-  responseText String? // réponse texte ou ID de choix sérialisé
-  fraction     Float?  // score 0..1
-  state        String? // "complete" | "incomplete" | "gradedright" | "gradedwrong" | ...
-
-  server_id           Int?       @unique
-  sync_status         SyncStatus @default(PENDING_PUSH)
-  server_timemodified Int?
-  local_updated_at    DateTime   @updatedAt
-  last_synced_at      Int?
-
-  attempt  QuizAttempt  @relation(fields: [attemptId], references: [id])
-  question QuizQuestion @relation(fields: [questionId], references: [id])
-}
-
-// ─────────────────────────────────────────────────────────────
-// DEVOIR (ASSIGNMENT)
-// ─────────────────────────────────────────────────────────────
-
+// Moodle "mod_assign" : Un devoir
 model Assignment {
   id           Int     @id @default(autoincrement())
   courseId     Int
+  moduleId     Int?
   name         String
   intro        String?
-  dueDate      Int?    // Unix timestamp
-  cutoffDate   Int?    // Unix timestamp
-  allowedTypes String? // "text" | "file" | "both"
-  maxFileSize  Int?    // octets
-  visible      Boolean @default(true)
+  dueDate      Int?
+  cutoffDate   Int?
+  allowedTypes String? // types de fichiers acceptés (ex: ".pdf,.zip")
+  maxFileSize  Int?
+  maxGrade     Float?
 
   server_id           Int?       @unique
   sync_status         SyncStatus @default(SYNCED)
@@ -267,51 +299,44 @@ model Assignment {
   local_updated_at    DateTime   @updatedAt
   last_synced_at      Int?
 
-  course      Course                 @relation(fields: [courseId], references: [id])
-  submissions AssignmentSubmission[]
+  course       Course                 @relation(fields: [courseId], references: [id])
+  module       Module?                @relation(fields: [moduleId], references: [id])
+  introFiles   LocalFile[]            // Fichiers joints aux consignes (sujet PDF, etc.)
+  submissions  AssignmentSubmission[]
 }
 
-// Soumission de devoir — propriété exclusive étudiant (CLIENT gagne)
+// Rendu de devoir effectué par l'étudiant (Propriété exclusive CLIENT)
 model AssignmentSubmission {
   id             Int             @id @default(autoincrement())
   assignmentId   Int
-  submissionText String?         // soumission texte en ligne
-  filePath       String?         // chemin local vers le fichier
-  fileName       String?
+  submissionText String?
   state          SubmissionState @default(DRAFT)
   grade          Float?
   gradedAt       Int?
   feedback       String?
 
   server_id           Int?       @unique
-  sync_status         SyncStatus @default(PENDING_PUSH)
+  sync_status         SyncStatus @default(PENDING_PUSH) // Initialisé à PENDING_PUSH lors d'une modif locale
   server_timemodified Int?
   local_updated_at    DateTime   @updatedAt
   last_synced_at      Int?
 
-  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  assignment     Assignment  @relation(fields: [assignmentId], references: [id])
+  submittedFiles LocalFile[] // Fichiers déposés par l'étudiant pour ce rendu
 }
 
 // ─────────────────────────────────────────────────────────────
-// ÉVÉNEMENTS
-// Pulled depuis Moodle — lecture seule pour étudiant
+// CALENDRIER ET ÉVÉNEMENTS
 // ─────────────────────────────────────────────────────────────
 
-model Event {
-  id           Int       @id @default(autoincrement())
+model CalendarEvent {
+  id           Int     @id @default(autoincrement())
   name         String
   description  String?
-  format       String?   // format de la description (HTML, markdown, etc.)
-  categoryId   Int?      // catégorie Moodle associée
-  courseId     Int?      // cours associé (null si global)
-  groupId      Int?      // groupe associé (null si global)
-  userId       Int?      // utilisateur créateur
-  eventType    EventType @default(SITE)
-  timestart    Int       // Unix timestamp de début
-  timeduration Int?      // durée en secondes (null = instantané)
-  visible      Boolean   @default(true)
-  location     String?   // lieu de l'événement
-  timemodified Int?      // Unix timestamp de dernière modification
+  eventType    String  // "user" | "course" | "site" | "group"
+  timeStart    Int
+  timeDuration Int     @default(0)
+  courseId     Int?    // Nullable : un événement peut être global (ex: "site" ou "user")
 
   server_id           Int?       @unique
   sync_status         SyncStatus @default(SYNCED)
@@ -319,23 +344,5 @@ model Event {
   local_updated_at    DateTime   @updatedAt
   last_synced_at      Int?
 
-  course Course? @relation(fields: [courseId], references: [id])
-}
-
-// ─────────────────────────────────────────────────────────────
-// ANNOTATION — notes personnelles, CLIENT gagne TOUJOURS
-// Jamais synchronisées vers le serveur Moodle
-// ─────────────────────────────────────────────────────────────
-
-model Annotation {
-  id       Int     @id @default(autoincrement())
-  courseId Int?    // null = annotation globale
-  content  String
-  color    String  @default("#FFFF88")
-
-  // Pas de server_id — les annotations restent locales
-  local_updated_at DateTime @updatedAt
-  createdAt        DateTime @default(now())
-
-  course Course? @relation(fields: [courseId], references: [id])
+  course      Course? @relation(fields: [courseId], references: [id])
 }

@@ -1,35 +1,41 @@
 // src/sync/pull/index.js
-// Ordre strict : profil → cours → quiz → tentatives → devoirs
-// moodleFetch lit MOODLE_URL depuis env — pas de moodleSiteUrl dans ctx.
-
-import { pullProfile }     from "./pullProfile.js";
-import { pullCourses }     from "./pullCourses.js";
-import { pullEvents }      from "./pullEvents.js";
-import { pullQuizzes }     from "./pullQuizzes.js";
-import { pullAttempts }    from "./pullAttempts.js";
-import { pullAssignments } from "./pullAssignments.js";
+import { pullProfile }         from "./pullProfile.js";
+import { pullCourses }         from "./pullCourses.js";
+import { pullCalendarEvents }  from "./pullCalendarEvents.js";
+import { pullCourseStructure } from "./pullCourseStructure.js";
+import { pullFileResources }   from "./pullFileResources.js";
+import { pullFolderResources } from "./pullFolderResources.js"; // <-- Nouvel import
+import { pullExternalUrls }    from "./pullExternalUrls.js";
+import { pullAssignments }     from "./pullAssignments.js";
+import { pullGrades }          from "./pullGrades.js";
 
 export const pullAll = async (ctx) => {
   let pulled = 0;
   let conflicts = 0;
 
-  const r1 = await pullProfile(ctx);
-  pulled += r1.pulled; conflicts += r1.conflicts;
-  
-  const r6 = await pullEvents(ctx);
-  pulled += r6.pulled; conflicts += r6.conflicts;
+  const add = (r) => { 
+    pulled += r?.pulled || 0; 
+    conflicts += r?.conflicts || 0; 
+  };
 
-  const r2 = await pullCourses(ctx);
-  pulled += r2.pulled; conflicts += r2.conflicts;
+  // 1. Profil et Cours
+  add(await pullProfile(ctx));
+  add(await pullCourses(ctx));
 
-  const r3 = await pullQuizzes(ctx);
-  pulled += r3.pulled; conflicts += r3.conflicts;
+  // 2. Événements
+  add(await pullCalendarEvents(ctx));
 
-  const r4 = await pullAttempts(ctx);
-  pulled += r4.pulled; conflicts += r4.conflicts;
+  // 3. Structure (Sections et Modules)
+  add(await pullCourseStructure(ctx));
 
-  const r5 = await pullAssignments(ctx);
-  pulled += r5.pulled; conflicts += r5.conflicts;
+  // 4. Contenus spécifiques & Fichiers
+  add(await pullFileResources(ctx));
+  add(await pullFolderResources(ctx)); // <-- Ajouté ici
+  add(await pullExternalUrls(ctx));
+  add(await pullAssignments(ctx));
+
+  // 5. Notes
+  add(await pullGrades(ctx));
 
   return { pulled, conflicts };
 };
