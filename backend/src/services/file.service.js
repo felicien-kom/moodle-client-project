@@ -53,7 +53,15 @@ export const downloadSingleFile = async (prisma, fileId, userEmail, moodleToken)
   }
 
   // URL protégée par token pour traverser pluginfile.php
-  const authenticatedUrl = `${file.moodleUrl}?token=${moodleToken}`;
+  // const authenticatedUrl = `${file.moodleUrl}?token=${moodleToken}`;
+  
+  // URL protégée par token pour traverser pluginfile.php
+  const urlObj = new URL(file.moodleUrl);
+
+  urlObj.searchParams.delete('forcedownload');
+  urlObj.searchParams.append('token', moodleToken);
+
+  const authenticatedUrl = urlObj.toString();
 
   try {
     const response = await fetch(authenticatedUrl);
