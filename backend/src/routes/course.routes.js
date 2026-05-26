@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { authenticate } from "../middlewares/authenticate.js";
 import * as course from "../controllers/course.controller.js";
+import * as fileController from "../controllers/file.controller.js";
 
 const router = Router();
 
@@ -20,9 +21,5 @@ router.get("/:id/files",             course.getLocalFiles);   // Remplace /resou
 router.get("/:id/sections",          course.getLocalSections); // Le Super-Endpoint
 router.get("/:id/grades",            course.getLocalGrades);
 router.get("/:id/events",            course.getLocalEvents);  // Nouveau
-
-// ── Futures routes de téléchargement binaire ─────────────────
-// router.get("/:id/files/:fileId/download", file.downloadFromMoodle);
-// router.get("/:id/files/:fileId/serve",    file.serveLocalBlob);
 
 export default router;
