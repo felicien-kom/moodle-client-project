@@ -22,3 +22,14 @@ export const getUserMediaDir = (email) => {
   }
   return absPath;
 };
+
+// NOUVEAU : Dossier dédié pour les devoirs de l'élève
+export const getUserSubmissionsDir = (email) => {
+  const baseDir = getUserMediaDir(email);
+  const submissionsDir = path.join(baseDir, "submissions");
+  
+  if (!fs.existsSync(submissionsDir)) {
+    fs.mkdirSync(submissionsDir, { recursive: true });
+  }
+  return submissionsDir;
+};
