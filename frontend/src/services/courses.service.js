@@ -1,386 +1,286 @@
 
-// Vidéos de prévisualisation libres de droits (Google Common Data Storage)
-const PREVIEW_VIDEOS = [
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-];
+import apiClient from "@/client/apiClient";
 
-const COURSE_IMAGES = [
-  "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1484417894907-623942c8ee29?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80",
-];
+/**
+ * Service pour gérer les cours
+ * Communique avec l'API backend pour récupérer, créer et gérer les cours
+ * Pas de mock data — données réelles du backend uniquement
+ */
 
-// Mock data en attendant le backend
-const mockCourses = [
-  {
-    id: "1",
-    title: "Techniques d'optimisation avancées",
-    description: "Maîtrisez les stratégies de performance applicative, l'analyse algorithmique et les meilleures pratiques d'architecture logicielle.",
-    category: "Developpement",
-    level: "Avancé",
-    duration: "12h 30min",
-    rating: 4.8,
-    reviewCount: 124,
-    image: COURSE_IMAGES[0],
-    previewVideo: PREVIEW_VIDEOS[0],
-    startDate: "2026-03-29",
-    endDate: null,
-    createdBy: "1",
-    createdByName: "Tamo Gregoire",
-    enrolledUserIds: ["3"],
-    sections: [
-      {
-        id: "s1",
-        title: "Fondamentaux de la performance",
-        activities: [
-          { id: "a1", type: "video", title: "Introduction au profiling", duration: "12 min" },
-          { id: "a2", type: "resource", title: "Guide PDF — Complexité algorithmique", duration: "Lecture" },
-          { id: "a3", type: "task", title: "Exercice : Analyser un algorithme O(n²)", duration: "30 min" },
-        ],
+// ═══════════════════════════════════════════════════════════════════════════════
+// ONLINE (Connexion Moodle requise)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Récupère le catalogue de tous les cours disponibles sur le serveur Moodle
+ * Permet la recherche, filtrage par catégorie et pagination
+ * @param {Object} options - Options de recherche et pagination
+ * @param {string} [options.search=""] - Terme de recherche
+ * @param {number} [options.categoryId] - ID de la catégorie pour filtrer
+ * @param {number} [options.page=0] - Numéro de page
+ * @param {number} [options.perPage=20] - Nombre de cours par page
+ * @returns {Promise<Object>} { total, courses }
+ */
+export async function getCatalogueOnline(options = {}) {
+  const { search = "", categoryId, page = 0, perPage = 20 } = options;
+
+  try {
+    const response = await apiClient.get("/courses/catalogue", {
+      params: {
+        search,
+        ...(categoryId && { categoryId }),
+        page,
+        perPage,
       },
-      {
-        id: "s2",
-        title: "Optimisation avancée",
-        activities: [
-          { id: "a4", type: "video", title: "Lazy loading et code splitting", duration: "20 min" },
-          { id: "a5", type: "quiz", title: "Quiz de validation", duration: "15 min" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "2",
-    title: "Architecture des applications web modernes",
-    description: "De la conception à la mise en production, concevez des systèmes robustes, évolutifs et maintenables.",
-    category: "Architecture",
-    level: "Intermédiaire",
-    duration: "18h 00min",
-    rating: 4.6,
-    reviewCount: 89,
-    image: COURSE_IMAGES[1],
-    previewVideo: PREVIEW_VIDEOS[1],
-    startDate: "2026-04-01",
-    endDate: null,
-    createdBy: "2",
-    createdByName: "Tarick Keni",
-    enrolledUserIds: ["1", "3"],
-    sections: [
-      {
-        id: "s3",
-        title: "Modèles d'architecture",
-        activities: [
-          { id: "a6", type: "video", title: "MVC vs Hexagonal Architecture", duration: "25 min" },
-          { id: "a7", type: "resource", title: "Guide de référence — Clean Architecture", duration: "Lecture" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "3",
-    title: "Analyse de données avec Python",
-    description: "De la collecte à la visualisation : nettoyage, exploration et interprétation des données avec Pandas, NumPy et Seaborn.",
-    category: "Data Science",
-    level: "Débutant",
-    duration: "9h 45min",
-    rating: 4.9,
-    reviewCount: 256,
-    image: COURSE_IMAGES[2],
-    previewVideo: PREVIEW_VIDEOS[2],
-    startDate: "2026-04-05",
-    endDate: null,
-    createdBy: "2",
-    createdByName: "Tarick Keni",
-    enrolledUserIds: ["1"],
-    sections: [],
-  },
-  {
-    id: "4",
-    title: "Pédagogie numérique inclusive",
-    description: "Concevez des formations accessibles et engageantes adaptées à tous les profils d'apprenants, même en connectivité limitée.",
-    category: "Education",
-    level: "Intermédiaire",
-    duration: "6h 15min",
-    rating: 4.7,
-    reviewCount: 43,
-    image: COURSE_IMAGES[3],
-    previewVideo: PREVIEW_VIDEOS[3],
-    startDate: "2026-04-10",
-    endDate: null,
-    createdBy: "1",
-    createdByName: "Tamo Gregoire",
-    enrolledUserIds: [],
-    sections: [],
-  },
-];
+    });
 
-let allCourses = structuredClone(mockCourses);
-
-function withViewerState(course, viewerUserId) {
-  const normalizedViewerId = String(viewerUserId || "");
-
-  return {
-    ...course,
-    isEnrolled:
-      normalizedViewerId.length > 0 &&
-      Array.isArray(course.enrolledUserIds) &&
-      course.enrolledUserIds.includes(normalizedViewerId),
-  };
+    return {
+      total: response.total || 0,
+      courses: response.courses || [],
+    };
+  } catch (error) {
+    console.error("Erreur lors de la récupération du catalogue:", error);
+    throw error;
+  }
 }
 
-function mapWithViewerState(courses, viewerUserId) {
-  return courses.map((course) => withViewerState(course, viewerUserId));
-}
-
-function getCourseById(courseId) {
-  return allCourses.find((course) => String(course.id) === String(courseId));
-}
-
-function getImageValue(imageInput) {
-  if (imageInput instanceof File) {
-    return URL.createObjectURL(imageInput);
+/**
+ * S'inscrire à un cours sur le serveur Moodle
+ * @param {number} courseServerId - L'ID du cours sur le serveur Moodle
+ * @returns {Promise<Object>} { enrollment, message }
+ */
+export async function enrollCourseOnline(courseServerId) {
+  if (!courseServerId) {
+    throw new Error("courseServerId est requis");
   }
 
-  if (typeof imageInput === "string" && imageInput.trim().length > 0) {
-    return imageInput;
+  try {
+    const response = await apiClient.post(`/courses/${courseServerId}/enroll`);
+    return response;
+  } catch (error) {
+    console.error(`Erreur lors de l'inscription au cours ${courseServerId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Se désinscrire d'un cours sur le serveur Moodle
+ * @param {number} courseServerId - L'ID du cours sur le serveur Moodle
+ * @returns {Promise<Object>} { message }
+ */
+export async function unenrollCourseOnline(courseServerId) {
+  if (!courseServerId) {
+    throw new Error("courseServerId est requis");
   }
 
-  return COURSE_IMAGES[Math.floor(Math.random() * COURSE_IMAGES.length)];
+  try {
+    const response = await apiClient.delete(`/courses/${courseServerId}/enroll`);
+    return response;
+  } catch (error) {
+    console.error(`Erreur lors de la désinscription au cours ${courseServerId}:`, error);
+    throw error;
+  }
 }
 
-export async function fetchAllCourses({ viewerUserId } = {}) {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mapWithViewerState(allCourses, viewerUserId)), 300);
-  });
+// ═══════════════════════════════════════════════════════════════════════════════
+// OFFLINE (Données locales synchronisées)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Récupère tous les cours locaux disponibles (synchronisés)
+ * @returns {Promise<Array>} Liste des cours
+ */
+export async function getAllLocalCourses() {
+  try {
+    const response = await apiClient.get("/courses");
+    return response.courses || [];
+  } catch (error) {
+    console.error("Erreur lors de la récupération des cours:", error);
+    throw error;
+  }
 }
 
-export async function fetchCourseById(courseId, { viewerUserId } = {}) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const course = getCourseById(courseId);
+/**
+ * Récupère un cours spécifique par son ID local
+ * @param {number} courseId - L'ID local du cours
+ * @returns {Promise<Object>} Les détails du cours
+ */
+export async function getCourseById(courseId) {
+  if (!courseId) {
+    throw new Error("courseId est requis");
+  }
 
-      if (!course) {
-        reject(new Error("Cours non trouve"));
-        return;
-      }
-
-      resolve(withViewerState(course, viewerUserId));
-    }, 300);
-  });
+  try {
+    const response = await apiClient.get(`/courses/${courseId}`);
+    return response.course;
+  } catch (error) {
+    console.error(`Erreur lors de la récupération du cours ${courseId}:`, error);
+    throw error;
+  }
 }
 
-export async function fetchUserCourses(userId) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const normalizedUserId = String(userId || "");
-      const userCourses = allCourses.filter(
-        (course) => String(course.createdBy) === normalizedUserId
-      );
+/**
+ * Récupère tous les devoirs d'un cours
+ * @param {number} courseId - L'ID local du cours
+ * @returns {Promise<Array>} Liste des devoirs avec leurs soumissions
+ */
+export async function getAssignmentsByCourse(courseId) {
+  if (!courseId) {
+    throw new Error("courseId est requis");
+  }
 
-      resolve(mapWithViewerState(userCourses, normalizedUserId));
-    }, 300);
-  });
+  try {
+    const response = await apiClient.get(`/courses/${courseId}/assignments`);
+    return response.assignments || [];
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des devoirs du cours ${courseId}:`, error);
+    throw error;
+  }
 }
 
-export async function fetchEnrolledCourses(userId) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const normalizedUserId = String(userId || "");
-      const enrolledCourses = allCourses.filter(
-        (course) =>
-          String(course.createdBy) !== normalizedUserId &&
-          Array.isArray(course.enrolledUserIds) &&
-          course.enrolledUserIds.includes(normalizedUserId)
-      );
+/**
+ * Récupère tous les fichiers et ressources d'un cours
+ * @param {number} courseId - L'ID local du cours
+ * @returns {Promise<Array>} Liste des fichiers et ressources
+ */
+export async function getFilesByCourse(courseId) {
+  if (!courseId) {
+    throw new Error("courseId est requis");
+  }
 
-      resolve(mapWithViewerState(enrolledCourses, normalizedUserId));
-    }, 300);
-  });
+  try {
+    const response = await apiClient.get(`/courses/${courseId}/files`);
+    return response.files || [];
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des fichiers du cours ${courseId}:`, error);
+    throw error;
+  }
 }
 
-export async function fetchDiscoverCourses(userId) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const normalizedUserId = String(userId || "");
-      const discoverCourses = allCourses.filter(
-        (course) =>
-          String(course.createdBy) !== normalizedUserId &&
-          (!Array.isArray(course.enrolledUserIds) ||
-            !course.enrolledUserIds.includes(normalizedUserId))
-      );
+/**
+ * Récupère tous les événements d'un cours
+ * @param {number} courseId - L'ID local du cours
+ * @returns {Promise<Array>} Liste des événements du calendrier
+ */
+export async function getEventsByCourse(courseId) {
+  if (!courseId) {
+    throw new Error("courseId est requis");
+  }
 
-      resolve(mapWithViewerState(discoverCourses, normalizedUserId));
-    }, 300);
-  });
+  try {
+    const response = await apiClient.get(`/courses/${courseId}/events`);
+    return response.events || [];
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des événements du cours ${courseId}:`, error);
+    throw error;
+  }
 }
 
-export async function createCourse(courseData) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const authorId = String(courseData.createdBy || "");
+/**
+ * Récupère toutes les sections d'un cours (super-endpoint)
+ * L'arborescence complète : sections → modules → ressources
+ * @param {number} courseId - L'ID local du cours
+ * @returns {Promise<Array>} Liste des sections avec modules et ressources imbriqués
+ */
+export async function getSectionsByCourse(courseId) {
+  if (!courseId) {
+    throw new Error("courseId est requis");
+  }
 
-      const newCourse = {
-        id: String(Date.now()),
-        title: courseData.title,
-        description: courseData.description || "",
-        category: courseData.category || "General",
-        image: getImageValue(courseData.image),
-        startDate: courseData.startDate || null,
-        endDate: courseData.endDate || null,
-        createdBy: authorId,
-        createdByName: courseData.createdByName || "Inconnu",
-        enrolledUserIds: [],
-        sections: [],
-        createdAt: new Date().toISOString(),
-      };
-
-      allCourses = [newCourse, ...allCourses];
-      resolve(withViewerState(newCourse, authorId));
-    }, 300);
-  });
+  try {
+    const response = await apiClient.get(`/courses/${courseId}/sections`);
+    return response.sections || [];
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des sections du cours ${courseId}:`, error);
+    throw error;
+  }
 }
 
-export async function updateCourse(courseId, courseData) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const course = getCourseById(courseId);
+/**
+ * Récupère toutes les notes d'un cours
+ * @param {number} courseId - L'ID local du cours
+ * @returns {Promise<Array>} Liste des grades/notes
+ */
+export async function getGradesByCourse(courseId) {
+  if (!courseId) {
+    throw new Error("courseId est requis");
+  }
 
-      if (!course) {
-        reject(new Error("Cours non trouve"));
-        return;
-      }
-
-      Object.assign(course, {
-        ...courseData,
-        image:
-          Object.prototype.hasOwnProperty.call(courseData, "image")
-            ? getImageValue(courseData.image)
-            : course.image,
-      });
-
-      resolve(course);
-    }, 300);
-  });
+  try {
+    const response = await apiClient.get(`/courses/${courseId}/grades`);
+    return response.grades || [];
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des notes du cours ${courseId}:`, error);
+    throw error;
+  }
 }
 
-export async function deleteCourse(courseId) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = allCourses.findIndex(
-        (course) => String(course.id) === String(courseId)
-      );
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS - Récupération de données complètes
+// ═══════════════════════════════════════════════════════════════════════════════
 
-      if (index === -1) {
-        reject(new Error("Cours non trouve"));
-        return;
-      }
+/**
+ * Récupère toutes les données d'un cours (complet)
+ * Inclut : cours, sections, devoirs, fichiers, événements, notes
+ * @param {number} courseId - L'ID local du cours
+ * @returns {Promise<Object>} Objet contenant toutes les données du cours
+ */
+export async function getCompleteCourseData(courseId) {
+  if (!courseId) {
+    throw new Error("courseId est requis");
+  }
 
-      allCourses.splice(index, 1);
-      resolve();
-    }, 300);
-  });
+  try {
+    const [course, sections, assignments, files, events, grades] = await Promise.all([
+      getCourseById(courseId),
+      getSectionsByCourse(courseId),
+      getAssignmentsByCourse(courseId),
+      getFilesByCourse(courseId),
+      getEventsByCourse(courseId),
+      getGradesByCourse(courseId),
+    ]);
+
+    return {
+      course,
+      sections,
+      assignments,
+      files,
+      events,
+      grades,
+    };
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des données complètes du cours ${courseId}:`, error);
+    throw error;
+  }
 }
 
-export async function enrollInCourse(courseId, userId) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const course = getCourseById(courseId);
-      const normalizedUserId = String(userId || "");
+/**
+ * Récupère tous les cours avec leurs événements
+ * @returns {Promise<Array>} Cours avec événements
+ */
+export async function getAllCoursesWithEvents() {
+  try {
+    const courses = await getAllLocalCourses();
 
-      if (!course || !normalizedUserId) {
-        reject(new Error("Impossibilite de s'inscrire"));
-        return;
-      }
+    const coursesWithEvents = await Promise.all(
+      courses.map(async (course) => {
+        try {
+          const events = await getEventsByCourse(course.id);
+          return { ...course, events };
+        } catch {
+          // Si erreur, retourner le cours sans événements
+          return { ...course, events: [] };
+        }
+      })
+    );
 
-      if (String(course.createdBy) === normalizedUserId) {
-        reject(new Error("Vous etes deja proprietaire de ce cours"));
-        return;
-      }
-
-      if (!Array.isArray(course.enrolledUserIds)) {
-        course.enrolledUserIds = [];
-      }
-
-      if (!course.enrolledUserIds.includes(normalizedUserId)) {
-        course.enrolledUserIds.push(normalizedUserId);
-      }
-
-      resolve(withViewerState(course, normalizedUserId));
-    }, 300);
-  });
+    return coursesWithEvents;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des cours avec événements:", error);
+    throw error;
+  }
 }
 
-export async function unenrollFromCourse(courseId, userId) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const course = getCourseById(courseId);
-      const normalizedUserId = String(userId || "");
-
-      if (!course || !normalizedUserId) {
-        reject(new Error("Impossibilite de se desinscrire"));
-        return;
-      }
-
-      course.enrolledUserIds = (course.enrolledUserIds || []).filter(
-        (id) => id !== normalizedUserId
-      );
-
-      resolve(withViewerState(course, normalizedUserId));
-    }, 300);
-  });
-}
-
-export async function addSection(courseId, sectionData) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const course = getCourseById(courseId);
-
-      if (!course) {
-        reject(new Error("Cours non trouve"));
-        return;
-      }
-
-      const newSection = {
-        id: `s${Date.now()}`,
-        ...sectionData,
-        activities: [],
-      };
-
-      course.sections.push(newSection);
-      resolve(newSection);
-    }, 300);
-  });
-}
-
-export async function addActivity(courseId, sectionId, activityData) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const course = getCourseById(courseId);
-
-      if (!course) {
-        reject(new Error("Cours non trouve"));
-        return;
-      }
-
-      const section = course.sections.find(
-        (item) => String(item.id) === String(sectionId)
-      );
-
-      if (!section) {
-        reject(new Error("Section non trouvee"));
-        return;
-      }
-
-      const newActivity = {
-        id: `a${Date.now()}`,
-        ...activityData,
-      };
-
-      section.activities.push(newActivity);
-      resolve(newActivity);
-    }, 300);
-  });
-}
+// LEGACY MOCK DATA (DEPRECATED - DO NOT USE)
+// Tous les appels à la base de données doivent utiliser les fonctions ci-dessus
+// qui communiquent avec l'API backend

@@ -1,5 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
-import EventModal from "./EventModal";
+import { useState, useMemo } from "react";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -24,32 +23,6 @@ const EV_COLORS = [
   { bg: "bg-indigo-100", text: "text-indigo-800" },
 ];
 
-// Événements de démonstration — clé format "YYYY-MM-DD"
-const INITIAL_EVENTS = {
-  "2026-01-07": [{ id: 1,  label: "bonjour toud",   color: 0 }],
-  "2026-01-09": [{ id: 2,  label: "en gfant q..",   color: 2 }],
-  "2026-01-13": [{ id: 3,  label: "glog",           color: 1 }],
-  "2026-01-14": [{ id: 4,  label: "TD 4 envoyer",   color: 1 }],
-  "2026-01-15": [{ id: 5,  label: "nen n'est..",    color: 4 }],
-  "2026-01-17": [{ id: 6,  label: "lmloutds",       color: 3 }, { id: 7, label: "jeudi les a..", color: 5 }],
-  "2026-01-20": [{ id: 8,  label: "jxhjxhk",        color: 8 }],
-  "2026-01-22": [{ id: 9,  label: "Physique..",      color: 6 }, { id: 10, label: "mimi", color: 7 }],
-  "2026-01-23": [{ id: 11, label: "lseee",           color: 2 }, { id: 12, label: "jqftfhgkl..", color: 1 }],
-  "2026-01-25": [{ id: 13, label: "lolita",          color: 6 }, { id: 14, label: "yo les gars", color: 4 }],
-  "2026-01-26": [{ id: 15, label: "fermeture..",     color: 0 }, { id: 16, label: "vous éla t..", color: 1 }],
-  "2026-01-27": [{ id: 17, label: "patate",          color: 2 }, { id: 18, label: "patate", color: 2 }],
-  "2026-01-28": [{ id: 19, label: "patate",          color: 2 }, { id: 20, label: "Tamo Geo..", color: 5 }],
-  "2026-01-29": [{ id: 21, label: "nogr",            color: 4 }, { id: 22, label: "De voir de..", color: 1 }],
-  "2026-01-30": [{ id: 23, label: "ouverture",       color: 2 }, { id: 24, label: "fermeture", color: 0 }],
-  "2026-02-03": [{ id: 25, label: "Physique",        color: 6 }],
-  "2026-02-10": [{ id: 26, label: "Rendu projet",    color: 0 }],
-  "2026-02-14": [{ id: 27, label: "Saint-Valentin",  color: 6 }],
-  "2026-02-20": [{ id: 28, label: "Soutenance",      color: 3 }, { id: 29, label: "TD final", color: 1 }],
-  "2026-02-25": [{ id: 30, label: "TP Réseau",       color: 8 }],
-  "2026-03-01": [{ id: 31, label: "Début S2",        color: 2 }],
-  "2026-03-15": [{ id: 32, label: "Exam mi-term",    color: 0 }],
-  "2026-03-22": [{ id: 33, label: "glog avancé",     color: 1 }],
-};
 
 // ─── Utilitaires ─────────────────────────────────────────────────────────────
 
@@ -154,40 +127,37 @@ export default function Calender({ events: backendEvents = [] }) {
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
 
-  // État sélection / événements
+  // État sélection
   const [selectedDay, setSelectedDay] = useState(null);
-  const [localEvents, setLocalEvents] = useState(INITIAL_EVENTS);
-
-  // Modale
-  const [modal, setModal] = useState(null); // null | { defaultDate: string }
 
   // ─── Convertir les événements du backend en format calendrier ─────────────
-  const mergedEvents = useMemo(() => {
-    const merged = { ...localEvents };
+  const calendarEvents = useMemo(() => {
+    const grouped = {};
 
-    // Ajouter les événements du backend
+    // Convertir les événements du backend en format calendrier
     backendEvents.forEach(event => {
       if (event.timeStart) {
         const eventDate = new Date(event.timeStart * 1000);
         const key = toKey(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
         
-        const colorIndex = (backendEvents.indexOf(event) % EV_COLORS.length);
+        const colorIndex = event.color || (backendEvents.indexOf(event) % EV_COLORS.length);
         const eventItem = {
           id: event.id,
-          label: event.name || event.title || "Événement",
+          label: event.name || event.title || event.label || "Événement",
           color: colorIndex,
-          type: event.eventType || event.type || "event"
+          type: event.eventType || event.type || "event",
+          description: event.description
         };
 
-        if (!merged[key]) {
-          merged[key] = [];
+        if (!grouped[key]) {
+          grouped[key] = [];
         }
-        merged[key].push(eventItem);
+        grouped[key].push(eventItem);
       }
     });
 
-    return merged;
-  }, [backendEvents, localEvents]);
+    return grouped;
+  }, [backendEvents]);
 
   // ── Navigation ────────────────────────────────────────────────────────────
 
@@ -243,39 +213,8 @@ export default function Calender({ events: backendEvents = [] }) {
     month === today.getMonth() &&
     year === today.getFullYear();
 
-  // ── Gestion événements ────────────────────────────────────────────────────
-
-  const addEvent = ({ date, label, color }) => {
-    setLocalEvents(prev => ({
-      ...prev,
-      [date]: [...(prev[date] || []), { id: Date.now(), label, color }],
-    }));
-    // Synchroniser la vue sur le mois de l'événement ajouté
-    const [y, m] = date.split("-").map(Number);
-    setYear(y);
-    setMonth(m - 1);
-    setSelectedDay(Number(date.split("-")[2]));
-  };
-
-  const deleteEvent = (day, evId) => {
-    const key = toKey(year, month, day);
-    setLocalEvents(prev => ({
-      ...prev,
-      [key]: (prev[key] || []).filter(e => e.id !== evId),
-    }));
-  };
-
-  const handleEditEvent = ({ date, label, type }) => {
-    // Pour l'instant, on ajoute un nouvel événement avec les données modifiées
-    // Dans une version complète, il faudrait identifier l'événement à modifier
-    setLocalEvents(prev => ({
-      ...prev,
-      [date]: [...(prev[date] || []), { id: Date.now(), label, type }],
-    }));
-  };
-
   const selectedKey    = selectedDay ? toKey(year, month, selectedDay) : null;
-  const selectedEvents = selectedKey ? (mergedEvents[selectedKey] || []) : [];
+  const selectedEvents = selectedKey ? (calendarEvents[selectedKey] || []) : [];
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -285,22 +224,6 @@ export default function Calender({ events: backendEvents = [] }) {
       {/* ── Barre du haut ── */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
         <h2 className="text-lg font-bold text-black">Calendrier</h2>
-        <div className="flex items-center gap-2">
-          <select className="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 outline-none cursor-pointer">
-            <option value="">Choisir un type</option>
-            <option value="cours">Cours</option>
-            <option value="utilisateur">Utilisateur</option>
-            <option value="site">Site</option>
-            <option value="categorie">Catégorie</option>
-          </select>
-
-          <button
-            onClick={() => setModal({ defaultDate: "" })}
-            className="bg-slate-800 text-white border-none rounded-lg px-3 py-1.5 text-sm cursor-pointer font-medium flex items-center gap-1.5"
-          >
-            <span className="text-sm font-bold">+</span> Nouvel événement
-          </button>
-        </div>
       </div>
 
       {/* ── Contrôles de navigation ── */}
@@ -351,44 +274,17 @@ export default function Calender({ events: backendEvents = [] }) {
             <DayCell
               key={idx}
               day={day}
-              events={key ? (mergedEvents[key] || []) : []}
+              events={key ? (calendarEvents[key] || []) : []}
               isToday={day ? isToday(day) : false}
               isSelected={day !== null && day === selectedDay}
               onClick={() => {
                 if (!day) return;
-                const dayEvents = mergedEvents[key] || [];
                 setSelectedDay(prev => (prev === day ? null : day));
-                
-                // Si le jour a des événements, ouvrir la modal en mode edit avec le premier événement
-                if (dayEvents.length > 0) {
-                  const firstEvent = dayEvents[0];
-                  setModal({
-                    mode: "edit",
-                    initialData: {
-                      date: toKey(year, month, day),
-                      label: firstEvent.label,
-                      type: firstEvent.type || ("cours" in firstEvent ? "cours" : undefined)
-                    }
-                  });
-                }
               }}
             />
           );
         })}
       </div>
-
-
-
-      {/* ── Modal ajout/édition d'événement ── */}
-      {modal && (
-        <EventModal
-          mode={modal.mode || "add"}
-          defaultDate={modal.defaultDate}
-          initialData={modal.initialData}
-          onClose={() => setModal(null)}
-          onSubmit={modal.mode === "edit" ? handleEditEvent : addEvent}
-        />
-      )}
     </div>
   );
 }

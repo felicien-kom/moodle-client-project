@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import Calender from "@/components/content/Calender";
 import { RefreshCw } from "lucide-react";
 import apiClient from "@/client/apiClient";
+import { getEventsByCourse, formatEventsForCalendar } from "@/services/events.service";
 
 export default function Dashboard() {
   const [events, setEvents] = useState([]);
@@ -26,15 +27,15 @@ export default function Dashboard() {
       const coursesResponse = await apiClient.get("/courses");
       const courses = coursesResponse.courses || [];
 
-      // 🟢 Appel 2: Récupérer les événements de chaque cours
+      // 🟢 Appel 2: Récupérer les événements de chaque cours en utilisant events.service
       const allEvents = [];
       for (const course of courses) {
         try {
-          const eventsResponse = await apiClient.get(`/courses/${course.id}/events`);
-          const courseEvents = eventsResponse.events || [];
+          const courseEvents = await getEventsByCourse(course.id);
+          const formattedEvents = formatEventsForCalendar(courseEvents);
           
           // Enrichir les événements avec les informations du cours
-          const enrichedEvents = courseEvents.map(event => ({
+          const enrichedEvents = formattedEvents.map(event => ({
             ...event,
             courseId: course.id,
             courseName: course.title || "Cours sans titre"
