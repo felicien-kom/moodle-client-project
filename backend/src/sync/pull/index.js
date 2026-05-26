@@ -7,6 +7,7 @@ import { pullFileResources }   from "./pullFileResources.js";
 import { pullFolderResources } from "./pullFolderResources.js"; // <-- Nouvel import
 import { pullExternalUrls }    from "./pullExternalUrls.js";
 import { pullAssignments }     from "./pullAssignments.js";
+import { pullAssignmentSubmissions } from "./pullAssignmentSubmissions.js";
 import { pullGrades }          from "./pullGrades.js";
 
 export const pullAll = async (ctx) => {
@@ -33,6 +34,7 @@ export const pullAll = async (ctx) => {
   add(await pullFolderResources(ctx)); // <-- Ajouté ici
   add(await pullExternalUrls(ctx));
   add(await pullAssignments(ctx));
+  add(await pullAssignmentSubmissions(ctx));
 
   // 5. Notes
   add(await pullGrades(ctx));

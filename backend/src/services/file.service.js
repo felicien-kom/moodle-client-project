@@ -3,12 +3,17 @@ import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
 import { finished } from "stream/promises";
-import { getUserMediaDir } from "../utils/storage.js";
+import { getUserMediaDir, getUserSubmissionsDir } from "../utils/storage.js";
 
 export const checkFileLocalStatus = (file, userEmail) => {
   if (!file.localPath) {
     return { ...file, isDownloaded: false };
   }
+
+  // Astuce : getUserMediaDir pointe sur "data/media/email/"
+  // Si localPath vaut "submissions/mon_fichier.pdf", path.join va 
+  // naturellement résoudre vers "data/media/email/submissions/mon_fichier.pdf".
+  // Donc cette fonction marche nativement pour les deux cas !
   const baseDir = getUserMediaDir(userEmail);
   const fullPath = path.join(baseDir, file.localPath);
   const exists = fs.existsSync(fullPath);
@@ -29,14 +34,26 @@ export const downloadSingleFile = async (prisma, fileId, userEmail, moodleToken)
   }
 
   const baseDir = getUserMediaDir(userEmail);
-  // Un nom de fichier sain pour le système d'exploitation
   const safeName = file.filename.replace(/[^a-zA-Z0-9.-]/g, "_");
-  const relativePath = `file_${file.id}_${safeName}`;
+  
+  // ─── L'INTELLIGENCE DU ROUTAGE EST ICI ───────────────────────
+  let relativePath = "";
+  
+  if (file.submissionId) {
+    // S'assurer que le dossier submissions existe (au cas où c'est un nouvel appareil)
+    getUserSubmissionsDir(userEmail);
+    // On force le chemin relatif dans le sous-dossier
+    relativePath = path.join("submissions", `sub_${file.submissionId}_${file.id}_${safeName}`).replace(/\\/g, "/");
+  } else {
+    // Fichier classique du prof (cours)
+    relativePath = `file_${file.id}_${safeName}`;
+  }
+  // ─────────────────────────────────────────────────────────────
+
   const fullPath = path.join(baseDir, relativePath);
 
   // GESTION DU DOUBLON : Si le fichier existe physiquement, on renvoie un statut spécifique
   if (fs.existsSync(fullPath)) {
-    // S'assurer que la BD est synchro avec la réalité
     if (file.localPath !== relativePath) {
       await prisma.localFile.update({ where: { id: fileId }, data: { localPath: relativePath } });
     }
@@ -52,15 +69,10 @@ export const downloadSingleFile = async (prisma, fileId, userEmail, moodleToken)
     throw err;
   }
 
-  // URL protégée par token pour traverser pluginfile.php
-  // const authenticatedUrl = `${file.moodleUrl}?token=${moodleToken}`;
-  
-  // URL protégée par token pour traverser pluginfile.php
+  // Utilisation de votre excellente correction avec l'objet URL
   const urlObj = new URL(file.moodleUrl);
-
   urlObj.searchParams.delete('forcedownload');
   urlObj.searchParams.append('token', moodleToken);
-
   const authenticatedUrl = urlObj.toString();
 
   try {
@@ -82,8 +94,7 @@ export const downloadSingleFile = async (prisma, fileId, userEmail, moodleToken)
       wasAlreadyDownloaded: false 
     };
   } catch (error) {
-    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath); // Nettoyage fichier corrompu
-    
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath); 
     const netErr = new Error(`Échec du téléchargement : ${error.message}`);
     netErr.statusCode = 502;
     throw netErr;

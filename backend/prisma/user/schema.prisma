@@ -88,7 +88,7 @@ model SyncLog {
 model LocalFile {
   id          Int     @id @default(autoincrement())
   filename    String
-  moodleUrl   String  @unique // URL absolue vers pluginfile.php sur Moodle
+  moodleUrl   String?  @unique // URL absolue vers pluginfile.php sur Moodle, mais OPTIONNEL (?) pour permettre les uploads locaux
   mimeType    String?
   fileSize    Int?    
   localPath   String? // NULL = Fichier non encore téléchargé (icône cloud à afficher)
@@ -278,12 +278,23 @@ model Assignment {
   id           Int     @id @default(autoincrement())
   courseId     Int
   moduleId     Int?
+  
   name         String
-  intro        String?
-  dueDate      Int?
-  cutoffDate   Int?
-  allowedTypes String? // types de fichiers acceptés (ex: ".pdf,.zip")
-  maxFileSize  Int?
+  intro        String? 
+  activity     String? // Instructions affichées au démarrage
+  
+  // Contraintes temporelles
+  allowSubmissionsFromDate Int? 
+  dueDate                  Int? 
+  cutoffDate               Int? 
+  
+  // Configurations du rendu (Extraites des "configs" de Moodle)
+  requiresText Boolean @default(false) 
+  wordLimit    Int?    // Limite de mots si le texte est activé
+  requiresFile Boolean @default(false) 
+  maxFiles     Int?    
+  maxFileSize  Int?    
+  maxAttempts  Int?    
   maxGrade     Float?
 
   server_id           Int?       @unique
@@ -302,20 +313,22 @@ model Assignment {
 model AssignmentSubmission {
   id             Int             @id @default(autoincrement())
   assignmentId   Int
-  submissionText String?
-  state          SubmissionState @default(DRAFT)
+  attemptNumber  Int             @default(0) 
+  submissionText String?         
+  state          SubmissionState @default(DRAFT) 
+  
   grade          Float?
   gradedAt       Int?
-  feedback       String?
+  feedback       String?         
 
-  server_id           Int?       @unique
-  sync_status         SyncStatus @default(PENDING_PUSH) // Initialisé à PENDING_PUSH lors d'une modif locale
+  server_id           Int?       @unique // ID de la soumission sur Moodle
+  sync_status         SyncStatus @default(PENDING_PUSH) 
   server_timemodified Int?
   local_updated_at    DateTime   @updatedAt
   last_synced_at      Int?
 
   assignment     Assignment  @relation(fields: [assignmentId], references: [id])
-  submittedFiles LocalFile[] // Fichiers déposés par l'étudiant pour ce rendu
+  submittedFiles LocalFile[] 
 }
 
 // ─────────────────────────────────────────────────────────────
