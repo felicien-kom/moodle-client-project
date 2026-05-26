@@ -1,4 +1,5 @@
 // components/Chronologie.tsx
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem,
@@ -6,32 +7,83 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Globe, BookOpen, FileText } from "lucide-react";
+import { Globe, BookOpen, FileText, Calendar } from "lucide-react";
 
-const activities = [
-  {
-    id: 1, icon: Globe, color: "text-red-500", bg: "bg-red-100",
-    title: "bonjour toud", type: "Site", typeColor: "bg-blue-100 text-blue-700",
-    date: "Le 07/01/2026 à 12:56",
-  },
-  {
-    id: 2, icon: BookOpen, color: "text-green-600", bg: "bg-green-100",
-    title: "en gfant qu'in...", type: "Catégorie", typeColor: "bg-purple-100 text-purple-700",
-    date: "Le 09/01/2026 à 17:35", sub: "Category 1",
-  },
-  {
-    id: 3, icon: FileText, color: "text-blue-600", bg: "bg-blue-100",
-    title: "glog", type: "Cours", typeColor: "bg-green-100 text-green-700",
-    date: "Le 13/01/2026 à 12:00", sub: "IHM",
-  },
-  {
-    id: 4, icon: FileText, color: "text-blue-600", bg: "bg-blue-100",
-    title: "TD 4 envoyer", type: "Cours", typeColor: "bg-green-100 text-green-700",
-    date: "Le 14/01/2026 à 16:12",
-  },
-];
+// Icônes par type d'événement
+const TYPE_ICONS = {
+  "cours": { icon: BookOpen, color: "text-green-600", bg: "bg-green-100" },
+  "site": { icon: Globe, color: "text-red-500", bg: "bg-red-100" },
+  "categorie": { icon: FileText, color: "text-blue-600", bg: "bg-blue-100" },
+  "utilisateur": { icon: Calendar, color: "text-purple-600", bg: "bg-purple-100" },
+  "default": { icon: Calendar, color: "text-gray-600", bg: "bg-gray-100" }
+};
 
-export function Chronologie() {
+const TYPE_COLORS = {
+  "cours": "bg-green-100 text-green-700",
+  "site": "bg-blue-100 text-blue-700",
+  "categorie": "bg-purple-100 text-purple-700",
+  "utilisateur": "bg-gray-100 text-gray-700",
+  "default": "bg-gray-100 text-gray-700"
+};
+
+export function Chronologie({ events = [] }) {
+  const [filterType, setFilterType] = useState("tous");
+  const [filterDate, setFilterDate] = useState("toutes");
+
+  // ─── Filtrer les événements ──────────────────────────────────────────────
+  const filteredEvents = useMemo(() => {
+    let result = [...events];
+
+    // Filtrer par type
+    if (filterType !== "tous") {
+      result = result.filter(event => {
+        const eventType = event.eventType || event.type || "default";
+        return eventType.toLowerCase() === filterType.toLowerCase();
+      });
+    }
+
+    // Filtrer par date
+    if (filterDate === "semaine") {
+      const today = new Date();
+      const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      result = result.filter(event => {
+        const eventDate = new Date(event.timeStart * 1000 || event.date);
+        return eventDate >= today && eventDate <= weekFromNow;
+      });
+    } else if (filterDate === "mois") {
+      const today = new Date();
+      const monthFromNow = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+      result = result.filter(event => {
+        const eventDate = new Date(event.timeStart * 1000 || event.date);
+        return eventDate >= today && eventDate <= monthFromNow;
+      });
+    } else {
+      // Toutes les activités à venir
+      const today = new Date();
+      result = result.filter(event => {
+        const eventDate = new Date(event.timeStart * 1000 || event.date);
+        return eventDate >= today;
+      });
+    }
+
+    // Trier par date
+    return result.sort((a, b) => {
+      const dateA = new Date(a.timeStart * 1000 || a.date);
+      const dateB = new Date(b.timeStart * 1000 || b.date);
+      return dateA - dateB;
+    });
+  }, [events, filterType, filterDate]);
+
+  // ─── Déterminer l'icône et les couleurs ──────────────────────────────────
+  function getEventInfo(event) {
+    const eventType = event.eventType || event.type || "default";
+    const typeKey = eventType.toLowerCase();
+    const typeConfig = TYPE_ICONS[typeKey] || TYPE_ICONS.default;
+    const typeColor = TYPE_COLORS[typeKey] || TYPE_COLORS.default;
+
+    return { typeConfig, typeColor, eventType };
+  }
+
   return (
     <Card className="bg-white border border-gray-200 shadow-sm">
       <CardHeader className="pb-3">
@@ -44,7 +96,7 @@ export function Chronologie() {
         {/* Filtres */}
         <div className="space-y-2">
           <label className="text-xs font-medium text-gray-600">Échéance</label>
-          <Select defaultValue="toutes">
+          <Select value={filterDate} onValueChange={setFilterDate}>
             <SelectTrigger className="w-full bg-gray-50 border-gray-200">
               <SelectValue />
             </SelectTrigger>
@@ -58,7 +110,7 @@ export function Chronologie() {
 
         <div className="space-y-2">
           <label className="text-xs font-medium text-gray-600">Type d'événement</label>
-          <Select defaultValue="tous">
+          <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger className="w-full bg-gray-50 border-gray-200">
               <SelectValue />
             </SelectTrigger>
@@ -66,6 +118,8 @@ export function Chronologie() {
               <SelectItem value="tous">Tous les types</SelectItem>
               <SelectItem value="cours">Cours</SelectItem>
               <SelectItem value="site">Site</SelectItem>
+              <SelectItem value="categorie">Catégorie</SelectItem>
+              <SelectItem value="utilisateur">Utilisateur</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -73,32 +127,53 @@ export function Chronologie() {
         {/* Liste des activités */}
         <ScrollArea className="h-72">
           <div className="space-y-3 pr-2">
-            {activities.map((act) => (
-              <div
-                key={act.id}
-                className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 
-                           cursor-pointer transition-colors border border-transparent 
-                           hover:border-gray-200"
-              >
-                <div className={`p-2 rounded-full ${act.bg} shrink-0`}>
-                  <act.icon className={`h-4 w-4 ${act.color}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-black truncate">
-                      {act.title}
-                    </span>
-                    <Badge className={`text-xs shrink-0 ${act.typeColor} border-0`}>
-                      {act.type}
-                    </Badge>
+            {filteredEvents.length > 0 ? (
+              filteredEvents.map((event) => {
+                const { typeConfig, typeColor, eventType } = getEventInfo(event);
+                const Icon = typeConfig.icon;
+                const eventDate = new Date(event.timeStart * 1000 || event.date);
+                const formattedDate = eventDate.toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+
+                return (
+                  <div
+                    key={event.id}
+                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 
+                               cursor-pointer transition-colors border border-transparent 
+                               hover:border-gray-200"
+                  >
+                    <div className={`p-2 rounded-full ${typeConfig.bg} shrink-0`}>
+                      <Icon className={`h-4 w-4 ${typeConfig.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-black truncate">
+                          {event.name || event.title || "Événement sans titre"}
+                        </span>
+                        <Badge className={`text-xs shrink-0 border-0 ${typeColor}`}>
+                          {eventType}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {formattedDate}
+                      </p>
+                      {event.courseName && (
+                        <p className="text-xs text-gray-400">{event.courseName}</p>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">{act.date}</p>
-                  {act.sub && (
-                    <p className="text-xs text-gray-400">{act.sub}</p>
-                  )}
-                </div>
+                );
+              })
+            ) : (
+              <div className="flex items-center justify-center h-40 text-gray-400">
+                <p className="text-sm">Aucun événement trouvé</p>
               </div>
-            ))}
+            )}
           </div>
         </ScrollArea>
       </CardContent>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import EventModal from "./EventModal";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
@@ -147,7 +147,7 @@ function NavBtn({ onClick, children, title }) {
 
 // ─── Composant principal : Calendrier ─────────────────────────────────────────
 
-export default function Calender() {
+export default function Calender({ events: backendEvents = [] }) {
   const today = new Date();
 
   // État navigation
@@ -156,10 +156,38 @@ export default function Calender() {
 
   // État sélection / événements
   const [selectedDay, setSelectedDay] = useState(null);
-  const [events, setEvents] = useState(INITIAL_EVENTS);
+  const [localEvents, setLocalEvents] = useState(INITIAL_EVENTS);
 
   // Modale
   const [modal, setModal] = useState(null); // null | { defaultDate: string }
+
+  // ─── Convertir les événements du backend en format calendrier ─────────────
+  const mergedEvents = useMemo(() => {
+    const merged = { ...localEvents };
+
+    // Ajouter les événements du backend
+    backendEvents.forEach(event => {
+      if (event.timeStart) {
+        const eventDate = new Date(event.timeStart * 1000);
+        const key = toKey(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+        
+        const colorIndex = (backendEvents.indexOf(event) % EV_COLORS.length);
+        const eventItem = {
+          id: event.id,
+          label: event.name || event.title || "Événement",
+          color: colorIndex,
+          type: event.eventType || event.type || "event"
+        };
+
+        if (!merged[key]) {
+          merged[key] = [];
+        }
+        merged[key].push(eventItem);
+      }
+    });
+
+    return merged;
+  }, [backendEvents, localEvents]);
 
   // ── Navigation ────────────────────────────────────────────────────────────
 
@@ -218,7 +246,7 @@ export default function Calender() {
   // ── Gestion événements ────────────────────────────────────────────────────
 
   const addEvent = ({ date, label, color }) => {
-    setEvents(prev => ({
+    setLocalEvents(prev => ({
       ...prev,
       [date]: [...(prev[date] || []), { id: Date.now(), label, color }],
     }));
@@ -231,7 +259,7 @@ export default function Calender() {
 
   const deleteEvent = (day, evId) => {
     const key = toKey(year, month, day);
-    setEvents(prev => ({
+    setLocalEvents(prev => ({
       ...prev,
       [key]: (prev[key] || []).filter(e => e.id !== evId),
     }));
@@ -240,14 +268,14 @@ export default function Calender() {
   const handleEditEvent = ({ date, label, type }) => {
     // Pour l'instant, on ajoute un nouvel événement avec les données modifiées
     // Dans une version complète, il faudrait identifier l'événement à modifier
-    setEvents(prev => ({
+    setLocalEvents(prev => ({
       ...prev,
       [date]: [...(prev[date] || []), { id: Date.now(), label, type }],
     }));
   };
 
   const selectedKey    = selectedDay ? toKey(year, month, selectedDay) : null;
-  const selectedEvents = selectedKey ? (events[selectedKey] || []) : [];
+  const selectedEvents = selectedKey ? (mergedEvents[selectedKey] || []) : [];
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -323,12 +351,12 @@ export default function Calender() {
             <DayCell
               key={idx}
               day={day}
-              events={key ? (events[key] || []) : []}
+              events={key ? (mergedEvents[key] || []) : []}
               isToday={day ? isToday(day) : false}
               isSelected={day !== null && day === selectedDay}
               onClick={() => {
                 if (!day) return;
-                const dayEvents = events[key] || [];
+                const dayEvents = mergedEvents[key] || [];
                 setSelectedDay(prev => (prev === day ? null : day));
                 
                 // Si le jour a des événements, ouvrir la modal en mode edit avec le premier événement

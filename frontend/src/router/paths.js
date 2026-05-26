@@ -1,4 +1,4 @@
-import Assignment from "@/pages/app/Assignment";
+import Assignment from "@/pages/app/evaluations/Assignment";
 
 export const PATHS = {
 

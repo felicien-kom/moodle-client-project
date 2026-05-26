@@ -12,11 +12,11 @@ const Login     = lazy(() => import("@/pages/auth/Login"));
 const Register  = lazy(() => import("@/pages/auth/Register"));
 const Forgot    = lazy(() => import("@/pages/auth/ForgotPassword"));
 
-const Assignment = lazy(() => import("@/pages/app/Assignment"));
+const Assignment = lazy(() => import("@/pages/app/evaluations/Assignment"));
 const Dashboard = lazy(() => import("@/pages/app/Dashboard"));
 const Profile   = lazy(() => import("@/pages/app/Profile"));
 const Settings  = lazy(() => import("@/pages/app/Settings"));
-const Course = lazy(() => import("@/pages/app/Course"));
+const Course = lazy(() => import("@/pages/app/courses/Course"));
 // const UserList  = lazy(() => import("@/pages/app/users/UserList"));
 // const UserDetail= lazy(() => import("@/pages/app/users/UserDetail"));
 
