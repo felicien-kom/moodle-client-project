@@ -7,7 +7,7 @@ import { diagnoseLocalOnly, SyncCase } from "../diagnose.js";
 import { resolveConflict } from "../resolve.js";
 import { getUserMediaDir } from "../../utils/storage.js";
 
-export const pushAssignments = async ({ prisma, token, emitter }) => {
+export const pushAssignmentSubmissions = async ({ prisma, token, emitter }) => {
   emitter.emit("progress", { step: "PUSH", entity: "submissions", status: "start" });
 
   // On a besoin de l'utilisateur pour localiser son dossier media

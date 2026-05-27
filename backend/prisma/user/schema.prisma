@@ -344,6 +344,8 @@ model CalendarEvent {
   timeDuration Int     @default(0)
   courseId     Int?    // Nullable : un événement peut être global (ex: "site" ou "user")
 
+  isDeleted    Boolean @default(false) // NOUVEAU: Flag pour le Soft Delete offline
+
   server_id           Int?       @unique
   sync_status         SyncStatus @default(SYNCED)
   server_timemodified Int?
