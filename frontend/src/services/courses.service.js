@@ -8,6 +8,89 @@ import apiClient from "@/client/apiClient";
  */
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// CRÉATION DE COURS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Crée un nouveau cours localement
+ * @param {Object} courseData - Données du cours
+ * @param {string} courseData.title - Nom complet du cours
+ * @param {string} courseData.shortName - Nom abrégé du cours
+ * @param {Array<string>} courseData.categories - Catégories du cours
+ * @param {string} courseData.visibilite - Visibilité (Afficher/Masquer)
+ * @param {Object} courseData.dateDebut - Date de début { jour, mois, annee, hh, mm }
+ * @param {Object} courseData.dateFin - Date de fin { actif, jour, mois, annee, hh, mm }
+ * @param {string} courseData.numeroId - N° d'identification
+ * @param {string} courseData.resume - Résumé du cours
+ * @param {File} courseData.image - Image du cours (optionnel)
+ * @returns {Promise<Object>} { course, message }
+ */
+export async function createLocalCourse(courseData) {
+  try {
+    // Transformer les données du formulaire en format API
+    const formData = new FormData();
+    
+    // Ajouter les champs texte
+    formData.append('title', courseData.nomComplet || courseData.title);
+    formData.append('shortName', courseData.nomAbrege || courseData.shortName);
+    formData.append('summary', courseData.resume || courseData.summary);
+    formData.append('visible', courseData.visibilite === 'Afficher');
+    
+    // Transformer la date de début
+    if (courseData.dateDebut) {
+      const startDate = new Date(
+        courseData.dateDebut.annee,
+        getMonthIndex(courseData.dateDebut.mois),
+        parseInt(courseData.dateDebut.jour),
+        parseInt(courseData.dateDebut.hh),
+        parseInt(courseData.dateDebut.mm)
+      );
+      formData.append('startDate', Math.floor(startDate.getTime() / 1000));
+    }
+    
+    // Transformer la date de fin si activée
+    if (courseData.dateFin && courseData.dateFin.actif) {
+      const endDate = new Date(
+        courseData.dateFin.annee,
+        getMonthIndex(courseData.dateFin.mois),
+        parseInt(courseData.dateFin.jour),
+        parseInt(courseData.dateFin.hh),
+        parseInt(courseData.dateFin.mm)
+      );
+      formData.append('endDate', Math.floor(endDate.getTime() / 1000));
+    }
+    
+    // Ajouter l'image si présente
+    if (courseData.image) {
+      formData.append('image', courseData.image);
+    }
+    
+    // Appeler l'endpoint de création
+    const response = await apiClient.post('/courses', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return {
+      course: response.course,
+      message: response.message || 'Cours créé avec succès',
+    };
+  } catch (error) {
+    console.error("Erreur lors de la création du cours:", error);
+    throw error;
+  }
+}
+
+/**
+ * Convertit le nom du mois en français en index (0-11)
+ */
+function getMonthIndex(monthName) {
+  const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+  return months.indexOf(monthName.toLowerCase());
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ONLINE (Connexion Moodle requise)
 // ═══════════════════════════════════════════════════════════════════════════════
 

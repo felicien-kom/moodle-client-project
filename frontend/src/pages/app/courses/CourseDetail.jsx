@@ -4,6 +4,14 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft,
   Info,
   Layers,
@@ -14,9 +22,10 @@ import {
   Folder,
   ClipboardList,
   ExternalLink,
+  UserPlus,
 } from "lucide-react";
 import apiClient from "@/client/apiClient";
-import { formatSectionsForUI } from "@/services/courses.service.js";
+import { formatSectionsForUI, enrollCourseOnline } from "@/services/courses.service.js";
 import { downloadFile, serveFile } from "@/services/files.service.js";
 import { getFileIcon } from "@/utils/file.utils.js";
 import FolderView from "./FolderView.jsx";
@@ -252,6 +261,9 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
     return stored ? new Set(JSON.parse(stored)) : new Set();
   });
   const [selectedFolder, setSelectedFolder] = useState(null);
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   // Refs pour le scroll vers chaque section
   const detailsRef = useRef(null);
@@ -292,6 +304,36 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
 
   const handleFolderBack = () => {
     setSelectedFolder(null);
+  };
+
+  // ─── Gestion de l'inscription au cours ─────────────────────────────────────
+  const handleEnrollClick = () => {
+    setIsEnrollModalOpen(true);
+  };
+
+  const handleEnrollConfirm = async () => {
+    try {
+      setIsEnrolling(true);
+      const serverId = coursData.serverId || coursData.id;
+      
+      if (!serverId) {
+        alert("ID du serveur non disponible");
+        return;
+      }
+      
+      await enrollCourseOnline(serverId);
+      
+      setIsEnrollModalOpen(false);
+      setIsSuccessModalOpen(true);
+      
+      // Recharger les données pour mettre à jour l'état
+      loadCourseData();
+    } catch (error) {
+      console.error("Erreur lors de l'inscription:", error);
+      alert("Erreur lors de l'inscription: " + (error.message || error));
+    } finally {
+      setIsEnrolling(false);
+    }
   };
 
   // ─── Charger les données du backend au montage ─────────────────────────────
@@ -475,7 +517,16 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
               Retour à l'espace cours
             </Button>
             <h1 className="text-xl font-bold text-gray-900">{coursData.title || cours.title}</h1>
-            <div className="w-20"></div>
+            {/* Bouton d'inscription (uniquement pour les cours du catalogue/explorer) */}
+            {coursData.serverId && (
+              <Button
+                onClick={handleEnrollClick}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                S'inscrire
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -609,6 +660,61 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
         <TabsContent value="participants">Change your password here.</TabsContent>
         <TabsContent value="notes">Change your password here.</TabsContent>
       </Tabs>
+
+      {/* Modal de confirmation d'inscription */}
+      <Dialog open={isEnrollModalOpen} onOpenChange={setIsEnrollModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmer inscription</DialogTitle>
+            <DialogDescription>
+              Voulez-vous vraiment vous inscrire au cours "{coursData.title || cours.title}" ?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEnrollModalOpen(false)}
+              disabled={isEnrolling}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleEnrollConfirm}
+              disabled={isEnrolling}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isEnrolling ? "Inscription..." : "Confirmer inscription"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de succès d'inscription */}
+      <Dialog open={isSuccessModalOpen} onOpenChange={setIsSuccessModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <DialogTitle className="text-center">Inscription réussie !</DialogTitle>
+            <DialogDescription className="text-center">
+              Vous êtes maintenant inscrit au cours "{coursData.title || cours.title}".
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-center">
+            <Button
+              onClick={() => setIsSuccessModalOpen(false)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

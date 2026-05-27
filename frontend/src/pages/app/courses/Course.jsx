@@ -11,6 +11,7 @@ import {
 import CourseDetail from "@/pages/app/courses/CourseDetail";
 import apiClient from "@/client/apiClient";
 import CreateCourseModal from "@/components/courses/ModalFormCreationCours";
+import { getCatalogueOnline } from "@/services/courses.service";
 
 // ─── Image fond tableau math ──────────────────────────────────────────────────
 function MathBackground({ imagePath }) {
@@ -89,8 +90,9 @@ function CourseSection({ section }) {
 }
 
 // ─── Carte cours (dans la liste) ──────────────────────────────────────────────
-function CourseCard({ cours, onClick }) {
+function CourseCard({ cours, onClick, isExplorer = false }) {
   const imageUrl = cours.imageUrl || null;
+  const defaultImage = isExplorer ? "/src/assets/defaultCourseImage.jpg" : null;
   
   return (
     <Card
@@ -100,6 +102,8 @@ function CourseCard({ cours, onClick }) {
     >
       {imageUrl ? (
         <MathBackground imagePath={imageUrl} />
+      ) : isExplorer ? (
+        <MathBackground imagePath={defaultImage} />
       ) : (
         <div className="w-full h-32 bg-blue-100 flex items-center justify-center text-3xl">🖥️</div>
       )}
@@ -116,6 +120,7 @@ function EspaceCours({ onOuvrirCours }) {
   const [query, setQuery] = useState("");
   const [coursInscrits, setCoursInscrits] = useState([]);
   const [coursExplorer, setCoursExplorer] = useState([]);
+  const [coursCreés, setCoursCreés] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -130,10 +135,13 @@ function EspaceCours({ onOuvrirCours }) {
       setLoading(true);
       setError(null);
 
+      let enrolledCourses = [];
+
       // 🔵 Appel 1: Récupérer les cours inscrits (BD locale) - critique
       try {
         const responseInscrits = await apiClient.get("/courses");
-        setCoursInscrits(responseInscrits.courses || []);
+        enrolledCourses = responseInscrits.courses || [];
+        setCoursInscrits(enrolledCourses);
       } catch (localError) {
         console.error("Erreur lors du chargement des cours locaux:", localError);
         setCoursInscrits([]);
@@ -143,8 +151,13 @@ function EspaceCours({ onOuvrirCours }) {
 
       // 🟢 Appel 2: Récupérer le catalogue complet (Moodle) - optionnel (mode en ligne)
       try {
-        const responseCatalogue = await apiClient.get("/courses/catalogue");
-        setCoursExplorer(responseCatalogue.courses || []);
+        const responseCatalogue = await getCatalogueOnline();
+        const allCatalogueCourses = responseCatalogue.courses || [];
+        
+        // Filtrer les cours déjà inscrits par nom pour éviter les doublons
+        const explorerCourses = filterCatalogueByName(allCatalogueCourses, enrolledCourses);
+        
+        setCoursExplorer(explorerCourses);
       } catch (onlineError) {
         console.warn("Catalogue non disponible (mode hors-ligne):", onlineError);
         setCoursExplorer([]);
@@ -169,6 +182,21 @@ function EspaceCours({ onOuvrirCours }) {
       (c.categoryName && c.categoryName.toLowerCase().includes(query.toLowerCase()))
     );
   }
+
+  // Fonction pour filtrer le catalogue par nom de cours (exclure les cours inscrits)
+  function filterCatalogueByName(catalogueCourses, enrolledCourses) {
+    const enrolledNames = new Set(
+      enrolledCourses.map(c => c.title?.toLowerCase().trim())
+    );
+    return catalogueCourses.filter(c => 
+      !enrolledNames.has(c.title?.toLowerCase().trim())
+    );
+  }
+
+  // Fonction appelée quand un cours est créé via la modal
+  const handleCourseCreated = (newCourse) => {
+    setCoursCreés((prev) => [...prev, newCourse]);
+  };
 
   // ─── Afficher spinner pendant chargement ────────────────────────────
   if (loading) {
@@ -199,7 +227,7 @@ function EspaceCours({ onOuvrirCours }) {
     );
   }
 
-  const crees    = [];
+  const crees    = filter(coursCreés);
   const inscrits = filter(coursInscrits);
   const explorer = filter(coursExplorer);
 
@@ -246,8 +274,8 @@ function EspaceCours({ onOuvrirCours }) {
             <h2 className="text-base font-bold text-gray-900 mb-3">Vos cours créés</h2>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {crees.map(c => (
-                <CourseCard key={c.id} cours={c} onClick={() => onOuvrirCours(c)} />
+              {crees.map((c, index) => (
+                <CourseCard key={`created-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} />
               ))}
             </div>
           </div>
@@ -259,8 +287,8 @@ function EspaceCours({ onOuvrirCours }) {
             <h2 className="text-base font-bold text-gray-900 mb-3">Cours inscrits</h2>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {inscrits.map(c => (
-                <CourseCard key={c.id} cours={c} onClick={() => onOuvrirCours(c)} />
+              {inscrits.map((c, index) => (
+                <CourseCard key={`enrolled-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} />
               ))}
             </div>
           </div>
@@ -272,8 +300,8 @@ function EspaceCours({ onOuvrirCours }) {
             <h2 className="text-base font-bold text-gray-900 mb-3">Explorer d'autres cours</h2>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {explorer.map(c => (
-                <CourseCard key={c.id} cours={c} onClick={() => onOuvrirCours(c)} />
+              {explorer.map((c, index) => (
+                <CourseCard key={`explorer-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} isExplorer={true} />
               ))}
             </div>
           </div>
@@ -284,6 +312,7 @@ function EspaceCours({ onOuvrirCours }) {
       <CreateCourseModal 
         open={isCreateModalOpen} 
         onOpenChange={setIsCreateModalOpen} 
+        onCourseCreated={handleCourseCreated}
       />
     </div>
   );

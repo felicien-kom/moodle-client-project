@@ -12,17 +12,18 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { X, Upload } from "lucide-react";
+import { createLocalCourse } from "@/services/courses.service";
 
 const CATEGORIES = ["Catégorie 1", "Catégorie 2", "Catégorie 3", "Mathématiques", "Informatique"];
 const VISIBILITE = ["Afficher", "Masquer"];
 
 // ─── Configuration des dimensions de la modal ────────────────────────────────
-// Pour ajuster la largeur : modifier la valeur max-w-4xl dans DialogContent (ligne 46)
+// Pour ajuster la largeur : modifier la valeur max-w-10xl dans DialogContent (ligne 46)
 // Options de largeur : max-w-sm, max-w-md, max-w-lg, max-w-xl, max-w-2xl, max-w-3xl, max-w-4xl, max-w-5xl, max-w-6xl, max-w-7xl
 // Pour ajuster la hauteur : modifier max-h-[90vh] dans DialogContent (ligne 46)
 // Pour ajuster le padding horizontal : modifier px-6 dans DialogHeader et div (lignes 47, 51)
 
-export default function CreateCourseModal({ open, onOpenChange }) {
+export default function CreateCourseModal({ open, onOpenChange, onCourseCreated }) {
   const [form, setForm] = useState({
     nomComplet: "",
     nomAbrege: "",
@@ -34,6 +35,7 @@ export default function CreateCourseModal({ open, onOpenChange }) {
     resume: "",
     image: null,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const removeCategorie = (cat) =>
     setForm((f) => ({ ...f, categories: f.categories.filter((c) => c !== cat) }));
@@ -46,6 +48,83 @@ export default function CreateCourseModal({ open, onOpenChange }) {
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
   const MOIS = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"];
+
+  const handleSubmit = async () => {
+    if (!form.nomComplet.trim()) {
+      alert("Le nom complet du cours est requis");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const result = await createLocalCourse(form);
+      
+      // Appeler la callback pour ajouter le cours à la liste
+      if (onCourseCreated && result.course) {
+        onCourseCreated(result.course);
+      }
+      
+      // Fermer la modal et réinitialiser le formulaire
+      onOpenChange(false);
+      setForm({
+        nomComplet: "",
+        nomAbrege: "",
+        categories: ["Catégorie 1"],
+        visibilite: "Afficher",
+        dateDebut: { jour: "28", mois: "mai", annee: "2026", hh: "00", mm: "00" },
+        dateFin: { actif: true, jour: "28", mois: "mai", annee: "2027", hh: "00", mm: "00" },
+        numeroId: "",
+        resume: "",
+        image: null,
+      });
+      
+      alert("Cours créé avec succès !");
+    } catch (error) {
+      console.error("Erreur lors de la création du cours:", error);
+      // Si l'endpoint n'existe pas encore, simuler la création localement
+      if (error.message && error.message.includes("404") || error.message && error.message.includes("405")) {
+        const simulatedCourse = {
+          id: Date.now(),
+          title: form.nomComplet,
+          shortName: form.nomAbrege || form.nomComplet.substring(0, 10),
+          categoryName: form.categories[0] || "Non catégorisé",
+          summary: form.resume || "",
+          imageUrl: null,
+          startDate: form.dateDebut ? new Date(form.dateDebut.annee, getMonthIndex(form.dateDebut.mois), parseInt(form.dateDebut.jour)).getTime() / 1000 : null,
+          endDate: form.dateFin && form.dateFin.actif ? new Date(form.dateFin.annee, getMonthIndex(form.dateFin.mois), parseInt(form.dateFin.jour)).getTime() / 1000 : null,
+          visible: form.visibilite === "Afficher",
+        };
+        
+        if (onCourseCreated) {
+          onCourseCreated(simulatedCourse);
+        }
+        
+        onOpenChange(false);
+        setForm({
+          nomComplet: "",
+          nomAbrege: "",
+          categories: ["Catégorie 1"],
+          visibilite: "Afficher",
+          dateDebut: { jour: "28", mois: "mai", annee: "2026", hh: "00", mm: "00" },
+          dateFin: { actif: true, jour: "28", mois: "mai", annee: "2027", hh: "00", mm: "00" },
+          numeroId: "",
+          resume: "",
+          image: null,
+        });
+        
+        alert("Cours créé localement (endpoint non disponible)");
+      } else {
+        alert("Erreur lors de la création du cours: " + (error.message || error));
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  function getMonthIndex(monthName) {
+    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+    return months.indexOf(monthName.toLowerCase());
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,47 +168,10 @@ export default function CreateCourseModal({ open, onOpenChange }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-start">
-                <Label className="sm:pt-2 text-sm font-medium">Catégorie de cours</Label>
-                <div className="sm:col-span-2 space-y-2">
-                  <div className="flex flex-wrap gap-1 min-h-[32px] p-1.5 border rounded-md bg-white">
-                    {form.categories.map((cat) => (
-                      <Badge key={cat} variant="secondary" className="flex items-center gap-1 text-xs">
-                        {cat}
-                        <button onClick={() => removeCategorie(cat)} className="hover:text-red-500">
-                          <X size={11} />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <Select onValueChange={addCategorie}>
-                    <SelectTrigger className="w-full text-sm">
-                      <SelectValue placeholder="Rechercher une catégorie..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
-                <Label className="text-sm font-medium">Visibilité du cours</Label>
-                <div className="sm:col-span-2">
-                  <Select value={form.visibilite} onValueChange={(v) => set("visibilite", v)}>
-                    <SelectTrigger className="w-40 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {VISIBILITE.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              
+              
 
               {/* Date début */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
@@ -177,14 +219,6 @@ export default function CreateCourseModal({ open, onOpenChange }) {
                   ))}
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
-                <Label className="text-sm font-medium">N° d'identification du cours</Label>
-                <div className="sm:col-span-2">
-                  <Input value={form.numeroId} onChange={(e) => set("numeroId", e.target.value)}
-                    className="w-36" />
-                </div>
-              </div>
             </div>
           </section>
 
@@ -228,11 +262,11 @@ export default function CreateCourseModal({ open, onOpenChange }) {
         </div>
 
         <DialogFooter className="px-6 py-4 border-t flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto" disabled={isSubmitting}>
             Annuler
           </Button>
-          <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
-            Créer le cours
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
+            {isSubmitting ? "Création..." : "Créer le cours"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,4 +1,5 @@
 // components/Navbar.tsx
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PATHS } from "@/router/paths";
 import {
@@ -18,12 +19,14 @@ import { RefreshCw, Mail, HelpCircle, Settings, ChevronDown } from "lucide-react
 import { useAuth } from "@/context/AuthContext";
 import DynamicAvatar from "./DynamicAvatar";
 import { getLocalUser } from "@/utils/api.utils";
+import { startSync } from "@/services/sync.service";
 
 export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
   const user = getLocalUser();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Fonctions de navigation
   const goToHome = () => navigate(PATHS.public.home);
@@ -33,6 +36,21 @@ export function Navbar() {
   const goToProfile = () => navigate(PATHS.app.profile);
   const goToLogin = () => navigate(PATHS.auth.login);
   const goToCourse = () => navigate(PATHS.app.course);
+
+  // Fonction de synchronisation
+  const handleSync = async () => {
+    try {
+      setIsSyncing(true);
+      const result = await startSync();
+      console.log("Synchronisation lancée:", result);
+      alert("Synchronisation lancée avec succès");
+    } catch (error) {
+      console.error("Erreur lors de la synchronisation:", error);
+      alert("Erreur lors de la synchronisation: " + (error.message || error));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Détection de la route actuelle
   const isActiveRoute = (path) => {
@@ -105,8 +123,15 @@ export function Navbar() {
 
       {/* Icônes droite */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="text-gray-600">
-          <RefreshCw className="h-4 w-4" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-gray-600"
+          onClick={handleSync}
+          disabled={isSyncing}
+          title="Synchroniser"
+        >
+          <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
         </Button>
         <Button variant="ghost" size="icon" className="text-gray-600">
           <HelpCircle className="h-4 w-4" />
