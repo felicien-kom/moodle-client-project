@@ -18,13 +18,10 @@ export const pullAssignmentSubmissions = async ({ prisma, token, cursor, servert
 
       const sub = lastAttempt.submission;
 
-      // ─── CORRECTION ICI ──────────────────────────────────────────
       // Si le statut est "new", l'étudiant n'a jamais touché au devoir sur le serveur.
-      // On ne crée pas de soumission locale inutilement.
       if (sub.status === "new") {
         continue; 
       }
-      // ─────────────────────────────────────────────────────────────
 
       const serverTimemodified = sub.numcreated ?? sub.timemodified ?? 0;
       
@@ -35,14 +32,14 @@ export const pullAssignmentSubmissions = async ({ prisma, token, cursor, servert
       const filePlugin = sub.plugins?.find(p => p.type === "file");
       const submittedFiles = filePlugin?.fileareas?.[0]?.files || [];
 
-      // Moodle state: "new", "draft", "submitted"
+      // Moodle state: "draft" ou "submitted"
       const state = sub.status === "submitted" ? "SUBMITTED" : "DRAFT";
 
       const local = await prisma.assignmentSubmission.findFirst({ where: { assignmentId: assign.id } });
       let action = local ? diagnose(local, serverTimemodified, cursor) : diagnoseNew();
 
       if (action === SyncCase.CONFLICT) {
-        action = resolveConflict("assignment_submission"); // CLIENT gagne (l'étudiant ne perd pas son travail hors-ligne)
+        action = resolveConflict("assignment_submission"); // CLIENT gagne (on ne perd pas le brouillon local)
         conflicts++;
       }
 
@@ -71,18 +68,36 @@ export const pullAssignmentSubmissions = async ({ prisma, token, cursor, servert
         });
         pulled++;
 
-        // Fichiers déjà soumis sur Moodle
+        // ─── CORRECTION : Ajout des métadonnées complètes pour les fichiers ───
         for (const f of submittedFiles) {
           if (!f.fileurl) continue;
+          
           await prisma.localFile.upsert({
             where: { moodleUrl: f.fileurl },
-            update: { submissionId: savedSub.id, filename: f.filename, server_timemodified: serverTimemodified },
-            create: { submissionId: savedSub.id, filename: f.filename, moodleUrl: f.fileurl, sync_status: "SYNCED" }
+            update: { 
+              submissionId:        savedSub.id, 
+              filename:            f.filename, 
+              mimeType:            f.mimetype ?? null,
+              fileSize:            f.filesize ?? null,
+              server_timemodified: serverTimemodified,
+              last_synced_at:      servertime 
+            },
+            create: { 
+              submissionId:        savedSub.id, 
+              filename:            f.filename, 
+              moodleUrl:           f.fileurl, 
+              mimeType:            f.mimetype ?? null,
+              fileSize:            f.filesize ?? null,
+              sync_status:         "SYNCED",
+              server_timemodified: serverTimemodified,
+              last_synced_at:      servertime 
+            }
           });
         }
+        // ────────────────────────────────────────────────────────────────────────
       }
     } catch (err) {
-      // Ignore si le devoir n'est pas accessible
+      // Ignore si le devoir n'est pas accessible (ex: caché par le professeur)
     }
   }
 
