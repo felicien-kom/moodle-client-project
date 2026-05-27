@@ -1,8 +1,8 @@
-// src/sync/push/pushAssignments.js
+// src/sync/push/pushAssignmentSubmissions.js
 import fs from "fs";
 import path from "path";
 import { moodleFetch } from "../../config/moodleApi.js";
-import { env } from "../../config/env.js"; // Pour avoir l'URL de base Moodle
+import { env } from "../../config/env.js"; 
 import { diagnoseLocalOnly, SyncCase } from "../diagnose.js";
 import { resolveConflict } from "../resolve.js";
 import { getUserMediaDir } from "../../utils/storage.js";
@@ -10,18 +10,24 @@ import { getUserMediaDir } from "../../utils/storage.js";
 export const pushAssignmentSubmissions = async ({ prisma, token, emitter }) => {
   emitter.emit("progress", { step: "PUSH", entity: "submissions", status: "start" });
 
-  // On a besoin de l'utilisateur pour localiser son dossier media
   const user = await prisma.localUser.findFirst();
   if (!user) return { pushed: 0, conflicts: 0 };
 
-  // On récupère toutes les soumissions en attente de PUSH, AVEC leurs fichiers liés
+  // ─── SÉCURITÉ AJOUTÉE ICI ──────────────────────────────────────────────
+  // On s'assure de ne pousser QUE les copies appartenant à l'utilisateur connecté
+  // et UNIQUEMENT s'il s'agit d'un travail (DRAFT/SUBMITTED), pas d'une correction (GRADED).
   const pendingSubmissions = await prisma.assignmentSubmission.findMany({
-    where:   { sync_status: "PENDING_PUSH" },
+    where:   { 
+      sync_status: "PENDING_PUSH",
+      moodleUserId: user.moodleUserId,           // <-- Sécurité 1 : Mes copies
+      state: { in: ["DRAFT", "SUBMITTED"] }      // <-- Sécurité 2 : Pas de notes
+    },
     include: { 
       assignment: { select: { server_id: true, name: true } },
-      submittedFiles: true // Les fichiers locaux fraîchement créés
+      submittedFiles: true 
     },
   });
+  // ────────────────────────────────────────────────────────────────────────
 
   let pushed = 0;
   let conflicts = 0;
@@ -40,7 +46,7 @@ export const pushAssignmentSubmissions = async ({ prisma, token, emitter }) => {
       let shouldPush = true;
 
       if (submission.server_id) {
-        // Le devoir existait déjà sur Moodle. On vérifie s'il a été modifié là-bas.
+        // Comme c'est filtré sur l'utilisateur courant, cet appel Moodle renverra bien SA copie
         const { data: serverData } = await moodleFetch(
           "mod_assign_get_submission_status",
           { assignid: submission.assignment.server_id },
@@ -50,47 +56,43 @@ export const pushAssignmentSubmissions = async ({ prisma, token, emitter }) => {
         const serverSub = serverData.lastattempt?.submission;
         const serverTimemodified = serverSub?.timemodified ?? 0;
 
-        // Si le serveur est plus récent que notre dernier PULL
         if (serverSub && serverTimemodified > (submission.server_timemodified ?? 0)) {
-          const resolution = resolveConflict("assignment_submission"); // CLIENT gagne toujours !
+          const resolution = resolveConflict("assignment_submission"); 
           conflicts++;
           emitter.emit("progress", {
             step: "CONFLICT", entity: "submission",
             localId: submission.id, resolution,
           });
 
-          if (resolution === SyncCase.PULL) shouldPush = false; // Par sécurité, bien que ça n'arrivera pas
+          if (resolution === SyncCase.PULL) shouldPush = false; 
         }
       }
 
       if (!shouldPush) continue;
 
       // ─── ÉTAPE 2 : UPLOAD DES FICHIERS (DRAFT AREA MOODLE) ──────────────
-      let draftItemId = 0; // 0 indique à Moodle de créer une nouvelle zone
+      let draftItemId = 0; 
 
       if (submission.submittedFiles.length > 0) {
-        const baseDir = getUserMediaDir(user.email); // Pointe sur data/media/email/
+        const baseDir = getUserMediaDir(user.email); 
 
         for (const file of submission.submittedFiles) {
-          const fullPath = path.join(baseDir, file.localPath); // Résout avec "submissions/..."
+          const fullPath = path.join(baseDir, file.localPath); 
 
           if (!fs.existsSync(fullPath)) {
             console.warn(`[SYNC WARNING] Fichier local introuvable: ${fullPath}`);
             continue;
           }
 
-          // Construction du FormData compatible Node.js 18+
           const fileBuffer = fs.readFileSync(fullPath);
           const blob = new Blob([fileBuffer], { type: file.mimeType || "application/octet-stream" });
           
           const formData = new FormData();
           formData.append("token", token);
-          formData.append("itemid", draftItemId); // On passe l'itemid (0 au 1er, puis celui de Moodle)
+          formData.append("itemid", draftItemId); 
           formData.append("filearea", "draft");
           formData.append("file", blob, file.filename);
 
-          // L'appel se fait sur upload.php, PAS server.php
-          // Assurez-vous que env.MOODLE_URL ne se termine pas par un slash
           const uploadUrl = `${env.MOODLE_URL}/webservice/upload.php`;
           
           const uploadRes = await fetch(uploadUrl, { method: "POST", body: formData });
@@ -102,7 +104,6 @@ export const pushAssignmentSubmissions = async ({ prisma, token, emitter }) => {
              throw new Error(`Moodle Upload Error: ${uploadData.error}`);
           }
 
-          // Moodle renvoie un tableau contenant le nouvel itemid
           if (Array.isArray(uploadData) && uploadData[0]?.itemid) {
             draftItemId = uploadData[0].itemid;
           }
@@ -113,12 +114,11 @@ export const pushAssignmentSubmissions = async ({ prisma, token, emitter }) => {
       const pluginData = {
         onlinetext_editor: {
           text:   submission.submissionText ?? "",
-          format: 1, // 1 = Format HTML standard
+          format: 1, 
           itemid: 0,
         }
       };
 
-      // Si des fichiers ont été uploadés, on attache l'ID de la zone de brouillon
       if (draftItemId !== 0) {
         pluginData.files_filemanager = draftItemId;
       }
@@ -132,12 +132,11 @@ export const pushAssignmentSubmissions = async ({ prisma, token, emitter }) => {
       if (submission.state === "SUBMITTED") {
         await moodleFetch("mod_assign_submit_for_grading", {
           assignmentid: submission.assignment.server_id,
-          acceptsubmissionstatement: 1, // On accepte la charte anti-plagiat si elle existe
+          acceptsubmissionstatement: 1, 
         }, token);
       }
 
       // ─── ÉTAPE 5 : MISE À JOUR DE LA BD LOCALE APRÈS SUCCÈS ──────────────
-      // On re-télécharge le statut exact depuis Moodle pour avoir les bons timestamps officiels
       const { data: updatedStatus } = await moodleFetch(
         "mod_assign_get_submission_status",
         { assignid: submission.assignment.server_id },
@@ -147,7 +146,6 @@ export const pushAssignmentSubmissions = async ({ prisma, token, emitter }) => {
       const moodleSub = updatedStatus.lastattempt?.submission;
       const newServerTime = moodleSub?.timemodified ?? Math.floor(Date.now() / 1000);
 
-      // 5A. On met à jour la soumission
       await prisma.assignmentSubmission.update({
         where: { id: submission.id },
         data: {
@@ -158,7 +156,6 @@ export const pushAssignmentSubmissions = async ({ prisma, token, emitter }) => {
         },
       });
 
-      // 5B. On marque tous les fichiers associés comme synchronisés
       if (submission.submittedFiles.length > 0) {
         await prisma.localFile.updateMany({
           where: { submissionId: submission.id },
