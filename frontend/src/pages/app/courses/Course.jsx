@@ -10,62 +10,7 @@ import {
 } from "lucide-react";
 import CourseDetail from "@/pages/app/courses/CourseDetail";
 import apiClient from "@/client/apiClient";
-
-
-// ─── Données mockées (alignées sur schema.prisma) ────────────────────────────
-const coursData = {
-  crees: [
-    { id: 10, title: "Moodle", shortName: "MDL", categoryName: "Catégorie 1", startDate: 1736995200, visible: true },
-  ],
-  inscrits: [
-    { id: 1, title: "Gestion de projet",    shortName: "GP", categoryName: "Catégorie 1", startDate: 1736995200, visible: true },
-    { id: 2, title: "Machine Learning",      shortName: "ML", categoryName: "Catégorie 1", startDate: 1737081600, visible: true },
-    { id: 3, title: "Analyse de données",    shortName: "AD", categoryName: "Catégorie 1", startDate: 1737168000, visible: true },
-    { id: 4, title: "Programmation WEB",     shortName: "WEB", categoryName: "Catégorie 1", startDate: 1737676800, visible: true },
-  ],
-  explorer: [
-    { id: 5, title: "test de cours",  shortName: "TEST", categoryName: "Catégorie 1", startDate: 1737590400, visible: true },
-    { id: 6, title: "cours test2",    shortName: "T2", categoryName: "Catégorie 1", startDate: 1737590400, visible: true },
-    { id: 7, title: "test cours 3",   shortName: "T3", categoryName: "Catégorie 1", startDate: 1737590400, visible: true },
-    { id: 8, title: "test cours 4",   shortName: "T4", categoryName: "Catégorie 1", startDate: 1737763200, visible: true },
-  ],
-};
-
-// Sections du cours (contenu style Moodle)
-const sectionsData = [
-  {
-    id: 1, titre: "Introduction au cours",
-    items: [
-      { type: "pdf",    nom: "Syllabus du cours",           detail: "PDF · 1.2 Mo" },
-      { type: "video",  nom: "Vidéo de présentation",       detail: "Vidéo · 8 min" },
-      { type: "link",   nom: "Ressources complémentaires",  detail: "URL externe" },
-    ],
-  },
-  {
-    id: 2, titre: "Chapitre 1 — Fondamentaux",
-    items: [
-      { type: "pdf",    nom: "Cours — Chapitre 1",                  detail: "PDF · 3.4 Mo" },
-      { type: "video",  nom: "Conférence 1 — Introduction",          detail: "Vidéo · 42 min" },
-      { type: "quiz",   nom: "Quiz — Chapitre 1",                    detail: "Quiz · 10 questions" },
-      { type: "assign", nom: "Devoir 1 — Exercices fondamentaux",    detail: "Échéance 25/01/2026" },
-    ],
-  },
-  {
-    id: 3, titre: "Chapitre 2 — Approfondissement",
-    items: [
-      { type: "pdf",    nom: "Cours — Chapitre 2",           detail: "PDF · 4.1 Mo" },
-      { type: "video",  nom: "Conférence 2 — Algorithmes",   detail: "Vidéo · 55 min" },
-      { type: "assign", nom: "TP Pratique — Implémentation", detail: "Échéance 05/02/2026" },
-    ],
-  },
-  {
-    id: 4, titre: "Évaluation finale", isFinal: true,
-    items: [
-      { type: "assign", nom: "Examen final",          detail: "Échéance 20/04/2026" },
-      { type: "quiz",   nom: "Quiz de révision final", detail: "Quiz · 30 questions" },
-    ],
-  },
-];
+import CreateCourseModal from "@/components/courses/ModalFormCreationCours";
 
 // ─── Image fond tableau math ──────────────────────────────────────────────────
 function MathBackground({ imagePath }) {
@@ -144,34 +89,23 @@ function CourseSection({ section }) {
 }
 
 // ─── Carte cours (dans la liste) ──────────────────────────────────────────────
-function CourseCard({ cours, showMath, onClick }) {
+function CourseCard({ cours, onClick }) {
+  const imageUrl = cours.imageUrl || null;
+  
   return (
     <Card
       onClick={onClick}
       className="border border-gray-200 shadow-none rounded-xl overflow-hidden cursor-pointer
         hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
     >
-      {showMath
-        ? <MathBackground imagePath="C:\Users\Djou.A\Desktop\Moodle client Node\moodle-client-project\frontend\src\assets\img\img05.jpg" />
-        : <div className="w-full h-32 bg-blue-100 flex items-center justify-center text-3xl">🖥️</div>}
+      {imageUrl ? (
+        <MathBackground imagePath={imageUrl} />
+      ) : (
+        <div className="w-full h-32 bg-blue-100 flex items-center justify-center text-3xl">🖥️</div>
+      )}
       <CardContent className="p-4">
         <p className="text-sm font-bold text-gray-900 mb-0.5">{cours.title}</p>
         <p className="text-xs text-gray-400 mb-2">{cours.categoryName}</p>
-        {/*
-        {cours.debut && (
-          <div className="flex items-center gap-1.5 text-xs text-gray-600">
-            <Calendar className="w-3 h-3" />
-            Début : {cours.startDate ? new Date(cours.startDate * 1000).toLocaleDateString('fr-FR') : 'Non définie'}
-          </div>
-        )}
-        
-        {cours.animateur && (
-          <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
-            <User className="w-3 h-3" />
-            Animé par {cours.animateur}
-          </div>
-        )}
-          */}
       </CardContent>
     </Card>
   );
@@ -184,6 +118,7 @@ function EspaceCours({ onOuvrirCours }) {
   const [coursExplorer, setCoursExplorer] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // ─── Charger les données au montage du composant ────────────────────
   useEffect(() => {
@@ -195,16 +130,32 @@ function EspaceCours({ onOuvrirCours }) {
       setLoading(true);
       setError(null);
 
-      // 🔵 Appel 1: Récupérer les cours inscrits (BD locale)
-      const responseInscrits = await apiClient.get("/courses");
-      setCoursInscrits(responseInscrits.courses || []);
+      // 🔵 Appel 1: Récupérer les cours inscrits (BD locale) - critique
+      try {
+        const responseInscrits = await apiClient.get("/courses");
+        setCoursInscrits(responseInscrits.courses || []);
+      } catch (localError) {
+        console.error("Erreur lors du chargement des cours locaux:", localError);
+        setCoursInscrits([]);
+        // Ne pas bloquer si les cours locaux échouent, mais c'est critique
+        setError("Impossible de charger les cours depuis la base locale");
+      }
 
-      // 🟢 Appel 2: Récupérer le catalogue complet (Moodle)
-      const responseCatalogue = await apiClient.get("/courses/catalogue");
-      setCoursExplorer(responseCatalogue.courses || []);
+      // 🟢 Appel 2: Récupérer le catalogue complet (Moodle) - optionnel (mode en ligne)
+      try {
+        const responseCatalogue = await apiClient.get("/courses/catalogue");
+        setCoursExplorer(responseCatalogue.courses || []);
+      } catch (onlineError) {
+        console.warn("Catalogue non disponible (mode hors-ligne):", onlineError);
+        setCoursExplorer([]);
+        // Ne pas bloquer l'affichage si le catalogue échoue
+      }
 
     } catch (err) {
-      setError(err.message || "Erreur lors du chargement des cours");
+      // Erreur critique seulement si les cours locaux échouent
+      if (!coursInscrits || coursInscrits.length === 0) {
+        setError(err.message || "Erreur lors du chargement des cours");
+      }
       console.error("Erreur chargement cours:", err);
     } finally {
       setLoading(false);
@@ -214,8 +165,8 @@ function EspaceCours({ onOuvrirCours }) {
   function filter(arr) {
     if (!query) return arr;
     return arr.filter(c =>
-      c.title.toLowerCase().includes(query.toLowerCase()) ||
-      c.categoryName.toLowerCase().includes(query.toLowerCase())
+      (c.title && c.title.toLowerCase().includes(query.toLowerCase())) ||
+      (c.categoryName && c.categoryName.toLowerCase().includes(query.toLowerCase()))
     );
   }
 
@@ -264,7 +215,10 @@ function EspaceCours({ onOuvrirCours }) {
             </div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">Espace Cours</h1>
           </div>
-          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-5 font-semibold gap-2">
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-5 font-semibold gap-2"
+          >
             <Plus className="w-4 h-4" />
             Créer un nouveau cours
           </Button>
@@ -293,7 +247,7 @@ function EspaceCours({ onOuvrirCours }) {
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {crees.map(c => (
-                <CourseCard key={c.id} cours={c} showMath={false} onClick={() => onOuvrirCours(c)} />
+                <CourseCard key={c.id} cours={c} onClick={() => onOuvrirCours(c)} />
               ))}
             </div>
           </div>
@@ -306,7 +260,7 @@ function EspaceCours({ onOuvrirCours }) {
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {inscrits.map(c => (
-                <CourseCard key={c.id} cours={c} showMath={true} onClick={() => onOuvrirCours(c)} />
+                <CourseCard key={c.id} cours={c} onClick={() => onOuvrirCours(c)} />
               ))}
             </div>
           </div>
@@ -319,12 +273,18 @@ function EspaceCours({ onOuvrirCours }) {
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {explorer.map(c => (
-                <CourseCard key={c.id} cours={c} showMath={true} onClick={() => onOuvrirCours(c)} />
+                <CourseCard key={c.id} cours={c} onClick={() => onOuvrirCours(c)} />
               ))}
             </div>
           </div>
         )}
       </div>
+
+      {/* Modal de création de cours */}
+      <CreateCourseModal 
+        open={isCreateModalOpen} 
+        onOpenChange={setIsCreateModalOpen} 
+      />
     </div>
   );
 }

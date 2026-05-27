@@ -281,6 +281,140 @@ export async function getAllCoursesWithEvents() {
   }
 }
 
+/**
+ * Formate les sections du cours pour l'affichage dans l'interface
+ * Transforme la structure backend (sections → modules → ressources) en structure UI (sections → items)
+ * @param {Array} sections - Sections retournées par le backend avec modules imbriqués
+ * @returns {Array} Sections formatées pour l'interface
+ */
+export function formatSectionsForUI(sections) {
+  if (!sections || !Array.isArray(sections)) {
+    return [];
+  }
+
+  return sections.map((section, idx) => {
+    const items = [];
+
+    // Parcourir les modules de la section
+    if (section.modules && Array.isArray(section.modules)) {
+      section.modules.forEach((module) => {
+        // FileResource (fichiers individuels)
+        if (module.fileResources && Array.isArray(module.fileResources)) {
+          module.fileResources.forEach((fileResource) => {
+            if (fileResource.files && Array.isArray(fileResource.files)) {
+              fileResource.files.forEach((file) => {
+                items.push({
+                  type: "file",
+                  nom: fileResource.name || file.filename || "Fichier",
+                  detail: file.fileSize 
+                    ? `${(file.fileSize / 1024 / 1024).toFixed(1)} Mo` 
+                    : "Fichier",
+                  fileData: file,
+                  resourceId: fileResource.id,
+                });
+              });
+            }
+          });
+        }
+
+        // FolderResource (dossiers avec fichiers) - Traité comme un item distinct
+        if (module.folderResources && Array.isArray(module.folderResources)) {
+          module.folderResources.forEach((folderResource) => {
+            items.push({
+              type: "folder",
+              nom: folderResource.name || "Dossier",
+              detail: folderResource.intro ? folderResource.intro.substring(0, 60) + "..." : `${folderResource.files?.length || 0} fichiers`,
+              folderData: folderResource,
+              folderId: folderResource.id,
+              files: folderResource.files || [],
+            });
+          });
+        }
+
+        // ExternalUrl (liens externes)
+        if (module.externalUrls && Array.isArray(module.externalUrls)) {
+          module.externalUrls.forEach((externalUrl) => {
+            items.push({
+              type: "link",
+              nom: externalUrl.name || "Lien externe",
+              detail: "URL externe",
+              urlData: externalUrl,
+              url: externalUrl.externalUrl || externalUrl.url,
+            });
+          });
+        }
+
+        // Assignment (devoirs)
+        if (module.assignments && Array.isArray(module.assignments)) {
+          module.assignments.forEach((assignment) => {
+            const dueDate = assignment.dueDate
+              ? new Date(assignment.dueDate * 1000).toLocaleDateString('fr-FR')
+              : "Sans date";
+            items.push({
+              type: "assign",
+              nom: assignment.name || "Devoir",
+              detail: `Échéance: ${dueDate}`,
+              assignmentData: assignment,
+            });
+          });
+        }
+      });
+    }
+
+    return {
+      id: section.id || `section-${idx}`,
+      titre: section.name || section.title || `Section ${idx + 1}`,
+      items: items.length > 0 ? items : [{
+        type: "link",
+        nom: "Pas de contenu",
+        detail: "Aucune ressource pour cette section"
+      }],
+      isFinal: section.name?.toLowerCase().includes("évaluation") || 
+               section.name?.toLowerCase().includes("final") ||
+               section.name?.toLowerCase().includes("exam"),
+    };
+  });
+}
+
+/**
+ * Récupère les fichiers téléchargés en cache local
+ * @returns {Promise<Set<string>>} Set d'URLs de fichiers téléchargés
+ */
+export async function getDownloadedFiles() {
+  try {
+    const dbName = "downloaded_files";
+    const request = indexedDB.open(dbName, 1);
+    
+    return new Promise((resolve, reject) => {
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction("files", "readonly");
+        const store = transaction.objectStore("files");
+        const getAllRequest = store.getAll();
+        
+        getAllRequest.onsuccess = () => {
+          const urls = new Set(getAllRequest.result.map(item => item.url));
+          resolve(urls);
+        };
+        getAllRequest.onerror = () => reject(getAllRequest.error);
+      };
+    });
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * Vérifie si un fichier est téléchargé
+ * @param {string} fileUrl - URL du fichier
+ * @returns {Promise<boolean>} true si téléchargé
+ */
+export async function isFileDownloaded(fileUrl) {
+  const downloadedFiles = await getDownloadedFiles();
+  return downloadedFiles.has(fileUrl);
+}
+
 // LEGACY MOCK DATA (DEPRECATED - DO NOT USE)
 // Tous les appels à la base de données doivent utiliser les fonctions ci-dessus
 // qui communiquent avec l'API backend
