@@ -12,6 +12,7 @@ import { moodleFetch, checkMoodleReachable, isMoodleTokenError } from "../config
 import { getCursor, saveCursor } from "./cursor.js";
 // import { pushAll } from "./push/index.js"; // PUSH désactivé pendant les tests pull
 import { pullAll } from "./pull/index.js";
+import { pushAll } from "./push/index.js";
 
 export class SyncEngine extends EventEmitter {
   /**
@@ -90,14 +91,13 @@ export class SyncEngine extends EventEmitter {
       let totalPulled = 0;
       let totalConflicts = 0;
 
-      // PUSH — désactivé temporairement pour tester uniquement le pull
-      // Décommenter quand le push sera implémenté et validé
-      // this.emit("progress", { step: "PHASE", phase: "PUSH" });
-      // const pushResult = await pushAll(ctx);
-      // totalPushed    += pushResult.pushed;
-      // totalConflicts += pushResult.conflicts;
+      // --- PHASE 1 : PUSH (Envoi des modifications locales vers Moodle) ---
+      this.emit("progress", { step: "PHASE", phase: "PUSH" });
+      const pushResult = await pushAll(ctx);
+      totalPushed    += pushResult.pushed;
+      totalConflicts += pushResult.conflicts;
 
-      // PULL
+      // --- PHASE 2 : PULL (Récupération des nouveautés du serveur) ---
       this.emit("progress", { step: "PHASE", phase: "PULL" });
       const pullResult = await pullAll(ctx);
       totalPulled    += pullResult.pulled;
