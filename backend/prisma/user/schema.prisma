@@ -172,6 +172,9 @@ model Course {
   events      CalendarEvent[]
   assignments Assignment[]
   grades      Grade[]
+
+  // ─── LIGNE À AJOUTER POUR RÉPARER LA RELATION ───
+  participants CourseParticipant[]
 }
 
 model Section {
@@ -313,6 +316,7 @@ model Assignment {
 model AssignmentSubmission {
   id             Int             @id @default(autoincrement())
   assignmentId   Int
+  moodleUserId   Int?            // NOUVEAU: Identifie l'auteur de la copie
   attemptNumber  Int             @default(0) 
   submissionText String?         
   state          SubmissionState @default(DRAFT) 
@@ -353,4 +357,18 @@ model CalendarEvent {
   last_synced_at      Int?
 
   course      Course? @relation(fields: [courseId], references: [id])
+}
+
+// ─── NOUVELLE TABLE : Les étudiants inscrits au cours ─────────
+model CourseParticipant {
+  id              Int      @id @default(autoincrement())
+  courseId        Int
+  moodleUserId    Int
+  fullname        String
+  email           String?
+  profileImageUrl String?
+
+  course          Course   @relation(fields: [courseId], references: [id])
+  
+  @@unique([courseId, moodleUserId]) // Un utilisateur n'est inscrit qu'une fois par cours
 }
