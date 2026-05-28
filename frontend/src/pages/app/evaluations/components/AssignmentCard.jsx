@@ -2,7 +2,7 @@ import { Calendar, ArrowLeft } from "lucide-react";
 import { StudentStatusBadge } from "./StudentStatusBadge";
 
 export function AssignmentCard({ assignment, onClick, role }) {
-  const isTeacher = role === "student";
+  const isTeacher = role === "teacher";
   const now = new Date().getTime() / 1000;
   const isLate = assignment.dueDate && now > assignment.dueDate && (!assignment.submission || assignment.submission.state === "DRAFT");
 
