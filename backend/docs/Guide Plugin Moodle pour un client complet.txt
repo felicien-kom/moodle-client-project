@@ -1,0 +1,38 @@
+Tout d'abord, arreter proprement Moodle avec Stop_Moodle.exe, puis arreter MySQL normalement.
+
+Au niveau de repertoire suivant :
+C:\xampp\htdocs\moodle\server\moodle\local\
+
+Dézipper le zip offline_sync.zip. Et c'est tout (bien sur, ce serait mieux de supprimer le zip des que c'est fait).
+
+Relancer MySQL puis Moodle normalement, et repartir sur locahost.
+
+Mettre le localhost à jour et ce sera bon.
+
+Une toute nouvelle fonction sera disponible : local_offline_sync_create_module
+
+Repartir au niveau du service utilisé jusqu'alors et ajouter la toute nouvelle fonction à la liste de ces fonctions de ce service.
+
+Et c'est bon, vous pourre faire des requetes pour ajouter des modules : activités (assign) et ressources (url, fichier, dossier) aux cours.
+
+Bien sur pour les fichiers, il faut uploader d'abord et recuperere le itemID pour lier le fichier aux differents modules.
+
+
+http://localhost/webservice/upload.php
+form-data=
+token=
+itemid=
+filearea=draft
+file (type: File) et uploadé son fichier
+
+URL
+http://localhost/webservice/rest/server.php?moodlewsrestformat=json&wstoken=00f3a1d19c9c083f35fa242c0bf1d51a&wsfunction=local_offline_sync_create_module&courseid=6&sectionnum=2&modname=url&name=Lien vers apple&intro=Utiliser ce lien pour acceder à Apple&options[0][name]=externalurl&options[0][value]=https://apple.com
+
+Fichier
+http://localhost/webservice/rest/server.php?moodlewsrestformat=json&wstoken=00f3a1d19c9c083f35fa242c0bf1d51a&wsfunction=local_offline_sync_create_module&courseid=6&sectionnum=2&modname=resource&name=Support de cours PDF&intro=Téléchargez ce document.&options[0][name]=files&options[0][value]=683305932&options[1][name]=display&options[1][value]=0
+
+Dossier
+http://localhost/webservice/rest/server.php?moodlewsrestformat=json&wstoken=00f3a1d19c9c083f35fa242c0bf1d51a&wsfunction=local_offline_sync_create_module&courseid=6&sectionnum=2&modname=folder&name=Dossier de ressources de révision&intro=Contient tous les documents utiles.&options[0][name]=files&options[0][value]=722549797&options[1][name]=display&options[1][value]=0
+
+Devoir
+http://localhost/webservice/rest/server.php?moodlewsrestformat=json&wstoken=00f3a1d19c9c083f35fa242c0bf1d51a&wsfunction=local_offline_sync_create_module&courseid=6&sectionnum=2&modname=folder&name=Dossier de ressources de révision&intro=Contient tous les documents utiles.&options[0][name]=files&options[0][value]=722549797&options[1][name]=display&options[1][value]=0
