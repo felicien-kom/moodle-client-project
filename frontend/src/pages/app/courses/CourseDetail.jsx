@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ArrowLeft,
   Info,
@@ -23,12 +30,15 @@ import {
   ClipboardList,
   ExternalLink,
   UserPlus,
+  Plus,
+  MoreVertical,
 } from "lucide-react";
 import apiClient from "@/client/apiClient";
-import { formatSectionsForUI, enrollCourseOnline } from "@/services/courses.service.js";
+import { formatSectionsForUI, enrollCourseOnline, createSection } from "@/services/courses.service.js";
 import { downloadFile, serveFile } from "@/services/files.service.js";
 import { getFileIcon } from "@/utils/file.utils.js";
 import FolderView from "./FolderView.jsx";
+import RessourcesActicityModal from "@/components/courses/RessourcesActicityModal.jsx";
 
 // ─── Icône colorée selon le type de ressource ─────────────────────────────────
 function ContentIcon({ type }) {
@@ -184,6 +194,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
 // ─── Section dépliable ────────────────────────────────────────────────────────
 function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
   const [open, setOpen] = useState(true);
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
 
   return (
     <div className="border border-gray-200 shadow-none rounded-xl overflow-hidden">
@@ -197,9 +208,27 @@ function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, dow
           <Layers className="w-4 h-4 text-gray-500 flex-shrink-0" />
           <span className="text-[15px] font-bold text-gray-900">{section.titre}</span>
         </div>
-        {open
-          ? <ChevronUp   className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+        <div className="flex items-center gap-2">
+          {/* Menu déroulant pour ajouter un module */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <button
+                className="p-1 hover:bg-gray-200 rounded-md transition-colors"
+                title="Options"
+              >
+                <MoreVertical className="w-4 h-4 text-gray-500" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setIsActivityModalOpen(true); }}>
+                Ajouter un module
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {open
+            ? <ChevronUp   className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+        </div>
       </button>
 
       {/* Corps */}
@@ -219,6 +248,12 @@ function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, dow
           </div>
         </div>
       )}
+
+      {/* Modal d'ajout d'activité/ressource */}
+      <RessourcesActicityModal
+        open={isActivityModalOpen}
+        onOpenChange={setIsActivityModalOpen}
+      />
     </div>
   );
 }
@@ -264,6 +299,9 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
+  const [newSectionName, setNewSectionName] = useState("");
+  const [isCreatingSection, setIsCreatingSection] = useState(false);
 
   // Refs pour le scroll vers chaque section
   const detailsRef = useRef(null);
@@ -333,6 +371,52 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
       alert("Erreur lors de l'inscription: " + (error.message || error));
     } finally {
       setIsEnrolling(false);
+    }
+  };
+
+  // ─── Gestion de la création de section ─────────────────────────────────────
+  const handleAddSectionClick = () => {
+    setIsSectionModalOpen(true);
+    setNewSectionName("");
+  };
+
+  const handleCreateSection = async () => {
+    if (!newSectionName.trim()) {
+      alert("Veuillez entrer un nom pour la section");
+      return;
+    }
+
+    try {
+      setIsCreatingSection(true);
+      const courseId = coursData.id || coursData.serverId;
+      
+      if (!courseId) {
+        alert("ID du cours non disponible");
+        return;
+      }
+
+      await createSection(courseId, newSectionName.trim());
+      
+      setIsSectionModalOpen(false);
+      setNewSectionName("");
+      
+      // Recharger les sections
+      const sectionsResponse = await apiClient.get(`/courses/${courseId}/sections`);
+      const backendSections = sectionsResponse.sections || [];
+      const transformedSections = formatSectionsForUI(backendSections);
+      setSections(transformedSections);
+    } catch (error) {
+      console.error("Erreur lors de la création de la section:", error);
+      alert("Erreur lors de la création de la section: " + (error.message || error));
+    } finally {
+      setIsCreatingSection(false);
+    }
+  };
+
+  const handleSectionNameKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleCreateSection();
     }
   };
 
@@ -654,6 +738,15 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
                 </Card>
               )}
 
+              {/* ── Bouton Ajouter une section ── */}
+              <Button
+                onClick={handleAddSectionClick}
+                className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-base border-2 border-dashed border-indigo-300 rounded-xl flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Ajouter une section
+              </Button>
+
             </main>
           </div>
         </TabsContent>
@@ -711,6 +804,44 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de création de section */}
+      <Dialog open={isSectionModalOpen} onOpenChange={setIsSectionModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Créer une nouvelle section</DialogTitle>
+            <DialogDescription>
+              Entrez le nom de la nouvelle section pour le cours "{coursData.title || cours.title}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Nom de la section..."
+              value={newSectionName}
+              onChange={(e) => setNewSectionName(e.target.value)}
+              onKeyDown={handleSectionNameKeyDown}
+              autoFocus
+              disabled={isCreatingSection}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsSectionModalOpen(false)}
+              disabled={isCreatingSection}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleCreateSection}
+              disabled={isCreatingSection || !newSectionName.trim()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {isCreatingSection ? "Création..." : "Créer"}
             </Button>
           </DialogFooter>
         </DialogContent>

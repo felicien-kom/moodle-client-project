@@ -243,6 +243,7 @@ function EspaceCours({ onOuvrirCours }) {
             </div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">Espace Cours</h1>
           </div>
+          
           <Button 
             onClick={() => setIsCreateModalOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-5 font-semibold gap-2"
@@ -250,6 +251,7 @@ function EspaceCours({ onOuvrirCours }) {
             <Plus className="w-4 h-4" />
             Créer un nouveau cours
           </Button>
+          
         </div>
 
         {/* Barre recherche */}
@@ -284,7 +286,7 @@ function EspaceCours({ onOuvrirCours }) {
         {/* Cours inscrits */}
         {inscrits.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Cours inscrits</h2>
+            <h2 className="text-base font-bold text-gray-900 mb-3">Cours crées</h2>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {inscrits.map((c, index) => (

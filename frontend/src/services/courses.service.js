@@ -498,6 +498,31 @@ export async function isFileDownloaded(fileUrl) {
   return downloadedFiles.has(fileUrl);
 }
 
+/**
+ * Crée une nouvelle section pour un cours
+ * @param {number} courseId - L'ID local du cours
+ * @param {string} sectionName - Le nom de la section
+ * @returns {Promise<Object>} La section créée
+ */
+export async function createSection(courseId, sectionName) {
+  if (!courseId) {
+    throw new Error("courseId est requis");
+  }
+  if (!sectionName) {
+    throw new Error("sectionName est requis");
+  }
+
+  try {
+    const response = await apiClient.post(`/courses/${courseId}/sections`, {
+      name: sectionName,
+    });
+    return response.section;
+  } catch (error) {
+    console.error(`Erreur lors de la création de la section pour le cours ${courseId}:`, error);
+    throw error;
+  }
+}
+
 // LEGACY MOCK DATA (DEPRECATED - DO NOT USE)
 // Tous les appels à la base de données doivent utiliser les fonctions ci-dessus
 // qui communiquent avec l'API backend
