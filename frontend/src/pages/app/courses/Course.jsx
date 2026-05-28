@@ -33,11 +33,11 @@ function MathBackground({ imagePath }) {
 // ─── Icône type de contenu ────────────────────────────────────────────────────
 function ContentIcon({ type }) {
   const map = {
-    pdf:    { icon: <FileText className="w-4 h-4" />,      bg: "bg-red-100",    text: "text-red-600" },
-    video:  { icon: <Video className="w-4 h-4" />,          bg: "bg-blue-100",   text: "text-blue-600" },
-    quiz:   { icon: <HelpCircle className="w-4 h-4" />,     bg: "bg-amber-100",  text: "text-amber-600" },
-    link:   { icon: <Link className="w-4 h-4" />,           bg: "bg-purple-100", text: "text-purple-600" },
-    assign: { icon: <ClipboardList className="w-4 h-4" />,  bg: "bg-emerald-100",text: "text-emerald-600" },
+    pdf: { icon: <FileText className="w-4 h-4" />, bg: "bg-red-100", text: "text-red-600" },
+    video: { icon: <Video className="w-4 h-4" />, bg: "bg-blue-100", text: "text-blue-600" },
+    quiz: { icon: <HelpCircle className="w-4 h-4" />, bg: "bg-amber-100", text: "text-amber-600" },
+    link: { icon: <Link className="w-4 h-4" />, bg: "bg-purple-100", text: "text-purple-600" },
+    assign: { icon: <ClipboardList className="w-4 h-4" />, bg: "bg-emerald-100", text: "text-emerald-600" },
   };
   const { icon, bg, text } = map[type] || map.link;
   return (
@@ -93,7 +93,7 @@ function CourseSection({ section }) {
 function CourseCard({ cours, onClick, isExplorer = false }) {
   const imageUrl = cours.imageUrl || null;
   const defaultImage = isExplorer ? "/src/assets/defaultCourseImage.jpg" : null;
-  
+
   return (
     <Card
       onClick={onClick}
@@ -153,10 +153,10 @@ function EspaceCours({ onOuvrirCours }) {
       try {
         const responseCatalogue = await getCatalogueOnline();
         const allCatalogueCourses = responseCatalogue.courses || [];
-        
+
         // Filtrer les cours déjà inscrits par nom pour éviter les doublons
         const explorerCourses = filterCatalogueByName(allCatalogueCourses, enrolledCourses);
-        
+
         setCoursExplorer(explorerCourses);
       } catch (onlineError) {
         console.warn("Catalogue non disponible (mode hors-ligne):", onlineError);
@@ -188,7 +188,7 @@ function EspaceCours({ onOuvrirCours }) {
     const enrolledNames = new Set(
       enrolledCourses.map(c => c.title?.toLowerCase().trim())
     );
-    return catalogueCourses.filter(c => 
+    return catalogueCourses.filter(c =>
       !enrolledNames.has(c.title?.toLowerCase().trim())
     );
   }
@@ -216,7 +216,7 @@ function EspaceCours({ onOuvrirCours }) {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-xl shadow-md">
           <p className="text-red-600 font-semibold mb-4">{error}</p>
-          <Button 
+          <Button
             onClick={() => loadCourses()}
             className="bg-indigo-600 hover:bg-indigo-700 text-white"
           >
@@ -227,7 +227,7 @@ function EspaceCours({ onOuvrirCours }) {
     );
   }
 
-  const crees    = filter(coursCreés);
+  const crees = filter(coursCreés);
   const inscrits = filter(coursInscrits);
   const explorer = filter(coursExplorer);
 
@@ -243,15 +243,15 @@ function EspaceCours({ onOuvrirCours }) {
             </div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">Espace Cours</h1>
           </div>
-          
-          <Button 
+
+          <Button
             onClick={() => setIsCreateModalOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-5 font-semibold gap-2"
           >
             <Plus className="w-4 h-4" />
             Créer un nouveau cours
           </Button>
-          
+
         </div>
 
         {/* Barre recherche */}
@@ -311,9 +311,9 @@ function EspaceCours({ onOuvrirCours }) {
       </div>
 
       {/* Modal de création de cours */}
-      <CreateCourseModal 
-        open={isCreateModalOpen} 
-        onOpenChange={setIsCreateModalOpen} 
+      <CreateCourseModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
         onCourseCreated={handleCourseCreated}
       />
     </div>

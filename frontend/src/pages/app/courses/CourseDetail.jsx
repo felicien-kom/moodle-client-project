@@ -66,13 +66,13 @@ function ContentIcon({ type, isDownloaded }) {
   }
 
   const config = {
-    folder:  { icon: Folder,         bg: "bg-amber-100",   text: "text-amber-600" },
-    link:    { icon: ExternalLink,   bg: "bg-purple-100",  text: "text-purple-600" },
-    assign:  { icon: FileEdit,       bg: "bg-orange-100",  text: "text-orange-600" },
+    folder: { icon: Folder, bg: "bg-amber-100", text: "text-amber-600" },
+    link: { icon: ExternalLink, bg: "bg-purple-100", text: "text-purple-600" },
+    assign: { icon: FileEdit, bg: "bg-orange-100", text: "text-orange-600" },
   };
-  
+
   const { icon: Icon, bg, text } = config[type] ?? { icon: Folder, bg: "bg-slate-100", text: "text-slate-600" };
-  
+
   return (
     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg} ${text}`}>
       <Icon className="w-4 h-4" />
@@ -85,7 +85,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
   const [isDownloading, setIsDownloading] = useState(false);
   const { role } = useUserRole();
   const isTeacher = role === 'teacher';
-  
+
   const handleFileAction = async (e) => {
     e.stopPropagation();
     setIsDownloading(true);
@@ -95,7 +95,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
         alert("ID du fichier manquant");
         return;
       }
-      
+
       if (downloadedFiles.has(fileId)) {
         await onFileOpen(fileId);
       } else {
@@ -107,17 +107,17 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
       setIsDownloading(false);
     }
   };
-  
+
   const handleLinkClick = (e) => {
     if (item.url) {
       e.stopPropagation();
       window.open(item.url, "_blank");
     }
   };
-  
+
   const fileId = item.fileData?.id || item.resourceId;
   const isFileDownloadedState = fileId ? downloadedFiles.has(fileId) : false;
-  
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 px-4 hover:bg-slate-50 transition-colors rounded-lg group gap-3">
       <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
@@ -135,7 +135,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
               {item.nom}
             </p>
           )}
-          
+
           <div className="flex items-center gap-2 mt-1">
             <p className="text-xs font-medium text-slate-500">{item.detail}</p>
             {item.type === 'assign' && (
@@ -151,7 +151,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
           </div>
         </div>
       </div>
-      
+
       <div className="flex-shrink-0 flex items-center justify-end">
         {item.type === 'file' && (
           <Button
@@ -170,13 +170,13 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
             )}
           </Button>
         )}
-        
+
         {item.type === 'folder' && (
           <Button onClick={(e) => { e.stopPropagation(); onFolderClick(item); }} size="sm" variant="outline" className="text-xs h-8 bg-white border-slate-200 text-slate-700">
             <Folder className="w-3.5 h-3.5 mr-1.5" /> Ouvrir
           </Button>
         )}
-        
+
         {item.type === 'assign' && (
           <Button onClick={(e) => { e.stopPropagation(); console.log("Devoir:", item); }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
             {isTeacher ? "Soumissions" : "Ma remise"}
@@ -222,7 +222,7 @@ function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, dow
             </DropdownMenuContent>
           </DropdownMenu>
           {open
-            ? <ChevronUp   className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
             : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
         </div>
       </button>
@@ -267,8 +267,8 @@ function NavItem({ label, active, onClick, isDetails }) {
         }`}
     >
       {isDetails
-        ? <Info    className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-indigo-600" : "text-gray-400"}`} />
-        : <Layers  className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-indigo-600" : "text-gray-400"}`} />
+        ? <Info className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-indigo-600" : "text-gray-400"}`} />
+        : <Layers className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-indigo-600" : "text-gray-400"}`} />
       }
       {label}
     </button>
@@ -321,7 +321,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
       console.log("Ouverture du fichier:", fileId);
       const blobUrl = await serveFile(fileId);
       window.open(blobUrl, '_blank');
-      
+
       // Nettoyer l'URL blob après un court délai
       setTimeout(() => {
         window.URL.revokeObjectURL(blobUrl);
@@ -349,17 +349,17 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
     try {
       setIsEnrolling(true);
       const serverId = coursData.serverId || coursData.id;
-      
+
       if (!serverId) {
         alert("ID du serveur non disponible");
         return;
       }
-      
+
       await enrollCourseOnline(serverId);
-      
+
       setIsEnrollModalOpen(false);
       setIsSuccessModalOpen(true);
-      
+
       // Recharger les données pour mettre à jour l'état
       loadCourseData();
     } catch (error) {
@@ -385,17 +385,17 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
     try {
       setIsCreatingSection(true);
       const courseId = coursData.id || coursData.serverId;
-      
+
       if (!courseId) {
         alert("ID du cours non disponible");
         return;
       }
 
       await createSection(courseId, newSectionName.trim());
-      
+
       setIsSectionModalOpen(false);
       setNewSectionName("");
-      
+
       // Recharger les sections
       const sectionsResponse = await apiClient.get(`/courses/${courseId}/sections`);
       const backendSections = sectionsResponse.sections || [];
@@ -623,7 +623,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
         <TabsContent value="cours">
           {/* ── Layout principal : sidebar + contenu ── */}
           <div className="flex-1 px-8 py-6 flex gap-6">
-            
+
             {/* Sidebar navigation */}
             <aside className="w-52 flex-shrink-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 px-1">
@@ -849,11 +849,11 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
 
 // ─── Valeur par défaut si cours non fourni (alignée sur schema.prisma) ────────
 const defaultCours = {
-  title:       "Machine Learning",
-  shortName:   "ML",
+  title: "Machine Learning",
+  shortName: "ML",
   categoryName: "Catégorie 1",
-  summary:     "Cours complet de Machine Learning couvrant les fondamentaux, les algorithmes classiques et les réseaux de neurones.",
-  startDate:   1737081600, // 16/01/2026
-  endDate:     null,
-  visible:     true,
+  summary: "Cours complet de Machine Learning couvrant les fondamentaux, les algorithmes classiques et les réseaux de neurones.",
+  startDate: 1737081600, // 16/01/2026
+  endDate: null,
+  visible: true,
 };

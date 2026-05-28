@@ -11,6 +11,7 @@ import { clearToken, getToken, setLocalUser, setToken } from "@/utils/api.utils"
 import { API_CONFIG } from "@/config/api.config";
 import { PATHS } from "@/router/paths";
 import { AuthContext } from "./AuthContext.store";
+import { userRole } from "@/services/user.service";
 
 export function AuthProvider({ children }) {
   const [user,      setUser]      = useState(null);
@@ -43,7 +44,11 @@ export function AuthProvider({ children }) {
 
     apiClient
       .get(API_CONFIG.endpoints.me)
-      .then((data) => setUser(data?.user ?? data ?? null))
+      .then((data) => {
+        const profile = data?.user ?? data ?? null;
+        setUser(profile);
+        if (profile) userRole(profile);
+      })
       .catch(() => {
         // clearToken();
         setUser(null);
@@ -104,6 +109,7 @@ export function AuthProvider({ children }) {
     const profile = data.user ?? meData?.user ?? meData;
     setUser(profile);
     setLocalUser(profile);
+    userRole(profile);
     await refreshProfiles();
 
     return profile;
@@ -153,6 +159,7 @@ export function AuthProvider({ children }) {
       clearToken();
       setUser(null);
       setLocalUser(null);
+      localStorage.removeItem("user_role");
       navigate(PATHS.auth.login, { replace: true });
     // }
   }, [navigate]);
