@@ -28,7 +28,7 @@ function SkeletonGrid() {
 
 export default function Assignment() {
   // TODO: Remplacer par le vrai rôle issu du contexte (AuthContext)
-  const role = "student"; // Modifier ici pour tester "student" ou "teacher"
+  const role = "teacher"; // Modifier ici pour tester "student" ou "teacher"
 
   const [activeTab, setActiveTab] = useState("a-faire"); // "a-faire" | "termines"
   const [query, setQuery] = useState("");
