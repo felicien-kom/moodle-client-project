@@ -158,6 +158,10 @@ export function subscribeSyncProgress(syncId, callbacks = {}) {
                       onComplete(data);
                       controller.abort();
                       return;
+                    } else if (data.type === "error") {
+                      onError(new Error(data.message || "Erreur de synchronisation"));
+                      controller.abort();
+                      return;
                     }
                   } catch (err) {
                     console.warn("Erreur parsing SSE:", err);
