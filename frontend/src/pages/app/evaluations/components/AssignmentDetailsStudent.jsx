@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, UploadCloud, File, Trash2, Calendar, BookOpen, FileText, Clock, Download } from "lucide-react";
+import { ArrowLeft, UploadCloud, File, Trash2, Calendar, BookOpen, FileText, Clock, Download, AlertCircle } from "lucide-react";
 import { submitAssignmentDraft, submitAssignmentFinal } from "@/services/assignments.service";
 import { StudentStatusBadge } from "./StudentStatusBadge";
 
@@ -16,8 +16,16 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
 
   const isSubmitted = assignment.submission?.state === "SUBMITTED" || assignment.submission?.state === "GRADED";
   const isDraft = assignment.submission?.state === "DRAFT";
-  const allowsText = assignment.allowedTypes === "text" || assignment.allowedTypes === "both" || !assignment.allowedTypes;
-  const allowsFiles = assignment.allowedTypes === "file" || assignment.allowedTypes === "both" || !assignment.allowedTypes;
+  const allowsText = assignment.allowedTypes === 'text' || assignment.allowedTypes === 'both' || !assignment.allowedTypes;
+  const allowsFiles = assignment.allowedTypes === 'file' || assignment.allowedTypes === 'both' || !assignment.allowedTypes;
+
+  // -- Validations --
+  const wordCount = textResponse.trim() ? textResponse.trim().split(/\s+/).length : 0;
+  const isWordLimitExceeded = Boolean(assignment.requiresText && assignment.wordLimit && wordCount > assignment.wordLimit);
+  
+  const isMaxFilesExceeded = Boolean(assignment.maxFiles && selectedFiles.length > assignment.maxFiles);
+  const isMaxFileSizeExceeded = Boolean(assignment.maxFileSize && selectedFiles.some(f => f.size > assignment.maxFileSize));
+  const isInvalid = isWordLimitExceeded || isMaxFilesExceeded || isMaxFileSizeExceeded;
 
   // Fichiers d'instructions du professeur (introFiles)
   const introFiles = assignment.introFiles || [];
@@ -106,7 +114,19 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* COLONNE GAUCHE */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 col-span-1">
+          {/* Alerte de conflit d'édition */}
+          {assignment.submission?.sync_status === "CONFLICT" && (
+            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 md:p-6 shadow-sm flex items-start gap-4 text-amber-950 animate-in slide-in-from-top-3 duration-300">
+              <AlertCircle className="w-6 h-6 shrink-0 text-amber-600 mt-0.5 animate-pulse" />
+              <div>
+                <h3 className="font-extrabold text-sm uppercase tracking-wider text-amber-900">Conflit d'édition résolu (Serveur Prioritaire)</h3>
+                <p className="text-sm mt-1.5 font-medium leading-relaxed text-amber-800">
+                  Une double modification a eu lieu simultanément sur cette soumission. Conformément aux règles de synchronisation, <strong>la version officielle enregistrée sur le serveur a prévalu</strong>. Vos modifications locales en conflit ont été écrasées pour éviter tout écart de notation.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Instructions du professeur */}
           <div className="bg-white rounded-3xl border border-slate-200/60 p-6 md:p-8 shadow-sm">

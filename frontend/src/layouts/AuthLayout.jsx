@@ -1,12 +1,19 @@
 import LanguagePicker from '@/components/simple/LanguagePicker';
 import ThemePicker from '@/components/simple/ThemePicker';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import bannerImage from '@/assets/img/img02.jpg';
 import { useTranslation } from 'react-i18next';
 import MainLogo from '@/components/custom/MainLogo';
+import { PATHS } from '@/router/paths';
 
 function AuthLayout() {
     const { t } = useTranslation();
+    const location = useLocation();
+
+    if (location.pathname === PATHS.auth.login) {
+        return <Outlet />;
+    }
+
     return (
         <div className='min-h-full bg-my-bg xl:p-4 flex flex-col'>
             <div className='bg-my-bg-light flex-1 min-h-150 rounded-xs flex'>

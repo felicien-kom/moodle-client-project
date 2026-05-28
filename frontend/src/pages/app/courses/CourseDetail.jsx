@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,16 +40,21 @@ import { formatSectionsForUI, enrollCourseOnline, createSection } from "@/servic
 import { downloadFile, serveFile } from "@/services/files.service.js";
 import { getFileIcon } from "@/utils/file.utils.js";
 import FolderView from "./FolderView.jsx";
-import RessourcesActicityModal from "@/components/courses/RessourcesActicityModal.jsx";
+import { useUserRole } from "@/hooks/useUserRole";
 
-// ─── Icône colorée selon le type de ressource ─────────────────────────────────
-function ContentIcon({ type }) {
-  if (type === "file") {
-    const dummyIcon = getFileIcon("file.txt");
-    const IconComponent = dummyIcon.icon;
+// ─── Icône colorée selon le type de resso// ??? Ic�ne color�e selon le type de ressource ???
+function ContentIcon({ type, isDownloaded }) {
+  if (type === 'file') {
+    if (isDownloaded) {
+      return (
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-100 text-emerald-600">
+          <CheckCircle className="w-4 h-4" />
+        </div>
+      );
+    }
     return (
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-100 ${dummyIcon.color}`}>
-        <IconComponent className="w-3.5 h-3.5" />
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-100 text-blue-600">
+        <FileText className="w-4 h-4" />
       </div>
     );
   }
@@ -55,47 +62,40 @@ function ContentIcon({ type }) {
   const config = {
     folder:  { icon: Folder,         bg: "bg-amber-100",   text: "text-amber-600" },
     link:    { icon: ExternalLink,   bg: "bg-purple-100",  text: "text-purple-600" },
-    assign:  { icon: ClipboardList,  bg: "bg-emerald-100", text: "text-emerald-600" },
+    assign:  { icon: FileEdit,       bg: "bg-orange-100",  text: "text-orange-600" },
   };
   
-  const { icon: Icon, bg, text } = config[type] ?? { icon: Folder, bg: "bg-gray-100", text: "text-gray-600" };
+  const { icon: Icon, bg, text } = config[type] ?? { icon: Folder, bg: "bg-slate-100", text: "text-slate-600" };
   
   return (
     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg} ${text}`}>
-      <Icon className="w-3.5 h-3.5" />
+      <Icon className="w-4 h-4" />
     </div>
   );
 }
 
-// ─── Élément de contenu avec boutons appropriés ────────────────────────────────
+// ??? �l�ment de contenu avec boutons appropri�s ???
 function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const { role } = useUserRole();
+  const isTeacher = role === 'teacher';
   
   const handleFileAction = async (e) => {
     e.stopPropagation();
     setIsDownloading(true);
     try {
-      // Utiliser le fileId pour télécharger/ouvrir le fichier
       const fileId = item.fileData?.id || item.resourceId;
-      console.log("Action fichier:", item, "fileId:", fileId);
-      
       if (!fileId) {
-        console.error("ID du fichier manquant:", item);
         alert("ID du fichier manquant");
         return;
       }
       
-      const isDownloaded = downloadedFiles.has(fileId);
-      
-      if (isDownloaded) {
-        // Ouvrir le fichier
+      if (downloadedFiles.has(fileId)) {
         await onFileOpen(fileId);
       } else {
-        // Télécharger le fichier
         await onFileDownload(fileId);
       }
     } catch (error) {
-      console.error("Erreur lors de l'action fichier:", error);
       alert(`Erreur: ${error.message || error}`);
     } finally {
       setIsDownloading(false);
@@ -113,77 +113,67 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
   const isFileDownloadedState = fileId ? downloadedFiles.has(fileId) : false;
   
   return (
-    <div className="flex items-center justify-between py-3 px-3 hover:bg-gray-50 transition-colors rounded-lg group">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <ContentIcon type={item.type} />
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 px-4 hover:bg-slate-50 transition-colors rounded-lg group gap-3">
+      <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+        <ContentIcon type={item.type} isDownloaded={isFileDownloadedState && item.type === 'file'} />
         <div className="min-w-0 flex-1">
-          {item.type === "link" ? (
+          {item.type === 'link' ? (
             <button
               onClick={handleLinkClick}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors text-left"
-            >
+              className="text-[15px] font-semibold text-slate-800 hover:text-primary transition-colors text-left font-sans">
               <span className="group-hover:underline">{item.nom}</span>
-              <ExternalLink className="w-3 h-3 inline ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <ExternalLink className="w-3.5 h-3.5 inline ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           ) : (
-            <p className="text-sm font-medium text-gray-700">
+            <p className="text-[15px] font-semibold text-slate-800 font-sans">
               {item.nom}
             </p>
           )}
-          <p className="text-xs text-gray-400 mt-0.5">{item.detail}</p>
+          
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs font-medium text-slate-500">{item.detail}</p>
+            {item.type === 'assign' && (
+              <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-semibold bg-orange-100 text-orange-700 hover:bg-orange-100">
+                � rendre
+              </Badge>
+            )}
+            {item.type === 'file' && isFileDownloadedState && (
+              <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-semibold bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none">
+                Disponible hors ligne
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
       
-      {/* Boutons d'action */}
-      <div className="ml-3 flex-shrink-0">
-        {item.type === "file" && (
+      <div className="flex-shrink-0 flex items-center justify-end">
+        {item.type === 'file' && (
           <Button
             onClick={handleFileAction}
             size="sm"
             variant={isFileDownloadedState ? "outline" : "default"}
             disabled={isDownloading}
-            className="text-xs"
+            className={`text-xs shadow-sm h-8 ${isFileDownloadedState ? 'border-slate-200 text-slate-700 bg-white hover:bg-slate-100' : 'bg-primary hover:bg-primary/95'}`}
           >
-            {isFileDownloadedState ? (
-              <>
-                <Eye className="w-3 h-3 mr-1" />
-                Ouvrir
-              </>
+            {isDownloading ? (
+              <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> En cours...</>
+            ) : isFileDownloadedState ? (
+              <><Eye className="w-3.5 h-3.5 mr-1.5" /> Ouvrir</>
             ) : (
-              <>
-                <Download className="w-3 h-3 mr-1" />
-                Télécharger
-              </>
+              <><CloudDownload className="w-3.5 h-3.5 mr-1.5" /> T�l�charger</>
             )}
           </Button>
         )}
         
-        {item.type === "folder" && (
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              onFolderClick(item);
-            }}
-            size="sm"
-            className="text-xs"
-          >
-            <Folder className="w-3 h-3 mr-1" />
-            Ouvrir
+        {item.type === 'folder' && (
+          <Button onClick={(e) => { e.stopPropagation(); onFolderClick(item); }} size="sm" variant="outline" className="text-xs h-8 bg-white border-slate-200 text-slate-700">
+            <Folder className="w-3.5 h-3.5 mr-1.5" /> Ouvrir
           </Button>
         )}
         
-        {item.type === "assign" && (
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              // TODO: Naviguer vers le détail du devoir
-              console.log("Devoir:", item);
-            }}
-            size="sm"
-            variant="outline"
-            className="text-xs"
-          >
-            Voir
+        {item.type === 'assign' && (
+          <Button onClick={(e) => { e.stopPropagation(); console.log("Devoir:", item); }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
+            {isTeacher ? "Soumissions" : "Ma remise"}
           </Button>
         )}
       </div>
@@ -191,22 +181,19 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
   );
 }
 
-// ─── Section dépliable ────────────────────────────────────────────────────────
+// ??? Section d�pliable ???
 function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
   const [open, setOpen] = useState(true);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
 
   return (
-    <div className="border border-gray-200 shadow-none rounded-xl overflow-hidden">
-      {/* En-tête cliquable */}
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-6 py-4
-          hover:bg-gray-50 transition-colors text-left"
-      >
+    <AccordionItem value={section.id.toString()} className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white data-[state=open]:rounded-b-none mb-4 last:mb-0">
+      <AccordionTrigger className="px-6 py-4 hover:bg-slate-50/80 hover:no-underline transition-colors data-[state=open]:bg-primary/5 group">
         <div className="flex items-center gap-3">
-          <Layers className="w-4 h-4 text-gray-500 flex-shrink-0" />
-          <span className="text-[15px] font-bold text-gray-900">{section.titre}</span>
+          <div className="p-2 rounded-lg bg-primary/10 text-primary group-data-[state=open]:bg-white group-data-[state=open]:shadow-sm transition-all">
+            <Layers className="w-4 h-4" />
+          </div>
+          <span className="text-base font-bold text-slate-900">{section.titre}</span>
         </div>
         <div className="flex items-center gap-2">
           {/* Menu déroulant pour ajouter un module */}
@@ -258,7 +245,7 @@ function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, dow
   );
 }
 
-// ─── Élément de navigation latérale ──────────────────────────────────────────
+
 function NavItem({ label, active, onClick, isDetails }) {
   return (
     <button

@@ -15,7 +15,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
-import bannerImage from "@/assets/img/banner.jpg";
+import bannerImage from "@/assets/img/img01.jpg";
 
 // Niveau de difficulté
 const LEVEL_CONFIG = {
