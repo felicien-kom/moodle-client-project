@@ -24,11 +24,7 @@ export const PATHS = {
     profile:   "/app/profile",
     settings:  "/app/settings",
     assignment: "/app/assignment",
-    course:"/app/course"
-    // Ex: sous-module
-    // users: {
-    //   list:   "/app/users",
-    //   detail: "/app/users/:id",
-    // },
+    course:"/app/course",
+    mediatheque: "/app/mediatheque"
   },
 };

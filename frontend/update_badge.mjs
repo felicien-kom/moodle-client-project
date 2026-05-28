@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+import fs from 'fs';
+const path = './src/pages/app/evaluations/components/StudentStatusBadge.jsx';
+let content = fs.readFileSync(path, 'utf8');
+
+// Replace everything after imports
+const newCode = `import { useEffect, useState } from "react";
 import { CheckCircle, AlertCircle, Clock, RefreshCw, UploadCloud } from "lucide-react";
 
 export function StudentStatusBadge({ assignment }) {
@@ -21,7 +26,7 @@ export function StudentStatusBadge({ assignment }) {
       
       if (diff < 0) {
         setIsLate(true);
-        setTimeLeft("Temps ï¿½coulï¿½");
+        setTimeLeft("Temps écoulé");
         setIsCritical(true);
       } else {
         setIsLate(false);
@@ -29,8 +34,8 @@ export function StudentStatusBadge({ assignment }) {
         const hours = Math.floor((diff % (24 * 3600)) / 3600);
         
         let timeStr = "";
-        if (days > 0) timeStr += `${days}j `;
-        timeStr += `${hours}h restants`;
+        if (days > 0) timeStr += \`\${days}j \`;
+        timeStr += \`\${hours}h restants\`;
         
         setTimeLeft(timeStr);
         setIsCritical(diff <= 48 * 3600); // <= 48h
@@ -42,15 +47,6 @@ export function StudentStatusBadge({ assignment }) {
     return () => clearInterval(interval);
   }, [assignment.dueDate, isSubmitted]);
 
-
-  // 1. Conflit de synchronisation
-  if (syncStatus === "CONFLICT") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-amber-50 text-amber-700 uppercase tracking-widest ring-1 ring-inset ring-amber-600/20" title="Une double modification a eu lieu, la version du serveur a prÃ©valu">
-        <AlertCircle className="w-3.5 h-3.5 animate-pulse text-amber-600" /> Conflit rÃ©solu
-      </span>
-    );
-  }
 
   // 1. Graded
   if (isGraded) {
@@ -66,7 +62,7 @@ export function StudentStatusBadge({ assignment }) {
     if (syncStatus === "PENDING_PUSH") {
       return (
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-orange-50 text-orange-700 uppercase tracking-widest ring-1 ring-inset ring-orange-600/20">
-          <UploadCloud className="w-3.5 h-3.5" /> Prï¿½t ï¿½ envoyer
+          <UploadCloud className="w-3.5 h-3.5" /> Prêt à envoyer
         </span>
       );
     }
@@ -87,7 +83,7 @@ export function StudentStatusBadge({ assignment }) {
     }
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-slate-100 text-slate-700 uppercase tracking-widest ring-1 ring-inset ring-slate-600/20">
-        <CheckCircle className="w-3.5 h-3.5" /> Brouillon sauvegardï¿½
+        <CheckCircle className="w-3.5 h-3.5" /> Brouillon sauvegardé
       </span>
     );
   }
@@ -96,7 +92,7 @@ export function StudentStatusBadge({ assignment }) {
   if (!assignment.dueDate) {
      return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-green-50 text-green-700 uppercase tracking-widest ring-1 ring-inset ring-green-600/20">
-        <Clock className="w-3.5 h-3.5" /> Sans ï¿½chï¿½ance
+        <Clock className="w-3.5 h-3.5" /> Sans échéance
       </span>
     );
   }
@@ -123,3 +119,8 @@ export function StudentStatusBadge({ assignment }) {
     </span>
   );
 }
+`;
+
+content = newCode;
+fs.writeFileSync(path, content, 'utf8');
+console.log('Update badge successful');
