@@ -8,7 +8,6 @@ export const saveLocalDraft = async (prisma, userEmail, localAssignId, text, fil
   if (!assignment) throw new Error("Assignment not found");
 
   // Validation métier stricte
-  console.log(assignment.requiresText);
   if (assignment.requiresText && text) {
     const wordCount = text.trim().split(/\s+/).length;
     if (assignment.wordLimit && wordCount > assignment.wordLimit) {

@@ -5,6 +5,8 @@ import courseRoutes from "./course.routes.js";
 import syncRoutes from "./sync.routes.js";
 import fileRoutes from "./file.routes.js";
 import assignmentRoutes from "./assignment.routes.js";
+import calendarRoutes from "./calendar.routes.js";
+import gradingRoutes from "./grading.routes.js";
 
 const router = Router();
 
@@ -15,5 +17,7 @@ router.use("/courses", courseRoutes);
 router.use("/sync", syncRoutes);
 router.use("/files", fileRoutes);
 router.use("/assignments", assignmentRoutes);
+router.use("/events", calendarRoutes);
+router.use("/submissions", gradingRoutes);
 
 export default router;
