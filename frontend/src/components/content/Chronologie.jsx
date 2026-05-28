@@ -15,20 +15,55 @@ const TYPE_ICONS = {
   "site": { icon: Globe, color: "text-red-500", bg: "bg-red-100" },
   "categorie": { icon: FileText, color: "text-blue-600", bg: "bg-blue-100" },
   "utilisateur": { icon: Calendar, color: "text-purple-600", bg: "bg-purple-100" },
+  "due": { icon: FileText, color: "text-amber-600", bg: "bg-amber-100" },
+  "gradingdue": { icon: FileText, color: "text-rose-600", bg: "bg-rose-100" },
   "default": { icon: Calendar, color: "text-gray-600", bg: "bg-gray-100" }
 };
+
 
 const TYPE_COLORS = {
   "cours": "bg-green-100 text-green-700",
   "site": "bg-blue-100 text-blue-700",
   "categorie": "bg-purple-100 text-purple-700",
   "utilisateur": "bg-gray-100 text-gray-700",
+  "due": "bg-amber-100 text-amber-700",
+  "gradingdue": "bg-rose-100 text-rose-700",
   "default": "bg-gray-100 text-gray-700"
 };
 
-export function Chronologie({ events = [] }) {
+const TYPE_MAPPING = {
+  "course": "cours",
+  "cours": "cours",
+  "site": "site",
+  "category": "categorie",
+  "categorie": "categorie",
+  "user": "utilisateur",
+  "utilisateur": "utilisateur",
+  "group": "groupe",
+  "groupe": "groupe",
+  "due": "due",
+  "gradingdue": "gradingdue"
+};
+
+const TYPE_DISPLAY_NAMES = {
+  "cours": "Cours",
+  "site": "Site",
+  "categorie": "Catégorie",
+  "utilisateur": "Utilisateur",
+  "groupe": "Groupe",
+  "due": "Échéance",
+  "gradingdue": "Correction",
+  "default": "Événement"
+};
+
+export function Chronologie({ events = [], onEventClick }) {
   const [filterType, setFilterType] = useState("tous");
   const [filterDate, setFilterDate] = useState("toutes");
+
+  const getNormalizedType = (event) => {
+    const rawType = (event.eventType || event.type || "default").toLowerCase();
+    return TYPE_MAPPING[rawType] || rawType;
+  };
 
   // ─── Filtrer les événements ──────────────────────────────────────────────
   const filteredEvents = useMemo(() => {
@@ -37,8 +72,8 @@ export function Chronologie({ events = [] }) {
     // Filtrer par type
     if (filterType !== "tous") {
       result = result.filter(event => {
-        const eventType = event.eventType || event.type || "default";
-        return eventType.toLowerCase() === filterType.toLowerCase();
+        const type = getNormalizedType(event);
+        return type === filterType.toLowerCase();
       });
     }
 
@@ -76,12 +111,12 @@ export function Chronologie({ events = [] }) {
 
   // ─── Déterminer l'icône et les couleurs ──────────────────────────────────
   function getEventInfo(event) {
-    const eventType = event.eventType || event.type || "default";
-    const typeKey = eventType.toLowerCase();
-    const typeConfig = TYPE_ICONS[typeKey] || TYPE_ICONS.default;
-    const typeColor = TYPE_COLORS[typeKey] || TYPE_COLORS.default;
+    const type = getNormalizedType(event);
+    const typeConfig = TYPE_ICONS[type] || TYPE_ICONS.default;
+    const typeColor = TYPE_COLORS[type] || TYPE_COLORS.default;
+    const displayType = TYPE_DISPLAY_NAMES[type] || TYPE_DISPLAY_NAMES.default;
 
-    return { typeConfig, typeColor, eventType };
+    return { typeConfig, typeColor, displayType };
   }
 
   return (
@@ -114,12 +149,14 @@ export function Chronologie({ events = [] }) {
             <SelectTrigger className="w-full bg-gray-50 border-gray-200">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white border border-gray-200 shadow-sm text-black">
               <SelectItem value="tous">Tous les types</SelectItem>
               <SelectItem value="cours">Cours</SelectItem>
               <SelectItem value="site">Site</SelectItem>
               <SelectItem value="categorie">Catégorie</SelectItem>
               <SelectItem value="utilisateur">Utilisateur</SelectItem>
+              <SelectItem value="due">Échéance</SelectItem>
+              <SelectItem value="gradingdue">Correction</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -129,7 +166,7 @@ export function Chronologie({ events = [] }) {
           <div className="space-y-3 pr-2">
             {filteredEvents.length > 0 ? (
               filteredEvents.map((event) => {
-                const { typeConfig, typeColor, eventType } = getEventInfo(event);
+                const { typeConfig, typeColor, displayType } = getEventInfo(event);
                 const Icon = typeConfig.icon;
                 const eventDate = new Date(event.timeStart * 1000 || event.date);
                 const formattedDate = eventDate.toLocaleDateString('fr-FR', {
@@ -143,6 +180,7 @@ export function Chronologie({ events = [] }) {
                 return (
                   <div
                     key={event.id}
+                    onClick={() => onEventClick && onEventClick(event)}
                     className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 
                                cursor-pointer transition-colors border border-transparent 
                                hover:border-gray-200"
@@ -156,7 +194,7 @@ export function Chronologie({ events = [] }) {
                           {event.name || event.title || "Événement sans titre"}
                         </span>
                         <Badge className={`text-xs shrink-0 border-0 ${typeColor}`}>
-                          {eventType}
+                          {displayType}
                         </Badge>
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">

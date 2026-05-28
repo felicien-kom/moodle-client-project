@@ -128,6 +128,7 @@ export function subscribeSyncProgress(syncId, callbacks = {}) {
         let buffer = "";
 
         const processStream = async () => {
+          let currentEvent = "";
           try {
             while (true) {
               const { done, value } = await reader.read();
@@ -140,9 +141,15 @@ export function subscribeSyncProgress(syncId, callbacks = {}) {
               buffer = lines.pop() || "";
 
               for (const line of lines) {
-                if (line.startsWith("data: ")) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith("event: ")) {
+                  currentEvent = trimmed.slice(7).trim();
+                } else if (trimmed.startsWith("data: ")) {
                   try {
-                    const data = JSON.parse(line.slice(6));
+                    const data = JSON.parse(trimmed.slice(6));
+                    if (currentEvent && !data.type) {
+                      data.type = currentEvent;
+                    }
                     onMessage(data);
 
                     if (data.type === "progress") {
@@ -155,6 +162,8 @@ export function subscribeSyncProgress(syncId, callbacks = {}) {
                   } catch (err) {
                     console.warn("Erreur parsing SSE:", err);
                   }
+                } else if (trimmed === "") {
+                  currentEvent = "";
                 }
               }
             }

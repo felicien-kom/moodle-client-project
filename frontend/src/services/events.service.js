@@ -89,3 +89,32 @@ export function groupEventsByDate(events) {
 
   return grouped;
 }
+
+/**
+ * Crée un nouvel événement (local ou distant)
+ * @param {Object} eventData - Les données de l'événement à créer
+ * @returns {Promise<Object>} L'événement créé
+ */
+export async function createEvent(eventData) {
+  // ─── Espace réservé pour l'endpoint d'API futur ───────────────────────
+  // TODO: Compléter ici avec l'url du point d'accès API final.
+  // Exemple: const response = await apiClient.post("/votre-endpoint-ici", { body: eventData });
+  
+  const response = await apiClient.post("/events", { body: eventData });
+  return response.event;
+}
+
+/**
+ * Met à jour un événement existant (local ou distant)
+ * @param {number|string} id - L'ID de l'événement à modifier
+ * @param {Object} eventData - Les nouvelles données de l'événement
+ * @returns {Promise<Object>} L'événement mis à jour
+ */
+export async function updateEvent(id, eventData) {
+  const response = await apiClient.put(`/events/${id}`, { body: eventData });
+  return response.event;
+}
+
+// Export avec majuscule pour compatibilité
+export const UpdateEvent = updateEvent;
+
