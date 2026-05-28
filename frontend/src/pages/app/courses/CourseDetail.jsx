@@ -34,12 +34,18 @@ import {
   UserPlus,
   Plus,
   MoreVertical,
+  CheckCircle,
+  FileText,
+  FileEdit,
+  Loader2,
+  CloudDownload,
 } from "lucide-react";
 import apiClient from "@/client/apiClient";
 import { formatSectionsForUI, enrollCourseOnline, createSection } from "@/services/courses.service.js";
 import { downloadFile, serveFile } from "@/services/files.service.js";
 import { getFileIcon } from "@/utils/file.utils.js";
 import FolderView from "./FolderView.jsx";
+import RessourcesActicityModal from "@/components/courses/RessourcesActicityModal.jsx";
 import { useUserRole } from "@/hooks/useUserRole";
 
 // ─── Icône colorée selon le type de resso// ??? Ic�ne color�e selon le type de ressource ???
@@ -181,14 +187,17 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
   );
 }
 
-// ??? Section d�pliable ???
+// ??? Section dpliable ???
 function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
   const [open, setOpen] = useState(true);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
 
   return (
-    <AccordionItem value={section.id.toString()} className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white data-[state=open]:rounded-b-none mb-4 last:mb-0">
-      <AccordionTrigger className="px-6 py-4 hover:bg-slate-50/80 hover:no-underline transition-colors data-[state=open]:bg-primary/5 group">
+    <div className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white mb-4 last:mb-0">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full px-6 py-4 hover:bg-slate-50/80 transition-colors flex items-center justify-between text-left group"
+      >
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10 text-primary group-data-[state=open]:bg-white group-data-[state=open]:shadow-sm transition-all">
             <Layers className="w-4 h-4" />

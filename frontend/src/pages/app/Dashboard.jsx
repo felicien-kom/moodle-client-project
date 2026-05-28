@@ -97,7 +97,7 @@ export default function Dashboard() {
         {/* Layout Principal : Grille de Cours + Panneau Latéral Calendrier */}
         <div className="flex flex-col xl:flex-row gap-8 items-start">
           
-          {/* Main Content: Liste des cours */}
+          {/* Main Content: Liste des cours 
           <div className="flex-1 w-full min-w-0">
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center justify-center p-2 rounded-lg bg-primary/10 text-primary">
@@ -118,7 +118,7 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-
+*/}
           {/* Sidebar: Calendrier */}
           <div className="w-full xl:w-[350px] shrink-0 sticky top-24">
             <div className="flex items-center gap-3 mb-6">
@@ -128,7 +128,7 @@ export default function Dashboard() {
               <h2 className="text-xl font-bold text-slate-800">Événements liés</h2>
             </div>
             
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm overflow-hidden">
+            <div className="rounded-10xl border border-slate-200 bg-white p-5 shadow-sm overflow-hidden">
               <Calender events={events} />
             </div>
           </div>
