@@ -86,9 +86,20 @@ export function AuthProvider({ children }) {
       navigate(PATHS.auth.login, { replace: true });
     // }
   }, [navigate]);
+  // --- Update Session ---
+  const updateSession = useCallback(async (newUserData) => {
+    // Si nous envoyons PATCH /auth/me/ avec le nouveau "name"
+    const response = await apiClient.patch(API_CONFIG.endpoints.me, { body: newUserData });
+    // response = { user: { ...updatedUser } }
+    if (response && response.user) {
+      setUser(response.user);
+      setLocalUser(response.user);
+      return response.user;
+    }
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, updateSession }}>
       {children}
     </AuthContext.Provider>
   );

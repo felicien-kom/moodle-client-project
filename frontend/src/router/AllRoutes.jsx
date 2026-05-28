@@ -26,7 +26,7 @@ function AllRoutes() {
         </Route>
 
         {/* Zone auth — layout minimaliste, pas de nav */}
-        <Route element={<AuthLayout />}>
+        <Route>
           {authRoutes.map((route) => (
             <Route key={route.path} path={route.path} element={route.element} />
           ))}

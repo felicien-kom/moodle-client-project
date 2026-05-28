@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@rive-app/react-webgl2": "^4.28.6"
+  }
+}
