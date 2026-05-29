@@ -189,7 +189,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
 }
 
 // ??? Section dpliable ???
-function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
+function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set(), onModuleAdded }) {
   const [open, setOpen] = useState(true);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
 
@@ -208,13 +208,14 @@ function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFil
         <div className="flex items-center gap-2">
           {/* Menu déroulant pour ajouter un module */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <button
-                className="p-1 hover:bg-gray-200 rounded-md transition-colors"
+            <DropdownMenuTrigger asChild>
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="p-1 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
                 title="Options"
               >
                 <MoreVertical className="w-4 h-4 text-gray-500" />
-              </button>
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setIsActivityModalOpen(true); }}>
@@ -252,6 +253,7 @@ function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFil
         onOpenChange={setIsActivityModalOpen}
         courseId={courseId}
         sectionId={section.id}
+        onModuleAdded={onModuleAdded}
       />
     </div>
   );
@@ -753,6 +755,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
                         onFileDownload={handleFileDownload}
                         onFileOpen={handleFileOpen}
                         downloadedFiles={downloadedFiles}
+                        onModuleAdded={loadCourseData}
                       />
                     </Card>
                   );

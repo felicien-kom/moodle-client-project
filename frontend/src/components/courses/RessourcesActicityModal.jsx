@@ -75,7 +75,7 @@ function ActivityGrid({ items, onItemClick }) {
   );
 }
 
-export default function AddActivityModal({ open, onOpenChange, courseId, sectionId }) {
+export default function AddActivityModal({ open, onOpenChange, courseId, sectionId, onModuleAdded }) {
   const [search, setSearch] = useState("");
   const [selectedFormType, setSelectedFormType] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState({});
@@ -150,6 +150,9 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
       });
       alert("Module créé avec succès !");
       handleCloseForm();
+      if (onModuleAdded) {
+        onModuleAdded();
+      }
     } catch (error) {
       console.error("Erreur lors de la création du module:", error);
       alert("Erreur lors de la création du module: " + (error.message || error));
