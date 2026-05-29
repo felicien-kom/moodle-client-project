@@ -29,13 +29,23 @@ export const pullCourseStructure = async ({ prisma, token, cursor, servertime, e
         const sectionVisible = Boolean(section.visible ?? 1);
 
         // 1. Stratégie d'évitement d'écriture pour la Section
-        const existingSection = await prisma.section.findUnique({
+        let existingSection = await prisma.section.findUnique({
           where: { server_id: section.id }
         });
+
+        // Si la section Moodle n'a pas été trouvée par son server_id,
+        // on tente de la faire correspondre à une section créée localement (server_id: null)
+        // en vérifiant l'index de la section et le cours
+        if (!existingSection) {
+          existingSection = await prisma.section.findFirst({
+            where: { courseId: localCourse.id, sectionIndex: sectionIndex }
+          });
+        }
 
         let localSection = existingSection;
 
         const sectionChanged = !existingSection || 
+          existingSection.server_id !== section.id || // Au cas où le server_id vient d'arriver
           existingSection.name !== sectionName ||
           existingSection.sectionIndex !== sectionIndex ||
           existingSection.summary !== sectionSummary ||
@@ -43,27 +53,36 @@ export const pullCourseStructure = async ({ prisma, token, cursor, servertime, e
           existingSection.courseId !== localCourse.id;
 
         if (sectionChanged) {
-          localSection = await prisma.section.upsert({
-            where:  { server_id: section.id },
-            update: {
-              name:           sectionName,
-              sectionIndex:   sectionIndex,
-              summary:        sectionSummary,
-              visible:        sectionVisible,
-              sync_status:    "SYNCED",
-              last_synced_at: servertime,
-            },
-            create: {
-              courseId:       localCourse.id,
-              server_id:      section.id,
-              name:           sectionName,
-              sectionIndex:   sectionIndex,
-              summary:        sectionSummary,
-              visible:        sectionVisible,
-              sync_status:    "SYNCED",
-              last_synced_at: servertime,
-            },
-          });
+          if (existingSection) {
+            // Mise à jour de la section existante
+            localSection = await prisma.section.update({
+              where: { id: existingSection.id },
+              data: {
+                server_id:      section.id,
+                // On garde le nom local si la section était en attente de push (au cas où le push de renommage n'a pas encore pris effet)
+                name:           (existingSection.sync_status === "PENDING_PUSH" && existingSection.name !== `Section ${sectionIndex}`) ? existingSection.name : sectionName,
+                sectionIndex:   sectionIndex,
+                summary:        sectionSummary,
+                visible:        sectionVisible,
+                sync_status:    "SYNCED",
+                last_synced_at: servertime,
+              }
+            });
+          } else {
+            // Création d'une nouvelle section
+            localSection = await prisma.section.create({
+              data: {
+                courseId:       localCourse.id,
+                server_id:      section.id,
+                name:           sectionName,
+                sectionIndex:   sectionIndex,
+                summary:        sectionSummary,
+                visible:        sectionVisible,
+                sync_status:    "SYNCED",
+                last_synced_at: servertime,
+              }
+            });
+          }
           pulled++;
         }
 

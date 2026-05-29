@@ -89,27 +89,6 @@ export const pushCourses = async ({ prisma, token, emitter }) => {
 
       const newServerId = serverResponse[0].id;
 
-      // Mettre à jour le cours local avec le server_id et SYNCED
-      await prisma.course.update({
-        where: { id: course.id },
-        data: {
-          server_id: newServerId,
-          sync_status: "SYNCED",
-          server_timemodified: servertime,
-          last_synced_at: servertime
-        }
-      });
-
-      // Mettre à jour les sections locales
-      await prisma.section.updateMany({
-        where: { courseId: course.id },
-        data: {
-          sync_status: "SYNCED",
-          server_timemodified: servertime,
-          last_synced_at: servertime
-        }
-      });
-
       // Inscription automatique du créateur au cours sur Moodle (en tant qu'enseignant : roleid 3)
       try {
         await moodleFetch("enrol_manual_enrol_users", {
@@ -123,6 +102,62 @@ export const pushCourses = async ({ prisma, token, emitter }) => {
         }, token);
       } catch (enrolErr) {
         console.warn(`[SYNC WARNING] Impossible d'inscrire l'enseignant au cours ${newServerId}:`, enrolErr.message);
+      }
+
+      // Mettre à jour le cours local avec le server_id et SYNCED
+      await prisma.course.update({
+        where: { id: course.id },
+        data: {
+          server_id: newServerId,
+          sync_status: "SYNCED",
+          server_timemodified: servertime,
+          last_synced_at: servertime
+        }
+      });
+
+      // Récupérer les sections générées par Moodle pour les renommer et obtenir leur server_id
+      try {
+        const courseContents = await moodleFetch("core_course_get_contents", { courseid: newServerId }, token);
+        if (courseContents && Array.isArray(courseContents)) {
+          for (const mSection of courseContents) {
+            // Mise à jour de l'ID de la section locale
+            await prisma.section.updateMany({
+              where: { courseId: course.id, sectionIndex: mSection.section },
+              data: {
+                server_id: mSection.id,
+                sync_status: "SYNCED",
+                server_timemodified: servertime,
+                last_synced_at: servertime
+              }
+            });
+
+            // Renommer la section sur Moodle pour matcher le nom local défini par l'enseignant
+            const localSection = course.sections.find(s => s.sectionIndex === mSection.section);
+            if (localSection && localSection.name && localSection.name !== mSection.name) {
+              try {
+                await moodleFetch("core_update_inplace_editable", {
+                  component: "format_topics",
+                  itemtype: "sectionname",
+                  itemid: mSection.id,
+                  value: localSection.name
+                }, token);
+              } catch (renameErr) {
+                console.warn(`[SYNC WARNING] Impossible de renommer la section ${mSection.id}:`, renameErr.message);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(`[SYNC WARNING] Impossible de récupérer les sections du cours ${newServerId}:`, err.message);
+        // Fallback si ça échoue : juste marquer comme SYNCED
+        await prisma.section.updateMany({
+          where: { courseId: course.id },
+          data: {
+            sync_status: "SYNCED",
+            server_timemodified: servertime,
+            last_synced_at: servertime
+          }
+        });
       }
 
       // Ajout de CourseEnrollment pour la sync PULL
