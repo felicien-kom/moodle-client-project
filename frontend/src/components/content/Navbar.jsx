@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { RefreshCw, ChevronDown, User as UserIcon, LogOut, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { RefreshCw, ChevronDown, User as UserIcon, LogOut, Wifi, WifiOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import MainLogo from "@/components/custom/MainLogo";
 import { getLocalUser } from "@/utils/api.utils";
@@ -60,6 +60,8 @@ export function Navbar() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
   const [syncMessage, setSyncMessage] = useState("");
+  const [syncPhase, setSyncPhase] = useState(""); // "INIT", "PUSH", "PULL", "COMPLETE"
+  const [syncError, setSyncError] = useState(null);
 
   // Fonctions de navigation
   const goToHome = () => navigate(PATHS.app.dashboard);
@@ -81,35 +83,86 @@ export function Navbar() {
       setIsSyncing(true);
       setSyncProgress(0);
       setSyncMessage("Démarrage de la synchronisation...");
+      setSyncPhase("INIT");
+      setSyncError(null);
   
+      console.log("[SYNC] Appel startSync...");
       const result = await startSync();
+      console.log("[SYNC] Résultat:", result);
+      
+      if (!result?.syncId) {
+        throw new Error("Pas de syncId reçu du serveur");
+      }
+      
+      console.log("[SYNC] syncId reçu:", result.syncId);
       
       // S'abonner aux SSE
       const unsubscribe = subscribeSyncProgress(result.syncId, {
         onProgress: (data) => {
-          setSyncProgress(data.progress || 0);
-          setSyncMessage(data.message || "Synchronisation en cours...");
+          console.log("[SSE] Progress event:", data);
+          // Mettre à jour la phase et la progression
+          if (data.phase) {
+            setSyncPhase(data.phase);
+            
+            // Animation fluide de la progression
+            if (data.progress !== undefined) {
+              setSyncProgress(prev => {
+                const diff = data.progress - prev;
+                // Interpolation rapide si grand écart, sinon direct
+                if (Math.abs(diff) > 10) {
+                  return prev + (diff * 0.3); // Smooth interpolation
+                }
+                return data.progress;
+              });
+            }
+            
+            // Message selon la phase
+            if (data.phase === "INIT") {
+              const statusMessages = {
+                checking_server: "Vérification du serveur...",
+                fetching_server_time: "Synchronisation horaire...",
+                ready: "Initialisation terminée",
+              };
+              setSyncMessage(statusMessages[data.status] || "Initialisation...");
+            } else if (data.phase === "PUSH") {
+              setSyncMessage(data.message || `Envoi des modifications (${data.pushed || 0} éléments)`);
+            } else if (data.phase === "PULL") {
+              setSyncMessage(data.message || `Récupération des nouveautés (${data.pulled || 0} éléments)`);
+            } else {
+              setSyncMessage(data.message || "Synchronisation en cours...");
+            }
+          }
         },
         onComplete: () => {
+          console.log("[SSE] Sync complète");
+          setSyncPhase("COMPLETE");
           setSyncProgress(100);
           setSyncMessage("À jour");
-          toast.success("Synchronisation terminée avec succès");
+          toast.success("Synchronisation terminée avec succès", {
+            description: "Tous vos cours et devoirs ont été mis à jour."
+          });
           setTimeout(() => {
             setIsSyncing(false);
             setSyncProgress(0);
             setSyncMessage("");
-          }, 2000);
+            setSyncPhase("");
+          }, 2500);
           unsubscribe();
         },
         onError: (err) => {
+          console.error("[SSE] Erreur:", err);
+          setSyncError(err?.message || "Erreur inconnue");
+          setSyncPhase("ERROR");
           setIsSyncing(false);
-          toast.error("Connexion perdue", { description: "La synchro reprendra plus tard." });
+          toast.error("Erreur de synchronisation", { description: err?.message || "La synchro reprendra plus tard." });
           unsubscribe();
         }
       });
   
     } catch (error) {
-      console.error("Erreur lors de la synchronisation:", error);
+      console.error("[SYNC] Exception:", error);
+      setSyncError(error?.message || "Erreur inconnue");
+      setSyncPhase("ERROR");
       toast.error("Erreur lors de la synchronisation", { description: error?.message || "Erreur inconnue" });
       setIsSyncing(false);
     }
@@ -210,18 +263,20 @@ export function Navbar() {
         {/* Bouton de Synchronisation amélioré */}
         <Button 
           variant={isSyncing ? "secondary" : "default"} 
-          className={`flex items-center gap-2 text-sm font-medium transition-all shadow-sm ${
+          className={`flex items-center gap-2 text-sm font-medium transition-all shadow-sm min-w-fit whitespace-nowrap ${
             !isOnline 
               ? "bg-slate-100 text-slate-400 opacity-70 cursor-not-allowed hidden sm:flex" 
               : isSyncing 
-                ? "bg-slate-100 text-slate-500 hover:bg-slate-200" 
+                ? syncPhase === "ERROR"
+                  ? "bg-red-100 text-red-600 hover:bg-red-100"
+                  : "bg-blue-100 text-blue-600 hover:bg-blue-200"
                 : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
           }`}
           onClick={handleSync}
           disabled={isSyncing || !isOnline}
-          title={!isOnline ? "Mode Hors-ligne" : "Synchroniser les données"}
+          title={!isOnline ? "Mode Hors-ligne" : isSyncing ? "Synchronisation en cours..." : "Synchroniser les données"}
         >
-          <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin text-primary' : ''}`} />
+          <RefreshCw className={`h-4 w-4 flex-shrink-0 ${isSyncing ? 'animate-spin' : ''} ${syncPhase === "ERROR" ? "text-red-600" : syncPhase === "COMPLETE" ? "text-emerald-600" : "text-current"}`} />
           <span className="hidden sm:inline-block">
             {isSyncing ? "Synchronisation..." : "Synchroniser"}
           </span>
@@ -261,32 +316,81 @@ export function Navbar() {
       </div>
       </nav>
       
-      {/* Barre de progression de synchronisation */}
+      {/* Barre de progression de synchronisation - Rendu Professionnel */}
       <div 
-        className={`w-full overflow-hidden transition-all duration-500 ease-in-out bg-slate-50/95 backdrop-blur border-b border-slate-200/50 ${
-          isSyncing ? "max-h-16 py-2.5 opacity-100" : "max-h-0 py-0 opacity-0 border-b-0"
+        className={`w-full transition-all duration-500 ease-in-out ${
+          syncPhase === "ERROR" 
+            ? "bg-gradient-to-r from-red-50 via-red-50 to-red-50 border-b border-red-200/30"
+            : syncPhase === "COMPLETE"
+            ? "bg-gradient-to-r from-emerald-50 via-emerald-50 to-emerald-50 border-b border-emerald-200/30"
+            : "bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border-b border-blue-200/20"
+        } ${
+          isSyncing ? "max-h-20 py-3 opacity-100 visible" : "max-h-0 py-0 opacity-0 invisible border-b-0"
         }`}
       >
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 animate-pulse-slow">
-          <div className="flex-shrink-0">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          </div>
-          <div className="flex-1">
-            <div className="flex mb-1 items-center justify-between text-[11px] font-semibold text-slate-600">
-              <span className="truncate max-w-[80%] flex items-center gap-2">
-                <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Échange actif</span>
-                {syncMessage || "Synchronisation..."}
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6">
+          {/* Ligne 1: Icône + Phase + Message + Pourcentage */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {syncPhase === "ERROR" ? (
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+              ) : syncPhase === "COMPLETE" ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+              ) : (
+                <Loader2 className="h-5 w-5 text-blue-600 animate-spin flex-shrink-0" />
+              )}
+              
+              {/* Badge Phase */}
+              {syncPhase && syncPhase !== "ERROR" && (
+                <span className={`px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wide transition-all duration-300 ${
+                  syncPhase === "INIT" ? "bg-blue-100 text-blue-700" :
+                  syncPhase === "PUSH" ? "bg-purple-100 text-purple-700" :
+                  syncPhase === "PULL" ? "bg-amber-100 text-amber-700" :
+                  "bg-emerald-100 text-emerald-700"
+                }`}>
+                  {syncPhase === "INIT" ? "Initialisation" :
+                   syncPhase === "PUSH" ? "Envoi" :
+                   syncPhase === "PULL" ? "Récupération" :
+                   "Terminé"}
+                </span>
+              )}
+              
+              {/* Message */}
+              <span className={`text-sm font-medium transition-colors duration-300 ${
+                syncPhase === "ERROR" 
+                  ? "text-red-700"
+                  : syncPhase === "COMPLETE"
+                  ? "text-emerald-700"
+                  : "text-slate-700"
+              }`}>
+                {syncError || syncMessage || "Synchronisation en cours..."}
               </span>
-              <span className={syncProgress === 100 ? "text-emerald-600 font-bold" : "text-primary"}>{syncProgress}%</span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
-              <div 
-                className={`h-full rounded-full transition-all duration-300 ease-out ${
-                  syncProgress === 100 ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-primary animate-progress-glow"
-                }`}
-                style={{ width: `${Math.max(2, syncProgress)}%` }}
-              ></div>
-            </div>
+            
+            {/* Pourcentage */}
+            <span className={`text-sm font-bold tabular-nums transition-colors duration-300 flex-shrink-0 ${
+              syncPhase === "ERROR" ? "text-red-600" :
+              syncPhase === "COMPLETE" ? "text-emerald-600" :
+              "text-blue-600"
+            }`}>
+              {syncProgress.toFixed(0)}%
+            </span>
+          </div>
+          
+          {/* Ligne 2: Barre de progression */}
+          <div className="w-full h-2 rounded-full bg-white/50 overflow-hidden shadow-inner backdrop-blur-sm border border-white/20">
+            <div 
+              className={`h-full rounded-full transition-all duration-200 ease-out ${
+                syncPhase === "ERROR" 
+                  ? "bg-gradient-to-r from-red-500 to-red-600 shadow-[0_0_16px_rgba(239,68,68,0.5)]"
+                  : syncPhase === "COMPLETE"
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[0_0_16px_rgba(16,185,129,0.5)]"
+                  : "bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 shadow-[0_0_16px_rgba(59,130,246,0.4)]"
+              }`}
+              style={{
+                width: `${syncProgress}%`,
+              }}
+            />
           </div>
         </div>
       </div>

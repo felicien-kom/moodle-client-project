@@ -49,7 +49,7 @@ export const startSync = async (req, res) => {
   });
 
   engine.on("done", (event) => {
-    _broadcast(syncId, "done", event);
+    _broadcast(syncId, "complete", event);
     activeSyncs.get(syncId).status = "done";
     runningSyncs.delete(email); // libérer le verrou
   });

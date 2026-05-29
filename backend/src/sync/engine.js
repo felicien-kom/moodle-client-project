@@ -37,12 +37,12 @@ export class SyncEngine extends EventEmitter {
       if (!user.moodleToken) throw new Error("No Moodle token. Please create your profile first.");
 
       // 2. Vérifier que le serveur Moodle est joignable
-      this.emit("progress", { step: "INIT", status: "checking_server" });
+      this.emit("progress", { phase: "INIT", progress: 5, status: "checking_server" });
       const reachable = await checkMoodleReachable();
       if (!reachable) throw new Error("Moodle server is not reachable. Check your connection.");
 
       // 3. Valider le token + obtenir le servertime depuis le header HTTP "Date"
-      this.emit("progress", { step: "INIT", status: "fetching_server_time" });
+      this.emit("progress", { phase: "INIT", progress: 10, status: "fetching_server_time" });
 
       let siteInfo, servertime;
       try {
@@ -62,7 +62,8 @@ export class SyncEngine extends EventEmitter {
       this.servertime = servertime;
 
       this.emit("progress", {
-        step:       "INIT",
+        phase:       "INIT",
+        progress:    15,
         status:     "ready",
         servertime: this.servertime,
         role:       user.role,
@@ -71,7 +72,7 @@ export class SyncEngine extends EventEmitter {
 
       // 4. Curseur de la dernière sync
       const cursor = await getCursor(this.prisma, user.id);
-      this.emit("progress", { step: "INIT", cursor, servertime: this.servertime });
+      this.emit("progress", { phase: "INIT", progress: 20, cursor, servertime: this.servertime });
       // throw Error('Erreur volontaire');
 
       // 5. Contexte partagé passé aux fonctions pull/push
@@ -91,17 +92,65 @@ export class SyncEngine extends EventEmitter {
       let totalPulled = 0;
       let totalConflicts = 0;
 
+      // Compteurs pour progression incrémentale
+      const pullSteps = ["profile", "courses", "courseParticipants", "calendarEvents", "courseStructure", "fileResources", "folderResources", "externalUrls", "assignments", "assignmentSubmissions", "grades"]; // 11
+      const pushSteps = ["profile", "calendarEvents", "assignmentSubmissions", "assignmentGrades"]; // 4
+      let pullCompletedCount = 0;
+      let pushCompletedCount = 0;
+
+      // Listener temporaire pour les événements détaillés de pull/push
+      const onProgress = (event) => {
+        // Convertir les événements step en événements phase avec progression incrémentale
+        if (event.step === "PULL" && event.status === "done") {
+          pullCompletedCount++;
+          const progressVal = 35 + (pullCompletedCount / pullSteps.length) * 58; // 35% → 93%
+          const phaseLabel = this._getEntityLabel(event.entity);
+          this.emit("progress", {
+            phase: "PULL",
+            progress: Math.round(progressVal),
+            status: "processing",
+            entity: phaseLabel,
+            pulled: event.pulled,
+            message: `Récupération ${phaseLabel}: ${event.pulled} élément${event.pulled > 1 ? 's' : ''}`
+          });
+        } else if (event.step === "PUSH" && event.status === "done") {
+          pushCompletedCount++;
+          const progressVal = 5 + (pushCompletedCount / pushSteps.length) * 23; // 5% → 28%
+          const phaseLabel = this._getEntityLabel(event.entity);
+          this.emit("progress", {
+            phase: "PUSH",
+            progress: Math.round(progressVal),
+            status: "processing",
+            entity: phaseLabel,
+            pushed: event.pushed,
+            message: `Envoi ${phaseLabel}: ${event.pushed} élément${event.pushed > 1 ? 's' : ''}`
+          });
+        }
+      };
+
+      // Ajouter le listener temporaire
+      this.on("progress", onProgress);
+
       // --- PHASE 1 : PUSH (Envoi des modifications locales vers Moodle) ---
-      this.emit("progress", { step: "PHASE", phase: "PUSH" });
+      this.emit("progress", { phase: "PUSH", progress: 5, status: "starting", message: "Préparation envoi..." });
+      
       const pushResult = await pushAll(ctx);
       totalPushed    += pushResult.pushed;
       totalConflicts += pushResult.conflicts;
+      
+      this.emit("progress", { phase: "PUSH", progress: 30, status: "completed", pushed: totalPushed, message: `Envoi complété: ${totalPushed} élément${totalPushed > 1 ? 's' : ''}` });
 
       // --- PHASE 2 : PULL (Récupération des nouveautés du serveur) ---
-      this.emit("progress", { step: "PHASE", phase: "PULL" });
+      this.emit("progress", { phase: "PULL", progress: 35, status: "starting", message: "Préparation récupération..." });
+      
       const pullResult = await pullAll(ctx);
       totalPulled    += pullResult.pulled;
       totalConflicts += pullResult.conflicts;
+      
+      this.emit("progress", { phase: "PULL", progress: 95, status: "completed", pulled: totalPulled, message: `Récupération complétée: ${totalPulled} élément${totalPulled > 1 ? 's' : ''}` });
+
+      // Retirer le listener temporaire
+      this.removeListener("progress", onProgress);
 
       // 6. Sauvegarder le nouveau curseur
       const newCursor = await saveCursor(this.prisma, user.id, this.servertime);
@@ -131,5 +180,23 @@ export class SyncEngine extends EventEmitter {
       where: { id: logId },
       data:  { status, pushed, pulled, conflicts, finishedAt: new Date(), errorMessage },
     });
+  }
+
+  _getEntityLabel(entity) {
+    const labels = {
+      "profile": "des informations",
+      "courses": "des cours",
+      "courseParticipants": "des participants",
+      "calendarEvents": "des événements calendrier",
+      "courseStructure": "de la structure",
+      "fileResources": "des fichiers",
+      "folderResources": "des dossiers",
+      "externalUrls": "des liens externes",
+      "assignments": "des devoirs",
+      "assignmentSubmissions": "des remises",
+      "grades": "des notes",
+      "assignmentGrades": "des notes de devoir"
+    };
+    return labels[entity] || entity;
   }
 }
