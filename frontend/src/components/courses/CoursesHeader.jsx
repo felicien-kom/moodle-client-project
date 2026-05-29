@@ -7,8 +7,8 @@ import { useUserRole } from "@/hooks/useUserRole";
  * Design épuré et professionnel
  */
 export function CoursesHeader({ onSearch, onCreateClick, searchValue = "" }) {
-  const { isTeacher, isAdmin } = useUserRole();
-  const canCreateCourse = isTeacher || isAdmin;
+  const { isTeacher } = useUserRole();
+  const canCreateCourse = isTeacher;
 
   return (
     <div className="w-full border-b border-indigo-100 bg-white">

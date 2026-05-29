@@ -2,16 +2,24 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
-  ArrowLeft, Plus, Search, BookOpen, Calendar, User,
-  Bell, Info, ChevronDown, ChevronUp, FileText,
+  Plus, Search, BookOpen, User,
+  ChevronDown, ChevronUp, FileText,
   Video, Link, ClipboardList, HelpCircle,
 } from "lucide-react";
+import image01 from "@/assets/img/img01.jpg";
+import image02 from "@/assets/img/img02.jpg";
+import image03 from "@/assets/img/img03.avif";
+import image04 from "@/assets/img/img04.avif";
+import image05 from "@/assets/img/img05.jpg";
+import image06 from "@/assets/img/img06.jpg";
+import image07 from "@/assets/img/img07.avif";
 import CourseDetail from "@/pages/app/courses/CourseDetail";
 import apiClient from "@/client/apiClient";
 import CreateCourseModal from "@/components/courses/ModalFormCreationCours";
+import { EmptyState } from "@/components/courses/EmptyState";
 import { getCatalogueOnline } from "@/services/courses.service";
+import { useUserRole } from "@/hooks/useUserRole";
 
 // ─── Image fond tableau math ──────────────────────────────────────────────────
 function MathBackground({ imagePath }) {
@@ -89,27 +97,43 @@ function CourseSection({ section }) {
   );
 }
 
+const EXPLORER_PLACEHOLDER_IMAGES = [
+  image01,
+  image02,
+  image03,
+  image04,
+  image05,
+  image06,
+  image07,
+];
+
+const getExplorerPlaceholderImage = (seed) => {
+  const key = seed || "default";
+  const hash = Array.from(String(key)).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return EXPLORER_PLACEHOLDER_IMAGES[Math.abs(hash) % EXPLORER_PLACEHOLDER_IMAGES.length];
+};
+
 // ─── Carte cours (dans la liste) ──────────────────────────────────────────────
 function CourseCard({ cours, onClick, isExplorer = false }) {
-  const imageUrl = cours.imageUrl || null;
-  const defaultImage = isExplorer ? "/src/assets/defaultCourseImage.jpg" : null;
+  const hasActualImage = cours.imageUrl || cours.image;
+  const imageUrl = hasActualImage ? (cours.imageUrl || cours.image) : isExplorer ? getExplorerPlaceholderImage(cours.id || cours.title) : null;
 
   return (
     <Card
       onClick={onClick}
-      className="border border-gray-200 shadow-none rounded-xl overflow-hidden cursor-pointer
-        hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+      className="border border-gray-200 shadow-none rounded-3xl overflow-hidden cursor-pointer bg-white
+        hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
     >
       {imageUrl ? (
         <MathBackground imagePath={imageUrl} />
-      ) : isExplorer ? (
-        <MathBackground imagePath={defaultImage} />
       ) : (
         <div className="w-full h-32 bg-blue-100 flex items-center justify-center text-3xl">🖥️</div>
       )}
       <CardContent className="p-4">
-        <p className="text-sm font-bold text-gray-900 mb-0.5">{cours.title}</p>
-        <p className="text-xs text-gray-400 mb-2">{cours.categoryName}</p>
+        <p className="text-sm font-semibold text-slate-900 mb-0.5 line-clamp-2">{cours.title}</p>
+        {cours.categoryName && (
+          <p className="text-xs text-slate-500 line-clamp-1">{cours.categoryName}</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -117,19 +141,16 @@ function CourseCard({ cours, onClick, isExplorer = false }) {
 
 // ─── VUE 1 : Espace Cours ────────────────────────────────────────────────────
 function EspaceCours({ onOuvrirCours }) {
+  const { isTeacher } = useUserRole();
   const [query, setQuery] = useState("");
   const [coursInscrits, setCoursInscrits] = useState([]);
   const [coursExplorer, setCoursExplorer] = useState([]);
-  const [coursCreés, setCoursCreés] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [showAllExplorer, setShowAllExplorer] = useState(false);
 
   // ─── Charger les données au montage du composant ────────────────────
-  useEffect(() => {
-    loadCourses();
-  }, []);
-
   async function loadCourses() {
     try {
       setLoading(true);
@@ -166,7 +187,7 @@ function EspaceCours({ onOuvrirCours }) {
 
     } catch (err) {
       // Erreur critique seulement si les cours locaux échouent
-      if (!coursInscrits || coursInscrits.length === 0) {
+      if (!enrolledCourses || enrolledCourses.length === 0) {
         setError(err.message || "Erreur lors du chargement des cours");
       }
       console.error("Erreur chargement cours:", err);
@@ -174,6 +195,11 @@ function EspaceCours({ onOuvrirCours }) {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    loadCourses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function filter(arr) {
     if (!query) return arr;
@@ -195,7 +221,7 @@ function EspaceCours({ onOuvrirCours }) {
 
   // Fonction appelée quand un cours est créé via la modal
   const handleCourseCreated = (newCourse) => {
-    setCoursCreés((prev) => [...prev, newCourse]);
+    setCoursInscrits((prev) => [newCourse, ...prev]);
   };
 
   // ─── Afficher spinner pendant chargement ────────────────────────────
@@ -227,86 +253,133 @@ function EspaceCours({ onOuvrirCours }) {
     );
   }
 
-  const crees = filter(coursCreés);
-  const inscrits = filter(coursInscrits);
+  const createdCourses = isTeacher ? filter(coursInscrits) : [];
+  const enrolledCourses = isTeacher ? [] : filter(coursInscrits);
   const explorer = filter(coursExplorer);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Top bar */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-2 cursor-pointer hover:text-indigo-600">
-              <ArrowLeft className="w-4 h-4" />
-              Retour au tableau de bord
-            </div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">Espace Cours</h1>
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8">
+          <div className="space-y-1">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+              Espace Cours
+            </h1>
+            <p className="text-sm text-slate-600 max-w-xl">
+              {isTeacher
+                ? "Gérez vos cours créés et suivez vos parcours pédagogiques."
+                : "Retrouvez les cours où vous êtes inscrit et découvrez de nouvelles formations."}
+            </p>
           </div>
 
-          <Button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-5 font-semibold gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Créer un nouveau cours
-          </Button>
-
+          {isTeacher && (
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-5 font-semibold gap-2 shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              Créer un nouveau cours
+            </Button>
+          )}
         </div>
 
-        {/* Barre recherche */}
-        <Card className="border border-gray-200 shadow-none rounded-xl mb-8">
-          <CardContent className="p-1 pl-4 flex items-center gap-2">
-            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        <Card className="border border-slate-200/80 shadow-sm rounded-2xl mb-10 bg-white">
+          <CardContent className="p-2 pl-4 flex items-center gap-2">
+            <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
             <Input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Rechercher un cours..."
-              className="border-none shadow-none focus-visible:ring-0 text-sm"
+              className="border-none shadow-none focus-visible:ring-0 text-sm bg-transparent"
             />
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-10 px-5">
-              Rechercher
-            </Button>
           </CardContent>
         </Card>
 
-        {/* Vos cours créés */}
-        {crees && crees.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Vos cours créés</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {crees.map((c, index) => (
-                <CourseCard key={`created-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} />
-              ))}
-            </div>
+        {isTeacher ? (
+          <div>
+            {createdCourses.length > 0 ? (
+              <>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-4">
+                  Vos cours créés
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {createdCourses.map((c, index) => (
+                    <CourseCard key={`created-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <EmptyState
+                icon={BookOpen}
+                title="Aucun cours créé pour le moment"
+                description="Vous pouvez créer un nouveau cours immédiatement. Tous vos cours créés apparaîtront ici." 
+                actionLabel="Créer un cours"
+                onAction={() => setIsCreateModalOpen(true)}
+              />
+            )}
           </div>
-        )}
+        ) : (
+          <>
+            {/* Cours inscrits */}
+            {enrolledCourses.length > 0 ? (
+              <div className="mb-10">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-4">
+                  Cours inscrits
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {enrolledCourses.map((c, index) => (
+                    <CourseCard key={`enrolled-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                icon={User}
+                title="Vous n'êtes inscrit à aucun cours"
+                description="Explorez le catalogue pour découvrir de nouvelles formations et vous inscrire à votre premier cours."
+                actionLabel="Explorer les cours"
+                onAction={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+              />
+            )}
 
-        {/* Cours inscrits */}
-        {inscrits.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Cours crées</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {inscrits.map((c, index) => (
-                <CourseCard key={`enrolled-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} />
-              ))}
+            {/* Explorer */}
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-4">
+                Explorer d&apos;autres cours
+              </h2>
+              {explorer.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {(showAllExplorer ? explorer : explorer.slice(0, 8)).map((c, index) => (
+                      <CourseCard
+                        key={`explorer-${c.id || index}`}
+                        cours={c}
+                        onClick={() => onOuvrirCours({ ...c, isExplorer: true })}
+                        isExplorer={true}
+                      />
+                    ))}
+                  </div>
+                  {explorer.length > 8 && (
+                    <div className="mt-6 flex justify-center">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAllExplorer((prev) => !prev)}
+                        className="rounded-full px-6 py-2 text-sm"
+                      >
+                        {showAllExplorer ? "Réduire" : `Afficher ${explorer.length - 8} cours supplémentaires`}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <EmptyState
+                  icon={Search}
+                  title="Aucun cours trouvé"
+                  description="Le catalogue n'est pas disponible pour le moment. Essayez de revenir plus tard."
+                />
+              )}
             </div>
-          </div>
-        )}
-
-        {/* Explorer */}
-        {explorer.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Explorer d'autres cours</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {explorer.map((c, index) => (
-                <CourseCard key={`explorer-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} isExplorer={true} />
-              ))}
-            </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -328,6 +401,7 @@ export default function Course() {
   function ouvrirCours(c) {
     setCoursActuel(c);
     setVue("detail");
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
 
   if (vue === "detail" && coursActuel) {

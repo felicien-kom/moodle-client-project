@@ -44,7 +44,7 @@ export const createProfile = async ({ email, username, serverPassword, clientPas
   );
 
   // ─── NOUVEAU : 3b. Détection Intelligente du Rôle ─────────────
-  let detectedRole = "STUDENT"; // Étudiant par défaut
+  let detectedRole = "student"; // Étudiant par défaut (format normalisé en minuscules)
   
   try {
     const { data: courses } = await moodleFetch(
@@ -74,7 +74,7 @@ export const createProfile = async ({ email, username, serverPassword, clientPas
             );
             
             if (isTeacher) {
-              detectedRole = "TEACHER";
+              detectedRole = "teacher";
               break; // On a trouvé un cours où il est prof, on arrête la boucle
             }
           }
@@ -103,7 +103,7 @@ export const createProfile = async ({ email, username, serverPassword, clientPas
       email,
       username,
       name:      siteInfo.fullname,
-      role:      detectedRole,       // <-- AJUSTEMENT ICI
+      role:      detectedRole,       // <-- rôle stocké en minuscules
       dbPath:    dbRelPath,          
     },
   });
@@ -117,7 +117,7 @@ export const createProfile = async ({ email, username, serverPassword, clientPas
       email,
       username,
       name:               siteInfo.fullname,
-      role:               detectedRole,      // <-- AJUSTEMENT ICI
+      role:               detectedRole,      // <-- rôle stocké en minuscules
       clientPasswordHash,
       moodleToken,
       moodleUserId:       siteInfo.userid,
@@ -131,7 +131,7 @@ export const createProfile = async ({ email, username, serverPassword, clientPas
       id:       localUser.id,
       email:    localUser.email,
       username: localUser.username,
-      role:     localUser.role, // Le JWT contiendra automatiquement "TEACHER" ou "STUDENT"
+      role:     localUser.role, // Le JWT contiendra le rôle normalisé (minuscules)
     }),
     user: _safeUser(localUser),
   };

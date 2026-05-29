@@ -15,7 +15,22 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
-import bannerImage from "@/assets/img/img01.jpg";
+
+const PLACEHOLDER_BACKGROUNDS = [
+  "linear-gradient(135deg, #4338ca 0%, #4f46e5 35%, #818cf8 100%)",
+  "linear-gradient(135deg, #0f766e 0%, #14b8a6 40%, #22d3ee 100%)",
+  "linear-gradient(135deg, #7c3aed 0%, #9333ea 45%, #a855f7 100%)",
+  "linear-gradient(135deg, #06347d 0%, #2563eb 40%, #7dd3fc 100%)",
+  "linear-gradient(135deg, #b45309 0%, #f59e0b 35%, #fbbf24 100%)",
+  "linear-gradient(135deg, #1d4ed8 0%, #2563eb 40%, #38bdf8 100%)",
+  "linear-gradient(135deg, #065f46 0%, #16a34a 45%, #4ade80 100%)",
+];
+
+const getPlaceholderBackground = (seed) => {
+  if (!seed) return PLACEHOLDER_BACKGROUNDS[0];
+  const hash = Array.from(String(seed)).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return PLACEHOLDER_BACKGROUNDS[Math.abs(hash) % PLACEHOLDER_BACKGROUNDS.length];
+};
 
 // Niveau de difficulté
 const LEVEL_CONFIG = {
@@ -35,10 +50,8 @@ export function CourseCard({
   courseId,
   image,
   title,
-  description,
   createdBy,
   createdByName,
-  startDate,
   category,
   level,
   duration,
@@ -50,23 +63,23 @@ export function CourseCard({
   onEdit,
   onDelete,
   onEnroll,
-  onUnenroll,
   onViewDetails,
   isEnrolled = false,
 }) {
-  const { isTeacher, isAdmin, isStudent, user } = useUserRole();
+  const { isTeacher, isStudent, user } = useUserRole();
   const [imageError, setImageError] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef(null);
 
   const isCreator = String(user?.id) === String(createdBy);
-  const canEdit = (isAdmin || (isTeacher && isCreator)) && typeof onEdit === "function";
-  const canDelete = (isAdmin || (isTeacher && isCreator)) && typeof onDelete === "function";
-  const canEnroll = (isStudent || isTeacher) && !isCreator && !isEnrolled && typeof onEnroll === "function";
+  const canEdit = isTeacher && isCreator && typeof onEdit === "function";
+  const canDelete = isTeacher && isCreator && typeof onDelete === "function";
+  const canEnroll = isStudent && !isCreator && !isEnrolled && typeof onEnroll === "function";
   const canViewDetails = typeof onViewDetails === "function";
 
-  const safeImage = !imageError && image ? image : bannerImage;
+  const hasValidImage = Boolean(image && !imageError);
+  const placeholderBackground = getPlaceholderBackground(courseId || title);
   const moduleCount = Array.isArray(sections) ? sections.length : 0;
   const levelConfig = LEVEL_CONFIG[level] || null;
 
@@ -116,14 +129,29 @@ export function CourseCard({
       <div className="relative aspect-video overflow-hidden bg-slate-100 flex-shrink-0">
 
         {/* Image par défaut */}
-        <img
-          src={safeImage}
-          alt={title}
-          onError={() => setImageError(true)}
-          className={`h-full w-full object-cover transition-all duration-500 ease-out ${
-            isHovering && previewVideo ? "opacity-0 scale-105" : "opacity-100 scale-100 group-hover:scale-[1.03]"
-          }`}
-        />
+        {hasValidImage ? (
+          <img
+            src={image}
+            alt={title}
+            onError={() => setImageError(true)}
+            className={`h-full w-full object-cover transition-all duration-500 ease-out ${
+              isHovering && previewVideo ? "opacity-0 scale-105" : "opacity-100 scale-100 group-hover:scale-[1.03]"
+            }`}
+          />
+        ) : (
+          <div
+            className="absolute inset-0 flex items-end p-4 text-white"
+            style={{
+              backgroundImage: placeholderBackground,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <div className="w-full rounded-3xl bg-black/30 p-3 backdrop-blur-sm">
+              <p className="text-sm font-semibold line-clamp-2">{title}</p>
+            </div>
+          </div>
+        )}
 
         {/* Vidéo de prévisualisation (appear on hover) */}
         {previewVideo && (
