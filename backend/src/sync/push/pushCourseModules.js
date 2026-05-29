@@ -107,6 +107,7 @@ export const pushCourseModules = async ({ prisma, token, emitter }) => {
         } else {
           // Standard behaviour for resources and folders in Moodle
           options.push({ name: "files", value: String(draftItemId) });
+          options.push({ name: "display", value: "0" });
         }
       }
 
