@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   ClipboardList, Folder, File, Link, Upload, Calendar as CalendarIcon, X,
 } from "lucide-react";
+import { addModule } from "@/services/courses.service";
 
 const ACTIVITES = [
   {
@@ -74,10 +75,16 @@ function ActivityGrid({ items, onItemClick }) {
   );
 }
 
-export default function AddActivityModal({ open, onOpenChange }) {
+export default function AddActivityModal({ open, onOpenChange, courseId, sectionId }) {
   const [search, setSearch] = useState("");
   const [selectedFormType, setSelectedFormType] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState({});
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    externalUrl: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filter = (list) =>
     list.filter((i) =>
@@ -91,7 +98,7 @@ export default function AddActivityModal({ open, onOpenChange }) {
 
   const handleCloseForm = () => {
     setSelectedFormType(null);
-    setSelectedFiles({});
+    resetForm();
   };
 
   const handleFileUpload = (formType) => {
@@ -103,6 +110,52 @@ export default function AddActivityModal({ open, onOpenChange }) {
       setSelectedFiles(prev => ({ ...prev, [formType]: files }));
     };
     input.click();
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData({ name: "", description: "", externalUrl: "" });
+    setSelectedFiles({});
+  };
+
+  const handleSubmit = async (modType) => {
+    if (!formData.name.trim()) {
+      alert("Le nom est requis");
+      return;
+    }
+
+    if (modType === "url" && !formData.externalUrl.trim()) {
+      alert("L'URL externe est requise");
+      return;
+    }
+
+    if (!courseId || !sectionId) {
+      alert("courseId et sectionId sont requis");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await addModule({
+        courseId,
+        sectionId,
+        modType,
+        name: formData.name,
+        intro: formData.description,
+        externalUrl: formData.externalUrl,
+        files: selectedFiles[modType] || [],
+      });
+      alert("Module créé avec succès !");
+      handleCloseForm();
+    } catch (error) {
+      console.error("Erreur lors de la création du module:", error);
+      alert("Erreur lors de la création du module: " + (error.message || error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -167,7 +220,12 @@ export default function AddActivityModal({ open, onOpenChange }) {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="file-name">Nom</Label>
-              <Input id="file-name" placeholder="Nom du fichier" />
+              <Input 
+                id="file-name" 
+                placeholder="Nom du fichier" 
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="file-description">Description</Label>
@@ -175,6 +233,8 @@ export default function AddActivityModal({ open, onOpenChange }) {
                 id="file-description" 
                 placeholder="Description du fichier..."
                 rows={4}
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -199,11 +259,15 @@ export default function AddActivityModal({ open, onOpenChange }) {
             </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-0">
-            <Button variant="outline" onClick={handleCloseForm}>
+            <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              Ajouter
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white" 
+              onClick={() => handleSubmit("resource")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -221,7 +285,12 @@ export default function AddActivityModal({ open, onOpenChange }) {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="folder-name">Nom</Label>
-              <Input id="folder-name" placeholder="Nom du dossier" />
+              <Input 
+                id="folder-name" 
+                placeholder="Nom du dossier" 
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="folder-description">Description</Label>
@@ -229,6 +298,8 @@ export default function AddActivityModal({ open, onOpenChange }) {
                 id="folder-description" 
                 placeholder="Description du dossier..."
                 rows={4}
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -253,11 +324,15 @@ export default function AddActivityModal({ open, onOpenChange }) {
             </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-0">
-            <Button variant="outline" onClick={handleCloseForm}>
+            <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              Ajouter
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white" 
+              onClick={() => handleSubmit("folder")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -275,11 +350,21 @@ export default function AddActivityModal({ open, onOpenChange }) {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="url-name">Nom</Label>
-              <Input id="url-name" placeholder="Nom du lien" />
+              <Input 
+                id="url-name" 
+                placeholder="Nom du lien" 
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="external-url">URL externe</Label>
-              <Input id="external-url" placeholder="https://example.com" />
+              <Input 
+                id="external-url" 
+                placeholder="https://example.com" 
+                value={formData.externalUrl}
+                onChange={(e) => handleInputChange("externalUrl", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="url-description">Description</Label>
@@ -287,15 +372,21 @@ export default function AddActivityModal({ open, onOpenChange }) {
                 id="url-description" 
                 placeholder="Description du lien..."
                 rows={4}
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
               />
             </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-0">
-            <Button variant="outline" onClick={handleCloseForm}>
+            <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              Ajouter
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white" 
+              onClick={() => handleSubmit("url")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -313,7 +404,12 @@ export default function AddActivityModal({ open, onOpenChange }) {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="assignment-name">Nom</Label>
-              <Input id="assignment-name" placeholder="Nom du devoir" />
+              <Input 
+                id="assignment-name" 
+                placeholder="Nom du devoir" 
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="assignment-description">Description</Label>
@@ -321,6 +417,8 @@ export default function AddActivityModal({ open, onOpenChange }) {
                 id="assignment-description" 
                 placeholder="Description du devoir..."
                 rows={4}
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -343,31 +441,17 @@ export default function AddActivityModal({ open, onOpenChange }) {
                 )}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="submission-settings">Autoriser la remise des</Label>
-              <Input id="submission-settings" placeholder="Ex: fichiers texte, PDF, etc." />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="due-date">Date limite</Label>
-              <div className="flex gap-2">
-                <Input id="due-date" type="date" className="flex-1" />
-                <Input type="time" className="w-32" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="reminder-date">Rappeler d'évaluer jusqu'au</Label>
-              <div className="flex gap-2">
-                <Input id="reminder-date" type="date" className="flex-1" />
-                <Input type="time" className="w-32" />
-              </div>
-            </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-0">
-            <Button variant="outline" onClick={handleCloseForm}>
+            <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              Ajouter
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white" 
+              onClick={() => handleSubmit("assign")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
         </DialogContent>

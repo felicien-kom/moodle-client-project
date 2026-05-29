@@ -31,10 +31,10 @@ export async function createLocalCourse(courseData) {
     const formData = new FormData();
     
     // Ajouter les champs texte
-    formData.append('title', courseData.nomComplet || courseData.title);
-    formData.append('shortName', courseData.nomAbrege || courseData.shortName);
-    formData.append('summary', courseData.resume || courseData.summary);
-    formData.append('visible', courseData.visibilite === 'Afficher');
+    formData.append('title', courseData.nomComplet || courseData.title || "");
+    formData.append('shortName', courseData.nomAbrege || courseData.shortName || (courseData.title ? courseData.title.slice(0, 8) : "COURSE"));
+    formData.append('summary', courseData.resume || courseData.summary || courseData.description || "");
+    formData.append('visible', courseData.visibilite === 'Afficher' || courseData.visible !== false);
     
     // Transformer la date de début
     if (courseData.dateDebut) {
@@ -45,6 +45,9 @@ export async function createLocalCourse(courseData) {
         parseInt(courseData.dateDebut.hh),
         parseInt(courseData.dateDebut.mm)
       );
+      formData.append('startDate', Math.floor(startDate.getTime() / 1000));
+    } else if (courseData.startDate) {
+      const startDate = new Date(courseData.startDate);
       formData.append('startDate', Math.floor(startDate.getTime() / 1000));
     }
     
@@ -58,6 +61,9 @@ export async function createLocalCourse(courseData) {
         parseInt(courseData.dateFin.mm)
       );
       formData.append('endDate', Math.floor(endDate.getTime() / 1000));
+    } else if (courseData.endDate) {
+      const endDate = new Date(courseData.endDate);
+      formData.append('endDate', Math.floor(endDate.getTime() / 1000));
     }
     
     // Ajouter l'image si présente
@@ -65,11 +71,14 @@ export async function createLocalCourse(courseData) {
       formData.append('image', courseData.image);
     }
     
+    // Ajouter le nombre de sections si présent
+    if (courseData.nombreDeSection) {
+      formData.append('numSections', courseData.nombreDeSection);
+    }
+    
     // Appeler l'endpoint de création
-    const response = await apiClient.post('/courses', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    const response = await apiClient.post('/courses', {
+      body: formData
     });
     
     return {
@@ -81,6 +90,8 @@ export async function createLocalCourse(courseData) {
     throw error;
   }
 }
+
+export const CreateCourse = createLocalCourse;
 
 /**
  * Convertit le nom du mois en français en index (0-11)
@@ -538,6 +549,72 @@ export async function getParticipantsByCourse(courseId) {
     return response.participants || [];
   } catch (error) {
     console.error(`Erreur lors de la récupération des participants du cours ${courseId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Ajoute un module (activité ou ressource) à une section d'un cours
+ * @param {Object} moduleData - Données du module
+ * @param {number} moduleData.courseId - ID du cours
+ * @param {number} moduleData.sectionId - ID de la section
+ * @param {string} moduleData.modType - Type de module (assign, resource, folder, url)
+ * @param {string} moduleData.name - Nom du module
+ * @param {string} [moduleData.intro] - Description du module
+ * @param {string} [moduleData.externalUrl] - URL externe (pour modType 'url')
+ * @param {File[]} [moduleData.files] - Fichiers associés (optionnel)
+ * @returns {Promise<Object>} { module, message }
+ */
+export async function addModule(moduleData) {
+  const { courseId, sectionId, modType, name, intro, externalUrl, files } = moduleData;
+
+  if (!courseId || !sectionId) {
+    throw new Error("courseId et sectionId sont requis");
+  }
+
+  if (!modType || !name) {
+    throw new Error("modType et name sont requis");
+  }
+
+  const validModTypes = ["assign", "resource", "folder", "url"];
+  if (!validModTypes.includes(modType)) {
+    throw new Error(`modType invalide. Doit être l'un de: ${validModTypes.join(", ")}`);
+  }
+
+  if (modType === "url" && !externalUrl) {
+    throw new Error("externalUrl est requis pour modType 'url'");
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('modType', modType);
+    formData.append('name', name);
+    
+    if (intro) {
+      formData.append('intro', intro);
+    }
+    
+    if (externalUrl) {
+      formData.append('externalUrl', externalUrl);
+    }
+    
+    // Ajouter les fichiers si présents
+    if (files && files.length > 0) {
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+    }
+
+    const response = await apiClient.post(`/modules/courses/${courseId}/sections/${sectionId}`, {
+      body: formData
+    });
+
+    return {
+      module: response.module,
+      message: response.message || 'Module créé avec succès',
+    };
+  } catch (error) {
+    console.error("Erreur lors de la création du module:", error);
     throw error;
   }
 }

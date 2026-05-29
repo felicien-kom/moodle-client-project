@@ -189,7 +189,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
 }
 
 // ??? Section dpliable ???
-function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
+function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
   const [open, setOpen] = useState(true);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
 
@@ -250,6 +250,8 @@ function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, dow
       <RessourcesActicityModal
         open={isActivityModalOpen}
         onOpenChange={setIsActivityModalOpen}
+        courseId={courseId}
+        sectionId={section.id}
       />
     </div>
   );
@@ -746,6 +748,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
                     >
                       <CourseSection
                         section={section}
+                        courseId={cours.id}
                         onFolderClick={setSelectedFolder}
                         onFileDownload={handleFileDownload}
                         onFileOpen={handleFileOpen}

@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ImagePlus, CheckCircle2 } from "lucide-react";
+import { CreateCourse } from "@/services/courses.service";
 
 /**
  * Formulaire pour créer/éditer un cours
  * Réutilisable pour création ET édition
  */
-export function CourseForm({ initialData, onSubmit, isLoading, isEditing = false }) {
+export function CourseForm({ initialData, onSubmit, isLoading: propIsLoading, isEditing = false }) {
+  const [localIsLoading, setLocalIsLoading] = useState(false);
+  const isLoading = propIsLoading || localIsLoading;
   const [formData, setFormData] = useState(
     initialData || {
       title: "",
@@ -59,14 +62,28 @@ export function CourseForm({ initialData, onSubmit, isLoading, isEditing = false
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    onSubmit(formData);
+    if (onSubmit) {
+      onSubmit(formData);
+    } else {
+      setLocalIsLoading(true);
+      try {
+        await CreateCourse(formData);
+        alert("Cours créé avec succès !");
+        window.history.back();
+      } catch (error) {
+        console.error("Erreur lors de la création du cours:", error);
+        alert("Erreur lors de la création du cours.");
+      } finally {
+        setLocalIsLoading(false);
+      }
+    }
   };
 
   return (

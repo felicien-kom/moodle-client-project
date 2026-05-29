@@ -27,10 +27,15 @@ async function request(endpoint, {
   const timeoutId  = setTimeout(() => controller.abort(), API_CONFIG.timeout);
 
   try {
+    const headers = buildHeaders(withAuth);
+    if (body instanceof FormData) {
+      delete headers["Content-Type"];
+    }
+
     const response = await fetch(url.toString(), {
       method,
-      headers: buildHeaders(withAuth),
-      body:    body ? JSON.stringify(body) : null,
+      headers,
+      body:    body instanceof FormData ? body : (body ? JSON.stringify(body) : null),
       signal:  controller.signal,
     });
 

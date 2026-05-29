@@ -34,6 +34,7 @@ export default function CreateCourseModal({ open, onOpenChange, onCourseCreated 
     numeroId: "",
     resume: "",
     image: null,
+    nombreDeSection: "1",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -76,6 +77,7 @@ export default function CreateCourseModal({ open, onOpenChange, onCourseCreated 
         numeroId: "",
         resume: "",
         image: null,
+        nombreDeSection: "1",
       });
       
       alert("Cours créé avec succès !");
@@ -110,6 +112,7 @@ export default function CreateCourseModal({ open, onOpenChange, onCourseCreated 
           numeroId: "",
           resume: "",
           image: null,
+          nombreDeSection: "1",
         });
         
         alert("Cours créé localement (endpoint non disponible)");
@@ -163,6 +166,19 @@ export default function CreateCourseModal({ open, onOpenChange, onCourseCreated 
                     value={form.nomAbrege}
                     onChange={(e) => set("nomAbrege", e.target.value)}
                     placeholder="Ex. : ALGO101"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-start">
+                <Label className="sm:pt-2 text-sm font-medium">Nombre de sections</Label>
+                <div className="sm:col-span-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    value={form.nombreDeSection}
+                    onChange={(e) => set("nombreDeSection", e.target.value)}
+                    placeholder="Ex. : 5"
                     className="w-full"
                   />
                 </div>
