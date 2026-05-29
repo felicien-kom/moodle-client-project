@@ -41,12 +41,13 @@ import {
   CloudDownload,
 } from "lucide-react";
 import apiClient from "@/client/apiClient";
-import { formatSectionsForUI, enrollCourseOnline, createSection } from "@/services/courses.service.js";
+import { formatSectionsForUI, enrollCourseOnline, createSection, getParticipantsByCourse } from "@/services/courses.service.js";
 import { downloadFile, serveFile } from "@/services/files.service.js";
 import { getFileIcon } from "@/utils/file.utils.js";
 import FolderView from "./FolderView.jsx";
 import RessourcesActicityModal from "@/components/courses/RessourcesActicityModal.jsx";
 import { useUserRole } from "@/hooks/useUserRole";
+import { userRole } from "@/services/user.service";
 
 // ─── Icône colorée selon le type de resso// ??? Ic�ne color�e selon le type de ressource ???
 function ContentIcon({ type, isDownloaded }) {
@@ -286,6 +287,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
   const [assignments, setAssignments] = useState([]);
   const [grades, setGrades] = useState([]);
   const [events, setEvents] = useState([]);
+  const [participants, setParticipants] = useState([]);
   const [downloadedFiles, setDownloadedFiles] = useState(() => {
     // Charger les fichiers téléchargés depuis localStorage
     const stored = localStorage.getItem('downloadedFiles');
@@ -488,6 +490,18 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
         setEvents([]);
       }
 
+      // 🟤 Appel 7: Participants du cours (pour TEACHER)
+      try {
+        const role = userRole();
+        if (role === "teacher") {
+          const participantsData = await getParticipantsByCourse(cours.id);
+          setParticipants(participantsData || []);
+        }
+      } catch (participantsError) {
+        console.error("Erreur lors du chargement des participants:", participantsError);
+        setParticipants([]);
+      }
+
     } catch (err) {
       // Erreur critique (ex: détails du cours)
       setError(err.message || "Erreur lors du chargement des détails du cours");
@@ -572,7 +586,26 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
               />
             </div>
           </TabsContent>
-          <TabsContent value="participants">Participants</TabsContent>
+          <TabsContent value="participants">
+            {userRole() === "teacher" ? (
+              <div className="bg-white p-6 rounded-xl border border-slate-200">
+                <h3 className="text-base font-bold text-slate-900 mb-4">Membres du cours</h3>
+                {participants.length > 0 ? (
+                  <ul className="divide-y divide-slate-100">
+                    {participants.map((p) => (
+                      <li key={p.id} className="py-2.5 text-sm text-slate-700 font-sans font-medium">
+                        {p.fullname}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-500 font-sans">Aucun participant inscrit.</p>
+                )}
+              </div>
+            ) : (
+              "Participants"
+            )}
+          </TabsContent>
           <TabsContent value="notes">Notes</TabsContent>
         </Tabs>
       </div>
@@ -746,7 +779,28 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
             </main>
           </div>
         </TabsContent>
-        <TabsContent value="participants">Change your password here.</TabsContent>
+        <TabsContent value="participants">
+          {userRole() === "teacher" ? (
+            <Card className="border border-gray-200 shadow-none rounded-xl">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Liste des participants</h3>
+                {participants.length > 0 ? (
+                  <ul className="divide-y divide-gray-100">
+                    {participants.map((participant) => (
+                      <li key={participant.id} className="py-3 text-sm text-gray-700 font-medium font-sans">
+                        {participant.fullname}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500 font-sans">Aucun participant trouvé pour ce cours.</p>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            "Change your password here."
+          )}
+        </TabsContent>
         <TabsContent value="notes">Change your password here.</TabsContent>
       </Tabs>
 

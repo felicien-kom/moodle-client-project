@@ -116,6 +116,14 @@ export const getLocalEventsByCourse = async (prisma, localCourseId) => {
   });
 };
 
+export const getLocalParticipantsByCourse = async (prisma, localCourseId) => {
+  return prisma.courseParticipant.findMany({
+    where: { courseId: localCourseId },
+    orderBy: { fullname: "asc" }
+  });
+};
+
+
 // LE SUPER-ENDPOINT (L'arborescence complète pour le Frontend)
 export const getLocalSectionsByCourse = async (prisma, localCourseId) => {
   return prisma.section.findMany({

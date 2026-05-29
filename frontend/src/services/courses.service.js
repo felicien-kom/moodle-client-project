@@ -523,6 +523,26 @@ export async function createSection(courseId, sectionName) {
   }
 }
 
+/**
+ * Récupère tous les participants d'un cours
+ * @param {number} courseId - L'ID local du cours
+ * @returns {Promise<Array>} Liste des participants
+ */
+export async function getParticipantsByCourse(courseId) {
+  if (!courseId) {
+    throw new Error("courseId est requis");
+  }
+
+  try {
+    const response = await apiClient.get(`/courses/${courseId}/participants`);
+    return response.participants || [];
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des participants du cours ${courseId}:`, error);
+    throw error;
+  }
+}
+
 // LEGACY MOCK DATA (DEPRECATED - DO NOT USE)
 // Tous les appels à la base de données doivent utiliser les fonctions ci-dessus
 // qui communiquent avec l'API backend
+

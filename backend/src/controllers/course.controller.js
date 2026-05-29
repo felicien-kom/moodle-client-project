@@ -70,3 +70,8 @@ export const getLocalEvents = async (req, res) => {
   const events = await courseService.getLocalEventsByCourse(req.prisma, Number(req.params.id));
   res.json({ events });
 };
+
+export const getLocalParticipants = async (req, res) => {
+  const participants = await courseService.getLocalParticipantsByCourse(req.prisma, Number(req.params.id));
+  res.json({ participants });
+};

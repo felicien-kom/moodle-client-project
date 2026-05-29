@@ -21,5 +21,6 @@ router.get("/:id/files",             course.getLocalFiles);   // Remplace /resou
 router.get("/:id/sections",          course.getLocalSections); // Le Super-Endpoint
 router.get("/:id/grades",            course.getLocalGrades);
 router.get("/:id/events",            course.getLocalEvents);  // Nouveau
+router.get("/:id/participants",      course.getLocalParticipants); // Participants
 
 export default router;
