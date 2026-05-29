@@ -34,6 +34,33 @@ export const unenrollCourse = async (req, res) => {
 };
 
 // ─── OFFLINE ─────────────────────────────────────────────────
+export const createLocalCourse = async (req, res) => {
+  const { title, shortName, summary, categoryId, numSections } = req.body;
+  const file = req.file; // Géré par Multer
+
+  if (!title) {
+    return res.status(400).json({ error: "title is required" });
+  }
+  
+  try {
+    const course = await courseService.createCourseLocally(
+      req.prisma,
+      req.user.email,
+      {
+        title,
+        shortName,
+        summary,
+        categoryId: categoryId ? Number(categoryId) : 1, // Par défaut 1 selon la demande
+        numSections: numSections ? Number(numSections) : 1,
+      },
+      file
+    );
+    res.status(201).json({ message: "Course created locally. Ready for sync.", course });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+};
+
 export const getLocalCourses = async (req, res) => {
   const courses = await courseService.getLocalCourses(req.prisma);
   res.json({ courses });
@@ -74,4 +101,4 @@ export const getLocalEvents = async (req, res) => {
 export const getLocalParticipants = async (req, res) => {
   const participants = await courseService.getLocalParticipantsByCourse(req.prisma, Number(req.params.id));
   res.json({ participants });
-};
+};
