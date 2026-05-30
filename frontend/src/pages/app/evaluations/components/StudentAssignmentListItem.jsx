@@ -1,5 +1,6 @@
 import { Calendar, ChevronRight, FileText } from "lucide-react";
 import { stripHtml } from "@/services/assignments.service";
+import { StudentStatusBadge } from "./StudentStatusBadge";
 
 export function StudentAssignmentListItem({ assignment, onClick, showGrade = false }) {
   const now = Date.now() / 1000;
@@ -29,7 +30,9 @@ export function StudentAssignmentListItem({ assignment, onClick, showGrade = fal
         <p className="text-sm text-slate-500 line-clamp-1 mt-0.5">
           {stripHtml(assignment.intro || assignment.activity) || "Consignes disponibles dans le détail"}
         </p>
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          <StudentStatusBadge assignment={assignment} showGrade={showGrade} />
+          <span className="text-slate-300 hidden sm:inline">·</span>
           <Calendar className={`w-3.5 h-3.5 ${isLate ? "text-red-500" : "text-slate-400"}`} />
           <span className={`text-xs font-medium ${isLate ? "text-red-600" : "text-slate-500"}`}>
             {assignment.dueDate

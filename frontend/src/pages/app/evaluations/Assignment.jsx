@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   getAllAssignments,
+  getTeacherAssignments,
   groupAssignmentsByCourse,
   isStudentSubmitted,
 } from "@/services/assignments.service";
@@ -11,6 +12,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { AssignmentCard } from "./components/AssignmentCard";
 import { AssignmentDetailsStudent } from "./components/AssignmentDetailsStudent";
 import { AssignmentDetailsTeacher } from "./components/AssignmentDetailsTeacher";
+import { TeacherGradePage } from "./components/TeacherGradePage";
 import { StudentCourseList } from "./components/StudentCourseList";
 import { StudentAssignmentListItem } from "./components/StudentAssignmentListItem";
 
@@ -33,13 +35,16 @@ export default function Assignment() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [devoirActuel, setDevoirActuel] = useState(null);
+  const [correctionCible, setCorrectionCible] = useState(null);
   const [selectedCourseGroup, setSelectedCourseGroup] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAllAssignments({ moodleUserId: user?.moodleUserId });
+      const data = isTeacher
+        ? await getTeacherAssignments(user)
+        : await getAllAssignments({ moodleUserId: user?.moodleUserId });
       setAssignments(data || []);
     } catch (err) {
       const isNetwork = err?.status === 0 || !navigator.onLine;
@@ -52,7 +57,7 @@ export default function Assignment() {
     } finally {
       setLoading(false);
     }
-  }, [user?.moodleUserId]);
+  }, [user?.moodleUserId, isTeacher]);
 
   useEffect(() => {
     fetchData();
@@ -105,7 +110,32 @@ export default function Assignment() {
     setActiveTab(tab);
     setSelectedCourseGroup(null);
     setDevoirActuel(null);
+    setCorrectionCible(null);
   };
+
+  if (isTeacher && correctionCible && devoirActuel) {
+    return (
+      <TeacherGradePage
+        assignment={devoirActuel}
+        submission={correctionCible.submission}
+        studentName={correctionCible.studentName}
+        gradableQueue={correctionCible.gradableQueue || []}
+        onRetour={() => setCorrectionCible(null)}
+        onNavigate={(target) =>
+          setCorrectionCible((prev) => ({
+            ...prev,
+            submission: target.submission,
+            studentName: target.studentName,
+            participant: target.participant,
+          }))
+        }
+        onSaved={() => {
+          setCorrectionCible(null);
+          fetchData();
+        }}
+      />
+    );
+  }
 
   if (devoirActuel) {
     return (
@@ -114,17 +144,20 @@ export default function Assignment() {
           {isTeacher ? (
             <AssignmentDetailsTeacher
               assignment={devoirActuel}
-              onRetour={(reload) => {
+              sessionUser={user}
+              onOpenGrade={setCorrectionCible}
+              onRetour={() => {
                 setDevoirActuel(null);
-                if (reload) fetchData();
+                fetchData();
               }}
             />
           ) : (
             <AssignmentDetailsStudent
               assignment={devoirActuel}
-              onRetour={(reload) => {
+              moodleUserId={user?.moodleUserId}
+              onRetour={() => {
                 setDevoirActuel(null);
-                if (reload) fetchData();
+                fetchData();
               }}
             />
           )}
@@ -277,8 +310,8 @@ export default function Assignment() {
             <p className="text-slate-600 font-bold">Aucun résultat</p>
             <p className="text-slate-400 text-sm mt-1 text-center max-w-md">
               {activeTab === "a-faire"
-                ? "Vous n'avez aucun devoir en attente pour le moment."
-                : "Aucune soumission enregistrée pour le moment."}
+                ? "Aucun devoir non envoyé ou en brouillon pour le moment."
+                : "Aucun devoir envoyé ou corrigé pour le moment."}
             </p>
           </div>
         )}

@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
@@ -15,25 +16,61 @@ import {
 } from "lucide-react";
 import {
   submitAssignmentComplete,
+  saveStudentDraft,
+  fetchStudentAssignment,
+  getDraftSuccessMessage,
   isStudentSubmitted,
+  getStudentSubmissionStatus,
+  getStudentStatusHint,
+  parseSubmissionText,
+  STUDENT_SUBMISSION_STATUS,
 } from "@/services/assignments.service";
 import { downloadFile, serveFile } from "@/services/files.service";
 import { DocumentSplitViewer } from "./DocumentSplitViewer";
+import { StudentStatusBadge } from "./StudentStatusBadge";
+import { toast } from "sonner";
 
-export function AssignmentDetailsStudent({ assignment, onRetour }) {
-  const [textResponse, setTextResponse] = useState(assignment.submission?.submissionText || "");
+function buildContentSnapshot(text, remark, existingFiles, selectedFiles) {
+  return JSON.stringify({
+    body: text.trim(),
+    remark: remark.trim(),
+    fileIds: [...existingFiles.map((f) => f.id)].sort((a, b) => a - b),
+    pending: selectedFiles.map((f) => `${f.name}:${f.size}`).sort(),
+  });
+}
+
+export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: moodleUserIdProp }) {
+  const { user } = useAuth();
+  const moodleUserId = moodleUserIdProp ?? user?.moodleUserId;
+
+  const [submissionLive, setSubmissionLive] = useState(assignment.submission);
+  const [loadingDraft, setLoadingDraft] = useState(true);
+  const assignmentView = { ...assignment, submission: submissionLive };
+
+  const initialParsed = parseSubmissionText(submissionLive?.submissionText || "");
+  const [textResponse, setTextResponse] = useState(initialParsed.body);
+  const [studentRemark, setStudentRemark] = useState(initialParsed.remark);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [existingFiles] = useState(() => assignment.submission?.submittedFiles || []);
+  const [existingFiles, setExistingFiles] = useState(
+    () => submissionLive?.submittedFiles || []
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [errorSubmit, setErrorSubmit] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const fileInputRef = useRef(null);
+  const lastSavedSnapshot = useRef(
+    buildContentSnapshot(initialParsed.body, initialParsed.remark, submissionLive?.submittedFiles || [], [])
+  );
 
-  const isSubmitted = isStudentSubmitted(assignment);
+  const isSubmitted = isStudentSubmitted(assignmentView);
+  const submissionStatus = getStudentSubmissionStatus(assignmentView);
+  const isDraft = submissionStatus === STUDENT_SUBMISSION_STATUS.DRAFT;
   const maxGrade = assignment.gradeMax ?? assignment.maxGrade ?? 20;
-  const requiresText = Boolean(assignment.requiresText);
-  const requiresFile = Boolean(assignment.requiresFile);
+  const requiresText = Boolean(Number(assignment.requiresText));
+  const requiresFile = Boolean(Number(assignment.requiresFile));
 
   const wordCount = textResponse.trim() ? textResponse.trim().split(/\s+/).length : 0;
   const isWordLimitExceeded = Boolean(
@@ -49,6 +86,122 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
   );
 
   const introFiles = assignment.introFiles || [];
+
+  const submittedContent = useMemo(
+    () => parseSubmissionText(submissionLive?.submissionText || ""),
+    [submissionLive?.submissionText]
+  );
+
+  const applySubmissionFromApi = (submission, { keepPendingFiles = false } = {}) => {
+    if (!submission) return;
+    const merged = {
+      ...submission,
+      submittedFiles: submission.submittedFiles || [],
+    };
+    setSubmissionLive(merged);
+    setExistingFiles(merged.submittedFiles);
+    const parsed = parseSubmissionText(merged.submissionText || "");
+    setTextResponse(parsed.body);
+    setStudentRemark(parsed.remark);
+    const pending = keepPendingFiles ? selectedFiles : [];
+    if (!keepPendingFiles) setSelectedFiles([]);
+    lastSavedSnapshot.current = buildContentSnapshot(
+      parsed.body,
+      parsed.remark,
+      merged.submittedFiles,
+      pending
+    );
+  };
+
+  const isDirty = useCallback(() => {
+    return (
+      lastSavedSnapshot.current !==
+      buildContentSnapshot(textResponse, studentRemark, existingFiles, selectedFiles)
+    );
+  }, [textResponse, studentRemark, existingFiles, selectedFiles]);
+
+  const reloadFromServer = useCallback(async () => {
+    if (!assignment.course?.id) return null;
+    const fresh = await fetchStudentAssignment(assignment.course.id, assignment.id, {
+      moodleUserId,
+      course: assignment.course,
+    });
+    if (fresh?.submission) {
+      applySubmissionFromApi(fresh.submission);
+    } else if (fresh) {
+      setSubmissionLive(null);
+      setExistingFiles([]);
+      lastSavedSnapshot.current = buildContentSnapshot("", "", [], []);
+    }
+    return fresh;
+  }, [assignment.course, assignment.id, moodleUserId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingDraft(true);
+        await reloadFromServer();
+      } catch (err) {
+        console.warn("Rechargement brouillon:", err);
+      } finally {
+        if (!cancelled) setLoadingDraft(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [assignment.id, reloadFromServer]);
+
+  const validateBeforeSave = (forFinalSubmit = false) => {
+    const hasTextContent = Boolean(textResponse.trim() || studentRemark.trim());
+
+    if (forFinalSubmit) {
+      if (requiresText && !textResponse.trim()) {
+        setErrorSubmit("Une réponse textuelle est requise pour remettre le devoir.");
+        return false;
+      }
+      if (requiresFile && totalFilesCount === 0) {
+        setErrorSubmit("Au moins un fichier est requis pour remettre le devoir.");
+        return false;
+      }
+      if (!requiresText && !requiresFile && !hasTextContent && totalFilesCount === 0) {
+        setErrorSubmit("Ajoutez une réponse, une remarque ou un fichier avant de remettre.");
+        return false;
+      }
+    }
+
+    if (isWordLimitExceeded || isMaxFilesExceeded || isMaxFileSizeExceeded) {
+      setErrorSubmit("Vérifiez les contraintes du devoir.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSaveDraft = async () => {
+    if (!validateBeforeSave(false)) return;
+
+    try {
+      setIsSavingDraft(true);
+      setErrorSubmit(null);
+      setSuccessMessage(null);
+      await saveStudentDraft(assignment.id, {
+        text: textResponse,
+        remark: studentRemark,
+        files: selectedFiles,
+      });
+      await reloadFromServer();
+      const msg = getDraftSuccessMessage();
+      setSuccessMessage(msg);
+      toast.success("Brouillon enregistré", { description: msg });
+    } catch (err) {
+      const msg = err.message || "Impossible d'enregistrer le brouillon.";
+      setErrorSubmit(msg);
+      toast.error("Échec du brouillon", { description: msg });
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -106,6 +259,41 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const persistDraftIfNeeded = async () => {
+    if (isSubmitted || !isDirty()) return true;
+    await saveStudentDraft(assignment.id, {
+      text: textResponse,
+      remark: studentRemark,
+      files: selectedFiles,
+    });
+    await reloadFromServer();
+    return true;
+  };
+
+  const handleBack = async () => {
+    if (isSubmitted) {
+      onRetour();
+      return;
+    }
+    if (isDirty()) {
+      try {
+        setIsSavingDraft(true);
+        await persistDraftIfNeeded();
+        toast.success("Brouillon enregistré", {
+          description: "Vos modifications ont été sauvegardées.",
+        });
+      } catch (err) {
+        toast.error("Enregistrement impossible", {
+          description: err.message || "Le brouillon n'a pas pu être sauvegardé.",
+        });
+        return;
+      } finally {
+        setIsSavingDraft(false);
+      }
+    }
+    onRetour();
+  };
+
   const handleSubmit = async () => {
     if (
       !confirm(
@@ -115,26 +303,24 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
       return;
     }
 
-    if (requiresText && !textResponse.trim()) {
-      setErrorSubmit("Une réponse textuelle est requise.");
-      return;
-    }
-    if (requiresFile && totalFilesCount === 0) {
-      setErrorSubmit("Au moins un fichier est requis.");
-      return;
-    }
-    if (isWordLimitExceeded || isMaxFilesExceeded || isMaxFileSizeExceeded) {
-      setErrorSubmit("Vérifiez les contraintes du devoir avant de remettre.");
-      return;
-    }
+    if (!validateBeforeSave(true)) return;
 
     try {
       setIsSubmitting(true);
       setErrorSubmit(null);
-      await submitAssignmentComplete(assignment.id, textResponse, selectedFiles);
-      onRetour(true);
+      setSuccessMessage(null);
+      const data = await submitAssignmentComplete(assignment.id, {
+        text: textResponse,
+        remark: studentRemark,
+        files: selectedFiles,
+      });
+      const msg = data.message;
+      toast.success("Devoir remis", { description: msg });
+      onRetour();
     } catch (err) {
-      setErrorSubmit(err.message || "Erreur lors de la remise du devoir.");
+      const msg = err.message || "Erreur lors de la remise du devoir.";
+      setErrorSubmit(msg);
+      toast.error("Remise impossible", { description: msg });
     } finally {
       setIsSubmitting(false);
     }
@@ -161,19 +347,23 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
       <div className="mb-6">
         <button
           type="button"
-          onClick={() => onRetour(false)}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors mb-4"
+          onClick={handleBack}
+          disabled={isSavingDraft || isSubmitting}
+          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors mb-4 disabled:opacity-50"
         >
           <ArrowLeft className="w-4 h-4" /> Retour
         </button>
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
           {assignment.name}
         </h1>
-        <p className="mt-1 text-slate-500">{assignment.course?.title}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <p className="text-slate-500">{assignment.course?.title}</p>
+          <StudentStatusBadge assignment={assignmentView} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 space-y-5">
+      <div className={preview ? "space-y-4" : "grid grid-cols-1 xl:grid-cols-3 gap-6"}>
+        <div className={preview ? "space-y-4" : "xl:col-span-2 space-y-5"}>
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
               Consignes
@@ -236,6 +426,25 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
                 </div>
               )}
 
+              {isDraft && (
+                <div className="mb-4 p-3 rounded-xl bg-amber-50 text-amber-900 text-sm border border-amber-100">
+                  {getStudentStatusHint(STUDENT_SUBMISSION_STATUS.DRAFT)}
+                </div>
+              )}
+
+              {loadingDraft && (
+                <div className="mb-4 flex items-center gap-2 text-sm text-slate-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Chargement de votre brouillon...
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="mb-4 p-3 rounded-xl bg-emerald-50 text-emerald-800 text-sm border border-emerald-100">
+                  {successMessage}
+                </div>
+              )}
+
               {errorSubmit && (
                 <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-700 text-sm border border-red-100">
                   {errorSubmit}
@@ -266,12 +475,31 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
                 </div>
               )}
 
-              {(requiresFile || selectedFiles.length > 0 || existingFiles.length > 0) && (
-                <div className="mb-6">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Fichiers
-                    {requiresFile && <span className="text-red-500 ml-1">*</span>}
-                  </label>
+              <div className="mb-5">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Remarque pour l&apos;enseignant
+                  <span className="text-slate-400 font-normal normal-case ml-1">(optionnel)</span>
+                </label>
+                <Textarea
+                  placeholder="Ex. : précision sur un point du devoir, difficulté rencontrée..."
+                  className="min-h-[80px] rounded-xl border-slate-200 text-sm"
+                  value={studentRemark}
+                  onChange={(e) => setStudentRemark(e.target.value)}
+                  maxLength={2000}
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Cette note sera transmise à l&apos;enseignant avec votre devoir.
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Fichiers
+                  {requiresFile && <span className="text-red-500 ml-1">*</span>}
+                  {!requiresFile && (
+                    <span className="text-slate-400 font-normal normal-case ml-1">(optionnel)</span>
+                  )}
+                </label>
 
                   {existingFiles.length > 0 && (
                     <ul className="mb-3 space-y-2">
@@ -344,22 +572,51 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
                     </p>
                   )}
                 </div>
-              )}
 
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting || isWordLimitExceeded || isMaxFilesExceeded || isMaxFileSizeExceeded}
-                className="w-full sm:w-auto rounded-xl h-12 font-bold bg-indigo-600 hover:bg-indigo-700"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Envoi en cours...
-                  </>
-                ) : (
-                  "Remettre le devoir"
-                )}
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={
+                    isSavingDraft ||
+                    isSubmitting ||
+                    isWordLimitExceeded ||
+                    isMaxFilesExceeded ||
+                    isMaxFileSizeExceeded
+                  }
+                  className="rounded-xl h-12 font-semibold border-slate-300"
+                >
+                  {isSavingDraft ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Enregistrement...
+                    </>
+                  ) : (
+                    "Enregistrer le brouillon"
+                  )}
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={
+                    isSubmitting ||
+                    isSavingDraft ||
+                    isWordLimitExceeded ||
+                    isMaxFilesExceeded ||
+                    isMaxFileSizeExceeded
+                  }
+                  className="rounded-xl h-12 font-bold bg-indigo-600 hover:bg-indigo-700"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Remise en cours...
+                    </>
+                  ) : (
+                    "Remettre le devoir"
+                  )}
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
@@ -368,12 +625,16 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
                 Votre travail a été transmis à l&apos;enseignant. Vous le retrouverez dans
                 l&apos;onglet « Mes soumissions ».
               </p>
-              {assignment.submission?.submissionText && (
+              {submittedContent.body && (
                 <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-100">
-                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">Votre texte</p>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                    {assignment.submission.submissionText}
-                  </p>
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">Votre réponse</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{submittedContent.body}</p>
+                </div>
+              )}
+              {submittedContent.remark && (
+                <div className="mt-3 p-4 bg-white rounded-xl border border-emerald-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">Votre remarque</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{submittedContent.remark}</p>
                 </div>
               )}
               {existingFiles.length > 0 && (
@@ -411,7 +672,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
           )}
         </div>
 
-        <div className="space-y-5">
+        <div className={`space-y-5 ${preview ? "hidden lg:block" : ""}`}>
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
               Informations
@@ -419,9 +680,8 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
             <div className="space-y-4 text-sm">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Statut</p>
-                <p className="font-semibold text-slate-900">
-                  {isSubmitted ? "Envoyé" : "Non envoyé"}
-                </p>
+                <StudentStatusBadge assignment={assignmentView} showGrade={false} />
+                <p className="text-xs text-slate-500 mt-2">{getStudentStatusHint(submissionStatus)}</p>
               </div>
               <Separator />
               <div>

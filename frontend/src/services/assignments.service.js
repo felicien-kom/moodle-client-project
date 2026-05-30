@@ -1,7 +1,38 @@
 import apiClient from "@/client/apiClient";
-import { getAllLocalCourses, getAssignmentsByCourse } from "./courses.service";
+import { getAllLocalCourses, getAssignmentsByCourse, getParticipantsByCourse } from "./courses.service";
+import { filterStudentParticipants, filterStudentSubmissions } from "@/utils/assignmentParticipants.utils";
+import { STUDENT_REMARK_SEPARATOR } from "@/constants/assignmentStudentApi";
 import { API_CONFIG } from "@/config/api.config";
 import { buildHeaders } from "@/utils/api.utils";
+
+function parseApiError(errorData, status) {
+  if (!errorData) return `Erreur serveur ${status}`;
+  if (typeof errorData.message === "string") return errorData.message;
+  if (typeof errorData.error === "string") return errorData.error;
+  if (Array.isArray(errorData.errors)) return errorData.errors.join(" ");
+  return `Erreur serveur ${status}`;
+}
+
+/** Combine réponse principale + remarque pour le champ API `text` (submissionText). */
+export function buildSubmissionText(mainText = "", remark = "") {
+  const body = mainText?.trim() || "";
+  const note = remark?.trim() || "";
+  if (body && note) return `${body}${STUDENT_REMARK_SEPARATOR}${note}`;
+  if (body) return body;
+  if (note) return note;
+  return "";
+}
+
+/** Sépare réponse et remarque après lecture de submissionText. */
+export function parseSubmissionText(raw = "") {
+  if (!raw) return { body: "", remark: "" };
+  const idx = raw.indexOf(STUDENT_REMARK_SEPARATOR);
+  if (idx === -1) return { body: raw.trim(), remark: "" };
+  return {
+    body: raw.slice(0, idx).trim(),
+    remark: raw.slice(idx + STUDENT_REMARK_SEPARATOR.length).trim(),
+  };
+}
 
 /** Retire les balises HTML pour les aperçus de cartes */
 export function stripHtml(html) {
@@ -9,10 +40,81 @@ export function stripHtml(html) {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** Statuts UI étudiant */
+export const STUDENT_SUBMISSION_STATUS = {
+  NOT_SENT: "NOT_SENT",
+  DRAFT: "DRAFT",
+  SUBMITTED: "SUBMITTED",
+  GRADED: "GRADED",
+};
+
+export function getStudentSubmissionStatus(assignment) {
+  const state = assignment?.submission?.state;
+  if (state === "GRADED") return STUDENT_SUBMISSION_STATUS.GRADED;
+  if (state === "SUBMITTED") return STUDENT_SUBMISSION_STATUS.SUBMITTED;
+  if (state === "DRAFT") return STUDENT_SUBMISSION_STATUS.DRAFT;
+  return STUDENT_SUBMISSION_STATUS.NOT_SENT;
+}
+
+export function getStudentStatusLabel(status) {
+  switch (status) {
+    case STUDENT_SUBMISSION_STATUS.DRAFT:
+      return "Brouillon";
+    case STUDENT_SUBMISSION_STATUS.SUBMITTED:
+      return "Envoyé";
+    case STUDENT_SUBMISSION_STATUS.GRADED:
+      return "Corrigé";
+    default:
+      return "Non envoyé";
+  }
+}
+
+/** Sous-titre badge / panneau info */
+export function getStudentStatusHint(status) {
+  switch (status) {
+    case STUDENT_SUBMISSION_STATUS.DRAFT:
+      return "Enregistré — vous pouvez quitter et reprendre plus tard";
+    case STUDENT_SUBMISSION_STATUS.SUBMITTED:
+      return "Remise définitive — modification impossible";
+    case STUDENT_SUBMISSION_STATUS.GRADED:
+      return "Corrigé par l'enseignant";
+    default:
+      return "Aucune sauvegarde — utilisez « Enregistrer le brouillon »";
+  }
+}
+
 /** Devoir remis par l'étudiant (SUBMITTED ou GRADED) */
 export function isStudentSubmitted(assignment) {
-  const state = assignment?.submission?.state;
-  return state === "SUBMITTED" || state === "GRADED";
+  const status = getStudentSubmissionStatus(assignment);
+  return (
+    status === STUDENT_SUBMISSION_STATUS.SUBMITTED ||
+    status === STUDENT_SUBMISSION_STATUS.GRADED
+  );
+}
+
+export function isStudentDraft(assignment) {
+  return getStudentSubmissionStatus(assignment) === STUDENT_SUBMISSION_STATUS.DRAFT;
+}
+
+/** Messages utilisateur (API renvoie souvent l'anglais) */
+export function getDraftSuccessMessage() {
+  return "Brouillon enregistré. Vous pouvez encore modifier votre travail avant la remise définitive.";
+}
+
+export function getSubmitSuccessMessage() {
+  return "Devoir remis avec succès. Retrouvez-le dans l'onglet « Mes soumissions ».";
+}
+
+function formatAssignmentApiMessage(apiMessage, kind) {
+  if (kind === "draft") {
+    if (apiMessage && /draft saved/i.test(apiMessage)) return getDraftSuccessMessage();
+    return apiMessage || getDraftSuccessMessage();
+  }
+  if (kind === "submit") {
+    if (apiMessage && /submitted|locked/i.test(apiMessage)) return getSubmitSuccessMessage();
+    return apiMessage || getSubmitSuccessMessage();
+  }
+  return apiMessage || "";
 }
 
 /** Regroupe les devoirs par cours inscrit */
@@ -37,13 +139,42 @@ export function groupAssignmentsByCourse(assignments) {
   );
 }
 
-function normalizeAssignment(raw, course, { moodleUserId } = {}) {
+function pickUserSubmission(submissions, moodleUserId) {
+  if (!submissions?.length) return null;
+  if (moodleUserId != null) {
+    return submissions.find((s) => s.moodleUserId === moodleUserId) || null;
+  }
+  if (submissions.length === 1) return submissions[0];
+  return null;
+}
+
+function applyTeacherSubmissionStats(assignment, participants = [], sessionUser = null) {
+  const students = filterStudentParticipants(participants, sessionUser);
+  const studentSubs = filterStudentSubmissions(
+    assignment.allSubmissions || [],
+    participants,
+    sessionUser
+  );
+  return {
+    ...assignment,
+    allSubmissions: studentSubs.map((s) => ({
+      ...s,
+      submittedFiles: s.submittedFiles || [],
+    })),
+    submittedCount: studentSubs.filter(
+      (s) => s.state === "SUBMITTED" || s.state === "GRADED"
+    ).length,
+    gradedCount: studentSubs.filter((s) => s.state === "GRADED").length,
+    totalCount: students.length || studentSubs.length,
+    studentParticipantCount: students.length,
+  };
+}
+
+function normalizeAssignment(raw, course, { moodleUserId, forTeacher = false } = {}) {
   const submissions = raw.submissions || [];
-  const userSubmission =
-    submissions.find((s) => moodleUserId && s.moodleUserId === moodleUserId) ||
-    submissions.find((s) => s.state === "DRAFT" || s.state === "SUBMITTED" || s.state === "GRADED") ||
-    submissions[0] ||
-    null;
+  const userSubmission = forTeacher
+    ? null
+    : pickUserSubmission(submissions, moodleUserId);
 
   const submittedCount = submissions.filter(
     (s) => s.state === "SUBMITTED" || s.state === "GRADED"
@@ -78,7 +209,9 @@ export async function getAllAssignments({ moodleUserId } = {}) {
       try {
         const assignments = await getAssignmentsByCourse(course.id);
         if (!assignments?.length) return [];
-        return assignments.map((a) => normalizeAssignment(a, course, { moodleUserId }));
+        return assignments.map((a) =>
+          normalizeAssignment(a, course, { moodleUserId, forTeacher: false })
+        );
       } catch (err) {
         console.warn(`Impossible de charger les devoirs pour le cours ${course.id}`, err);
         return [];
@@ -100,54 +233,127 @@ export async function getAllAssignments({ moodleUserId } = {}) {
   }
 }
 
+/** Recharge un devoir (soumission + fichiers) après brouillon ou à l'ouverture du détail */
+export async function fetchStudentAssignment(courseId, assignmentId, { moodleUserId, course } = {}) {
+  const assignments = await getAssignmentsByCourse(courseId);
+  const raw = assignments.find((a) => a.id === assignmentId);
+  if (!raw) return null;
+  const courseMeta = course || { id: courseId, title: raw.course?.title };
+  return normalizeAssignment(raw, courseMeta, { moodleUserId });
+}
+
+/** Recharge un devoir enseignant (toutes les soumissions + fichiers) */
+export async function fetchTeacherAssignment(courseId, assignmentId, { course, sessionUser } = {}) {
+  const assignments = await getAssignmentsByCourse(courseId);
+  const raw = assignments.find((a) => a.id === assignmentId);
+  if (!raw) return null;
+  const courseMeta = course || { id: courseId, title: raw.course?.title };
+  const normalized = normalizeAssignment(raw, courseMeta, { forTeacher: true });
+  let participants = [];
+  try {
+    participants = await getParticipantsByCourse(courseId);
+  } catch {
+    participants = [];
+  }
+  return applyTeacherSubmissionStats(normalized, participants, sessionUser);
+}
+
+/** Liste devoirs enseignant avec toutes les soumissions */
+export async function getTeacherAssignments(sessionUser = null) {
+  const courses = await getAllLocalCourses();
+  const promises = courses.map(async (course) => {
+    try {
+      const [assignments, participants] = await Promise.all([
+        getAssignmentsByCourse(course.id),
+        getParticipantsByCourse(course.id).catch(() => []),
+      ]);
+      if (!assignments?.length) return [];
+      return assignments.map((a) =>
+        applyTeacherSubmissionStats(
+          normalizeAssignment(a, course, { forTeacher: true }),
+          participants,
+          sessionUser
+        )
+      );
+    } catch (err) {
+      console.warn(`Devoirs cours ${course.id}:`, err);
+      return [];
+    }
+  });
+  const results = await Promise.all(promises);
+  return results.flat().sort((a, b) => {
+    if (!a.dueDate && !b.dueDate) return 0;
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return a.dueDate - b.dueDate;
+  });
+}
+
 /**
  * Sauvegarde un brouillon (Draft) ou soumet les fichiers et texte
  * On utilise fetch natif pour gérer correctement le multipart/form-data
  */
+/**
+ * PUT /assignments/:id/draft — body: text (string), files[] (multipart)
+ */
 export async function submitAssignmentDraft(assignmentId, text, files = []) {
   const formData = new FormData();
-  if (text) formData.append("text", text);
-  
-  files.forEach(f => {
+  if (text != null && text !== "") {
+    formData.append("text", text);
+  }
+
+  files.forEach((f) => {
     formData.append("files", f);
   });
-  
+
   const url = new URL(`${API_CONFIG.baseURL}/assignments/${assignmentId}/draft`);
-  
-  // On récupère les headers génériques (dont l'auth)
   const headers = buildHeaders(true);
-  // Important : Ne PAS définir Content-Type pour laisser le navigateur 
-  // injecter le bon boundary boundary=----WebKitFormBoundary...
   delete headers["Content-Type"];
 
-  try {
-    const response = await fetch(url.toString(), {
-      method: "PUT",
-      headers,
-      body: formData,
-    });
+  const response = await fetch(url.toString(), {
+    method: "PUT",
+    headers,
+    body: formData,
+  });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw {
-        message: errorData?.message || `Erreur serveur ${response.status}`,
-        status: response.status
-      };
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error("Erreur d'envoi du devoir:", error);
-    throw error;
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const err = new Error(parseApiError(data, response.status));
+    err.status = response.status;
+    err.data = data;
+    throw err;
   }
+
+  return data;
 }
 
 /**
- * Remise complète : enregistre le contenu puis passe en SUBMITTED (envoyé à l'enseignant).
+ * POST /assignments/:id/submit — enchaîne draft + verrouillage SUBMITTED
  */
-export async function submitAssignmentComplete(assignmentId, text, files = []) {
-  await submitAssignmentDraft(assignmentId, text, files);
-  return submitAssignmentFinal(assignmentId);
+export async function saveStudentDraft(
+  assignmentId,
+  { text = "", remark = "", files = [] } = {}
+) {
+  const payloadText = buildSubmissionText(text, remark);
+  const data = await submitAssignmentDraft(assignmentId, payloadText, files);
+  return {
+    ...data,
+    message: formatAssignmentApiMessage(data?.message, "draft"),
+  };
+}
+
+export async function submitAssignmentComplete(
+  assignmentId,
+  { text = "", remark = "", files = [] } = {}
+) {
+  const payloadText = buildSubmissionText(text, remark);
+  await submitAssignmentDraft(assignmentId, payloadText, files);
+  const data = await submitAssignmentFinal(assignmentId);
+  return {
+    ...data,
+    message: formatAssignmentApiMessage(data?.message, "submit"),
+  };
 }
 
 /**
@@ -155,10 +361,18 @@ export async function submitAssignmentComplete(assignmentId, text, files = []) {
  */
 export async function submitAssignmentFinal(assignmentId) {
   try {
-    const response = await apiClient.post(`/assignments/${assignmentId}/submit`);
-    return response;
+    const data = await apiClient.post(`/assignments/${assignmentId}/submit`);
+    return {
+      ...data,
+      message: formatAssignmentApiMessage(data?.message, "submit"),
+    };
   } catch (error) {
-    console.error("Erreur de soumission finale:", error);
-    throw error;
+    const msg =
+      error?.data?.errors?.join?.(" ") ||
+      error?.message ||
+      "Erreur lors de la remise du devoir.";
+    const err = new Error(msg);
+    err.status = error?.status;
+    throw err;
   }
 }

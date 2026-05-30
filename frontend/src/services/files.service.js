@@ -154,7 +154,7 @@ export async function bulkDownloadFiles(fileIds) {
   }
 
   try {
-    const response = await apiClient.post("/files/download-bulk", { fileIds });
+    const response = await apiClient.post("/files/download-bulk", { body: { fileIds } });
     return response;
   } catch (error) {
     console.error("Erreur lors du téléchargement en lot:", error);
