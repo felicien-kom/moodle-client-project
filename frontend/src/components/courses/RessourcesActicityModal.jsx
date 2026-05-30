@@ -121,13 +121,13 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
     setSelectedFiles({});
   };
 
-  const handleSubmit = async (modType) => {
+  const handleSubmit = async (formType) => {
     if (!formData.name.trim()) {
       alert("Le nom est requis");
       return;
     }
 
-    if (modType === "url" && !formData.externalUrl.trim()) {
+    if (formType === "url" && !formData.externalUrl.trim()) {
       alert("L'URL externe est requise");
       return;
     }
@@ -136,6 +136,15 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
       alert("courseId et sectionId sont requis");
       return;
     }
+
+    // Mapping des types de formulaire vers les modTypes valides de l'API
+    const modTypeMapping = {
+      "fichier": "resource",
+      "dossier": "folder",
+      "devoir": "assign",
+      "url": "url"
+    };
+    const modType = modTypeMapping[formType] || formType;
 
     try {
       setIsSubmitting(true);
@@ -146,7 +155,7 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
         name: formData.name,
         intro: formData.description,
         externalUrl: formData.externalUrl,
-        files: selectedFiles[modType] || [],
+        files: selectedFiles[formType] || [],
       });
       alert("Module créé avec succès !");
       handleCloseForm();
@@ -265,9 +274,9 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
             <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white" 
-              onClick={() => handleSubmit("resource")}
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => handleSubmit("fichier")}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Ajout..." : "Ajouter"}
@@ -330,9 +339,9 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
             <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white" 
-              onClick={() => handleSubmit("folder")}
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => handleSubmit("dossier")}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Ajout..." : "Ajouter"}
@@ -449,9 +458,9 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
             <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white" 
-              onClick={() => handleSubmit("assign")}
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => handleSubmit("devoir")}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Ajout..." : "Ajouter"}

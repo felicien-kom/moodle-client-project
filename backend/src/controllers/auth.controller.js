@@ -69,6 +69,12 @@ export const listProfiles = async (req, res) => {
   res.json({ profiles });
 };
 
+// GET /api/auth/moodle-status — Vérifie si le serveur Moodle est joignable
+export const getMoodleStatus = async (req, res) => {
+  const isReachable = await authService.checkMoodleReachable();
+  res.json({ reachable: isReachable });
+};
+
 // DELETE /api/auth/profile — Supprime le profil local de l'utilisateur connecté
 // export const deleteProfile = async (req, res) => {
 //   const result = await authService.deleteProfile(req.user.email);

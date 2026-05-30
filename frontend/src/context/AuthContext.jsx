@@ -12,11 +12,13 @@ import { API_CONFIG } from "@/config/api.config";
 import { PATHS } from "@/router/paths";
 import { AuthContext } from "./AuthContext.store";
 import { userRole } from "@/services/user.service";
+import { checkMoodleStatus } from "@/services/moodle.service";
 
 export function AuthProvider({ children }) {
   const [user,      setUser]      = useState(null);
   const [profiles,  setProfiles]  = useState([]);
   const [isOnline,  setIsOnline]  = useState(navigator.onLine);
+  const [isMoodleOnline, setIsMoodleOnline] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -67,6 +69,22 @@ export function AuthProvider({ children }) {
       window.removeEventListener("online", goOnline);
       window.removeEventListener("offline", goOffline);
     };
+  }, []);
+
+  // Vérification périodique du statut du serveur Moodle
+  useEffect(() => {
+    const checkMoodle = async () => {
+      const reachable = await checkMoodleStatus();
+      setIsMoodleOnline(reachable);
+    };
+
+    // Vérification initiale
+    checkMoodle();
+
+    // Vérification toutes les 30 secondes
+    const interval = setInterval(checkMoodle, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // --- Session expirée émise par apiClient (401) ---
@@ -170,6 +188,7 @@ export function AuthProvider({ children }) {
         user,
         profiles,
         isOnline,
+        isMoodleOnline,
         isAuthenticated,
         isLoading,
         login,

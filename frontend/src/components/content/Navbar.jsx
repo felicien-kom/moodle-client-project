@@ -55,7 +55,7 @@ function avatarColorFrom(name) {
 export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, isOnline } = useAuth();
+  const { logout, isMoodleOnline } = useAuth();
   const user = getLocalUser() || {};
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
@@ -74,7 +74,7 @@ export function Navbar() {
 
   // Fonction de synchronisation
   const handleSync = async () => {
-    if (!isOnline) {
+    if (!isMoodleOnline) {
       toast.error("Mode Hors-ligne", { description: "La synchronisation nécessite une connexion Internet." });
       return;
     }
@@ -242,7 +242,7 @@ export function Navbar() {
       {/* Icônes droite */}
       <div className="flex items-center gap-3">
         {/* Indicateur de statut réseau (Antenne active/déconnectée) */}
-        {isOnline ? (
+        {isMoodleOnline ? (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-xs font-semibold select-none shadow-sm">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -261,20 +261,20 @@ export function Navbar() {
         <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
 
         {/* Bouton de Synchronisation amélioré */}
-        <Button 
-          variant={isSyncing ? "secondary" : "default"} 
+        <Button
+          variant={isSyncing ? "secondary" : "default"}
           className={`flex items-center gap-2 text-sm font-medium transition-all shadow-sm min-w-fit whitespace-nowrap ${
-            !isOnline 
-              ? "bg-slate-100 text-slate-400 opacity-70 cursor-not-allowed hidden sm:flex" 
-              : isSyncing 
+            !isMoodleOnline
+              ? "bg-slate-100 text-slate-400 opacity-70 cursor-not-allowed hidden sm:flex"
+              : isSyncing
                 ? syncPhase === "ERROR"
                   ? "bg-red-100 text-red-600 hover:bg-red-100"
                   : "bg-blue-100 text-blue-600 hover:bg-blue-200"
                 : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
           }`}
           onClick={handleSync}
-          disabled={isSyncing || !isOnline}
-          title={!isOnline ? "Mode Hors-ligne" : isSyncing ? "Synchronisation en cours..." : "Synchroniser les données"}
+          disabled={isSyncing || !isMoodleOnline}
+          title={!isMoodleOnline ? "Mode Hors-ligne" : isSyncing ? "Synchronisation en cours..." : "Synchroniser les données"}
         >
           <RefreshCw className={`h-4 w-4 flex-shrink-0 ${isSyncing ? 'animate-spin' : ''} ${syncPhase === "ERROR" ? "text-red-600" : syncPhase === "COMPLETE" ? "text-emerald-600" : "text-current"}`} />
           <span className="hidden sm:inline-block">

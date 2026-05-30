@@ -13,7 +13,7 @@
 import bcrypt from "bcrypt";
 import { masterDb, getDb, buildDbRelPath } from "../config/db.js";
 import { signJwt } from "../utils/jwt.js";
-import { getMoodleToken, moodleFetch } from "../config/moodleApi.js";
+import { getMoodleToken, moodleFetch, checkMoodleReachable as checkMoodleApiReachable } from "../config/moodleApi.js";
 import { migrateUserDb } from "../scripts/migrate-user.js";
 
 const BCRYPT_ROUNDS = 12;
@@ -249,6 +249,12 @@ export const listProfiles = async () => {
       lastLoginAt: true,
     },
   });
+};
+
+// ─── checkMoodleReachable ─────────────────────────────────────
+
+export const checkMoodleReachable = async () => {
+  return await checkMoodleApiReachable();
 };
 
 // ─── Helper ──────────────────────────────────────────────────

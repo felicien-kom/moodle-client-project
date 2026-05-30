@@ -46,6 +46,7 @@ import { downloadFile, serveFile } from "@/services/files.service.js";
 import { getFileIcon } from "@/utils/file.utils.js";
 import FolderView from "./FolderView.jsx";
 import RessourcesActicityModal from "@/components/courses/RessourcesActicityModal.jsx";
+import VueVideos from "./VueVideos.jsx";
 import { useUserRole } from "@/hooks/useUserRole";
 import { userRole } from "@/services/user.service";
 
@@ -98,7 +99,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
       }
 
       if (downloadedFiles.has(fileId)) {
-        await onFileOpen(fileId);
+        await onFileOpen(fileId, item.fileData?.filename, item.fileData?.mimeType);
       } else {
         await onFileDownload(fileId);
       }
@@ -304,6 +305,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState("");
   const [isCreatingSection, setIsCreatingSection] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   // Refs pour le scroll vers chaque section
   const detailsRef = useRef(null);
@@ -322,16 +324,28 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
     }
   };
 
-  const handleFileOpen = async (fileId) => {
+  const handleFileOpen = async (fileId, fileName = null, mimeType = null) => {
     try {
       console.log("Ouverture du fichier:", fileId);
-      const blobUrl = await serveFile(fileId);
-      window.open(blobUrl, '_blank');
+      
+      // Détecter si c'est une vidéo
+      const videoExtensions = ['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv'];
+      const fileExtension = fileName?.split('.').pop()?.toLowerCase() || '';
+      const isVideo = videoExtensions.includes(fileExtension) || mimeType?.toLowerCase().includes('video');
+      
+      if (isVideo) {
+        // Ouvrir dans le lecteur vidéo intégré
+        setSelectedVideo({ fileId, fileName: fileName || 'Vidéo' });
+      } else {
+        // Comportement par défaut : ouvrir dans un nouvel onglet
+        const blobUrl = await serveFile(fileId);
+        window.open(blobUrl, '_blank');
 
-      // Nettoyer l'URL blob après un court délai
-      setTimeout(() => {
-        window.URL.revokeObjectURL(blobUrl);
-      }, 1000);
+        // Nettoyer l'URL blob après un court délai
+        setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl);
+        }, 1000);
+      }
     } catch (error) {
       console.error("Erreur lors de l'ouverture:", error);
       throw error;
@@ -547,6 +561,17 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
           </Button>
         </div>
       </div>
+    );
+  }
+
+  // ─── Afficher la vue vidéo si une vidéo est sélectionnée ─────────────────
+  if (selectedVideo) {
+    return (
+      <VueVideos
+        fileId={selectedVideo.fileId}
+        fileName={selectedVideo.fileName}
+        onRetour={() => setSelectedVideo(null)}
+      />
     );
   }
 
