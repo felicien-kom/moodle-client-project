@@ -138,7 +138,7 @@ export default function VueVideos({ fileId, fileName, onRetour }) {
       <div className="bg-gray-800 border-t border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between text-sm text-gray-400">
-            <p>Lecteur vidéo intégré</p>
+        
             <p>Utilisez les contrôles du lecteur pour naviguer</p>
           </div>
         </div>

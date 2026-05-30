@@ -51,6 +51,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { userRole } from "@/services/user.service";
 
 // ─── Icône colorée selon le type de resso// ??? Ic�ne color�e selon le type de ressource ???
+const role = userRole(); 
 function ContentIcon({ type, isDownloaded }) {
   if (type === 'file') {
     if (isDownloaded) {
@@ -208,7 +209,8 @@ function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFil
         </div>
         <div className="flex items-center gap-2">
           {/* Menu déroulant pour ajouter un module */}
-          <DropdownMenu>
+         
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div
                 onClick={(e) => e.stopPropagation()}
@@ -224,6 +226,7 @@ function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFil
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+         
           {open
             ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
             : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
@@ -789,7 +792,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
                 <Card className="border border-gray-200 shadow-none rounded-xl">
                   <CardContent className="p-6 text-center">
                     <p className="text-sm text-gray-500">
-                      Le contenu du cours n'est pas disponible pour le moment.
+                      Le contenu du cours n'est pas disponible pour le moment pour.Veuillez vous inscrire.
                     </p>
                     <p className="text-xs text-gray-400 mt-2">
                       Veuillez synchroniser le cours ou contacter l'administrateur.
@@ -799,19 +802,20 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
               )}
 
               {/* ── Bouton Ajouter une section ── */}
-              <Button
+              {/*<Button
                 onClick={handleAddSectionClick}
                 className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-base border-2 border-dashed border-indigo-300 rounded-xl flex items-center justify-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 Ajouter une section
               </Button>
+              */}
 
             </main>
           </div>
         </TabsContent>
         <TabsContent value="participants">
-          {userRole() === "teacher" ? (
+         
             <Card className="border border-gray-200 shadow-none rounded-xl">
               <CardContent className="p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Liste des participants</h3>
@@ -828,11 +832,9 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
                 )}
               </CardContent>
             </Card>
-          ) : (
-            "Change your password here."
-          )}
+         
         </TabsContent>
-        <TabsContent value="notes">Change your password here.</TabsContent>
+        <TabsContent value="notes">Aucune note disponible.</TabsContent>
       </Tabs>
 
       {/* Modal de confirmation d'inscription */}

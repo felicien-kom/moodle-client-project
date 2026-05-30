@@ -12,7 +12,7 @@ import CourseDetail from "@/pages/app/courses/CourseDetail";
 import apiClient from "@/client/apiClient";
 import CreateCourseModal from "@/components/courses/ModalFormCreationCours";
 import { getCatalogueOnline } from "@/services/courses.service";
-
+import { userRole } from "@/services/user.service";
 // ─── Image fond tableau math ──────────────────────────────────────────────────
 function MathBackground({ imagePath }) {
   return (
@@ -47,7 +47,7 @@ function ContentIcon({ type }) {
   );
 }
 
-// ─── Section dépliable ────────────────────────────────────────────────────────
+// ───  dépliable ────────────────────────────────────────────────────────
 function CourseSection({ section }) {
   const [open, setOpen] = useState(true);
   return (
@@ -230,7 +230,7 @@ function EspaceCours({ onOuvrirCours }) {
   const crees = filter(coursCreés);
   const inscrits = filter(coursInscrits);
   const explorer = filter(coursExplorer);
-
+  const role = userRole();
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-5xl mx-auto">
@@ -244,13 +244,13 @@ function EspaceCours({ onOuvrirCours }) {
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">Espace Cours</h1>
           </div>
 
-          <Button
+          {role === "teacher" &&(<Button
             onClick={() => setIsCreateModalOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-5 font-semibold gap-2"
           >
             <Plus className="w-4 h-4" />
             Créer un nouveau cours
-          </Button>
+          </Button>)}
 
         </div>
 
@@ -273,7 +273,7 @@ function EspaceCours({ onOuvrirCours }) {
         {/* Vos cours créés */}
         {crees && crees.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Vos cours créés</h2>
+            {role === "teacher" &&(<h2 className="text-base font-bold text-gray-900 mb-3">Vos cours créés</h2>)}
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {crees.map((c, index) => (
@@ -286,7 +286,7 @@ function EspaceCours({ onOuvrirCours }) {
         {/* Cours inscrits */}
         {inscrits.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Cours crées</h2>
+           <h2 className="text-base font-bold text-gray-900 mb-3">Mes cours</h2>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {inscrits.map((c, index) => (
@@ -297,7 +297,8 @@ function EspaceCours({ onOuvrirCours }) {
         )}
 
         {/* Explorer */}
-        {explorer.length > 0 && (
+         
+        {explorer.length > 0 && role === "student" && (
           <div className="mb-8">
             <h2 className="text-base font-bold text-gray-900 mb-3">Explorer d'autres cours</h2>
             <Separator className="mb-4" />
@@ -308,6 +309,8 @@ function EspaceCours({ onOuvrirCours }) {
             </div>
           </div>
         )}
+        
+      
       </div>
 
       {/* Modal de création de cours */}
