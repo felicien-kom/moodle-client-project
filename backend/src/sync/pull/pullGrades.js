@@ -94,6 +94,39 @@ export const pullGrades = async ({ prisma, token, moodleUserId, servertime, emit
                 last_synced_at:      servertime,
               }
             });
+
+            // Mettre à jour la table AssignmentSubmission en parallèle si c'est un devoir
+            if (itemType === "assign" && item.iteminstance) {
+              const localAssign = await prisma.assignment.findFirst({
+                where: { server_id: item.iteminstance }
+              });
+
+              if (localAssign) {
+                // Trouver la soumission de cet utilisateur
+                const recordUserId = userRecord.userid;
+                if (recordUserId) {
+                  const existingSub = await prisma.assignmentSubmission.findFirst({
+                    where: { assignmentId: localAssign.id, moodleUserId: recordUserId }
+                  });
+
+                  if (existingSub) {
+                    // Update only if it's SYNCED or if the server grade is newer
+                    if (existingSub.sync_status === "SYNCED" || existingSub.server_timemodified < serverTimemodified) {
+                      await prisma.assignmentSubmission.update({
+                        where: { id: existingSub.id },
+                        data: {
+                          grade: gradeValue,
+                          feedback: item.feedback || null,
+                          gradedAt: item.gradedategraded || servertime,
+                          state: gradeValue !== null ? "GRADED" : existingSub.state
+                        }
+                      });
+                    }
+                  }
+                }
+              }
+            }
+
             pulled++;
           }
         }
