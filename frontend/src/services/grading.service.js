@@ -8,6 +8,16 @@ function parseApiError(errorData, status) {
   return `Erreur serveur ${status}`;
 }
 
+export async function getGradedSubmissions() {
+  try {
+    const data = await apiClient.get("/submissions");
+    return data?.grades || [];
+  } catch (error) {
+    console.warn("Impossible de charger les notes:", error);
+    return [];
+  }
+}
+
 /**
  * PUT /submissions/:submissionId/grade
  * Rôle requis : TEACHER ou ADMIN

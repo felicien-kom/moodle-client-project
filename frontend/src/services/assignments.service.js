@@ -1,6 +1,7 @@
 import apiClient from "@/client/apiClient";
 import { getAllLocalCourses, getAssignmentsByCourse, getParticipantsByCourse } from "./courses.service";
 import { filterStudentParticipants, filterStudentSubmissions } from "@/utils/assignmentParticipants.utils";
+import { getGradedSubmissions } from "./grading.service";
 import { STUDENT_REMARK_SEPARATOR } from "@/constants/assignmentStudentApi";
 import { API_CONFIG } from "@/config/api.config";
 import { buildHeaders } from "@/utils/api.utils";
@@ -49,11 +50,60 @@ export const STUDENT_SUBMISSION_STATUS = {
 };
 
 export function getStudentSubmissionStatus(assignment) {
-  const state = assignment?.submission?.state;
-  if (state === "GRADED") return STUDENT_SUBMISSION_STATUS.GRADED;
+  const sub = assignment?.submission;
+  if (!sub) return STUDENT_SUBMISSION_STATUS.NOT_SENT;
+
+  const state = sub.state;
+  if (state === "GRADED" || sub.grade != null) {
+    return STUDENT_SUBMISSION_STATUS.GRADED;
+  }
   if (state === "SUBMITTED") return STUDENT_SUBMISSION_STATUS.SUBMITTED;
   if (state === "DRAFT") return STUDENT_SUBMISSION_STATUS.DRAFT;
   return STUDENT_SUBMISSION_STATUS.NOT_SENT;
+}
+
+/** Onglet « À faire » : non envoyé + brouillon */
+export function isStudentTodo(assignment) {
+  const status = getStudentSubmissionStatus(assignment);
+  return (
+    status === STUDENT_SUBMISSION_STATUS.NOT_SENT ||
+    status === STUDENT_SUBMISSION_STATUS.DRAFT
+  );
+}
+
+/** Onglet « Mes soumissions » : envoyé + corrigé */
+export function isStudentInSubmissionsTab(assignment) {
+  const status = getStudentSubmissionStatus(assignment);
+  return (
+    status === STUDENT_SUBMISSION_STATUS.SUBMITTED ||
+    status === STUDENT_SUBMISSION_STATUS.GRADED
+  );
+}
+
+/** Date limite dépassée (cutoffDate ou dueDate) */
+export function isAssignmentEvaluationExpired(assignment) {
+  const cutoff = assignment?.cutoffDate || assignment?.dueDate;
+  if (!cutoff) return false;
+  return Math.floor(Date.now() / 1000) > cutoff;
+}
+
+/**
+ * Devoir enseignant « Terminé » : échéance passée ET toutes les remises corrigées.
+ * Sans date d'échéance : terminé dès que toutes les remises reçues sont corrigées.
+ */
+export function isTeacherAssignmentTermine(assignment) {
+  const submitted = assignment?.submittedCount || 0;
+  const graded = assignment?.gradedCount || 0;
+  const allSubmittedGraded = submitted === 0 ? graded === 0 : graded >= submitted;
+
+  if (!assignment?.dueDate && !assignment?.cutoffDate) {
+    return submitted > 0 && allSubmittedGraded;
+  }
+  return isAssignmentEvaluationExpired(assignment) && allSubmittedGraded;
+}
+
+export function isTeacherAssignmentAFaire(assignment) {
+  return !isTeacherAssignmentTermine(assignment);
 }
 
 export function getStudentStatusLabel(status) {
@@ -83,13 +133,9 @@ export function getStudentStatusHint(status) {
   }
 }
 
-/** Devoir remis par l'étudiant (SUBMITTED ou GRADED) */
+/** Devoir remis ou corrigé (hors brouillon) */
 export function isStudentSubmitted(assignment) {
-  const status = getStudentSubmissionStatus(assignment);
-  return (
-    status === STUDENT_SUBMISSION_STATUS.SUBMITTED ||
-    status === STUDENT_SUBMISSION_STATUS.GRADED
-  );
+  return isStudentInSubmissionsTab(assignment);
 }
 
 export function isStudentDraft(assignment) {
@@ -141,11 +187,55 @@ export function groupAssignmentsByCourse(assignments) {
 
 function pickUserSubmission(submissions, moodleUserId) {
   if (!submissions?.length) return null;
+
   if (moodleUserId != null) {
-    return submissions.find((s) => s.moodleUserId === moodleUserId) || null;
+    const exact = submissions.find((s) => s.moodleUserId === moodleUserId);
+    if (exact) return exact;
   }
+
+  const active = submissions.filter((s) =>
+    ["DRAFT", "SUBMITTED", "GRADED"].includes(s.state)
+  );
+  if (active.length === 1) return active[0];
   if (submissions.length === 1) return submissions[0];
+
   return null;
+}
+
+/** Fusionne GET /submissions (notes) dans les devoirs étudiants */
+export async function mergeGradesIntoAssignments(assignments) {
+  const gradedList = await getGradedSubmissions();
+  if (!gradedList.length) return assignments;
+
+  const byAssignmentId = new Map();
+  for (const row of gradedList) {
+    const aid = row.assignmentId ?? row.assignment?.id;
+    if (aid != null) byAssignmentId.set(aid, row);
+  }
+
+  return assignments.map((a) => {
+    const gradedRow = byAssignmentId.get(a.id);
+    if (!gradedRow) return a;
+
+    const baseSub = a.submission || {
+      assignmentId: a.id,
+      moodleUserId: gradedRow.moodleUserId,
+    };
+
+    return {
+      ...a,
+      submission: {
+        ...baseSub,
+        grade: gradedRow.grade ?? baseSub.grade,
+        feedback: gradedRow.feedback ?? baseSub.feedback,
+        gradedAt: gradedRow.gradedAt ?? baseSub.gradedAt,
+        state:
+          gradedRow.grade != null || gradedRow.state === "GRADED"
+            ? "GRADED"
+            : baseSub.state,
+      },
+    };
+  });
 }
 
 function applyTeacherSubmissionStats(assignment, participants = [], sessionUser = null) {
@@ -155,7 +245,7 @@ function applyTeacherSubmissionStats(assignment, participants = [], sessionUser 
     participants,
     sessionUser
   );
-  return {
+  const stats = {
     ...assignment,
     allSubmissions: studentSubs.map((s) => ({
       ...s,
@@ -164,10 +254,16 @@ function applyTeacherSubmissionStats(assignment, participants = [], sessionUser 
     submittedCount: studentSubs.filter(
       (s) => s.state === "SUBMITTED" || s.state === "GRADED"
     ).length,
-    gradedCount: studentSubs.filter((s) => s.state === "GRADED").length,
+    gradedCount: studentSubs.filter(
+      (s) => s.state === "GRADED" || s.grade != null
+    ).length,
+    pendingGradeCount: studentSubs.filter((s) => s.state === "SUBMITTED").length,
+    evaluationExpired: isAssignmentEvaluationExpired(assignment),
     totalCount: students.length || studentSubs.length,
     studentParticipantCount: students.length,
   };
+  stats.isTermine = isTeacherAssignmentTermine(stats);
+  return stats;
 }
 
 function normalizeAssignment(raw, course, { moodleUserId, forTeacher = false } = {}) {
@@ -219,7 +315,7 @@ export async function getAllAssignments({ moodleUserId } = {}) {
     });
 
     const results = await Promise.all(promises);
-    return results
+    const flat = results
       .flat()
       .sort((a, b) => {
         if (!a.dueDate && !b.dueDate) return 0;
@@ -227,6 +323,7 @@ export async function getAllAssignments({ moodleUserId } = {}) {
         if (!b.dueDate) return -1;
         return a.dueDate - b.dueDate;
       });
+    return mergeGradesIntoAssignments(flat);
   } catch (error) {
     console.error("Erreur lors de la récupération de tous les devoirs:", error);
     throw error;
@@ -239,7 +336,9 @@ export async function fetchStudentAssignment(courseId, assignmentId, { moodleUse
   const raw = assignments.find((a) => a.id === assignmentId);
   if (!raw) return null;
   const courseMeta = course || { id: courseId, title: raw.course?.title };
-  return normalizeAssignment(raw, courseMeta, { moodleUserId });
+  const normalized = normalizeAssignment(raw, courseMeta, { moodleUserId });
+  const [merged] = await mergeGradesIntoAssignments([normalized]);
+  return merged;
 }
 
 /** Recharge un devoir enseignant (toutes les soumissions + fichiers) */
@@ -298,9 +397,7 @@ export async function getTeacherAssignments(sessionUser = null) {
  */
 export async function submitAssignmentDraft(assignmentId, text, files = []) {
   const formData = new FormData();
-  if (text != null && text !== "") {
-    formData.append("text", text);
-  }
+  formData.append("text", text != null ? String(text) : "");
 
   files.forEach((f) => {
     formData.append("files", f);

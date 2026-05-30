@@ -1,5 +1,5 @@
 import { Calendar, ChevronRight, FileText } from "lucide-react";
-import { stripHtml } from "@/services/assignments.service";
+import { stripHtml, getStudentSubmissionStatus, STUDENT_SUBMISSION_STATUS } from "@/services/assignments.service";
 import { StudentStatusBadge } from "./StudentStatusBadge";
 
 export function StudentAssignmentListItem({ assignment, onClick, showGrade = false }) {
@@ -10,6 +10,8 @@ export function StudentAssignmentListItem({ assignment, onClick, showGrade = fal
     assignment.submission?.state !== "SUBMITTED" &&
     assignment.submission?.state !== "GRADED";
 
+  const status = getStudentSubmissionStatus(assignment);
+  const showGradeOnList = showGrade || status === STUDENT_SUBMISSION_STATUS.GRADED;
   const maxGrade = assignment.gradeMax ?? 20;
   const grade = assignment.submission?.grade;
 
@@ -31,7 +33,7 @@ export function StudentAssignmentListItem({ assignment, onClick, showGrade = fal
           {stripHtml(assignment.intro || assignment.activity) || "Consignes disponibles dans le détail"}
         </p>
         <div className="flex flex-wrap items-center gap-2 mt-2">
-          <StudentStatusBadge assignment={assignment} showGrade={showGrade} />
+          <StudentStatusBadge assignment={assignment} showGrade={showGradeOnList} />
           <span className="text-slate-300 hidden sm:inline">·</span>
           <Calendar className={`w-3.5 h-3.5 ${isLate ? "text-red-500" : "text-slate-400"}`} />
           <span className={`text-xs font-medium ${isLate ? "text-red-600" : "text-slate-500"}`}>
@@ -46,7 +48,7 @@ export function StudentAssignmentListItem({ assignment, onClick, showGrade = fal
         </div>
       </div>
 
-      {showGrade && grade != null && (
+      {showGradeOnList && grade != null && (
         <div className="shrink-0 text-right">
           <p className="text-lg font-black text-emerald-600">{grade}</p>
           <p className="text-[10px] text-slate-400 font-medium">/{maxGrade}</p>

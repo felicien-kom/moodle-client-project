@@ -129,7 +129,14 @@ export const TEACHER_GRADING_ENDPOINTS = {
     },
     response: "{ message, submission } — submission.state passe à GRADED",
     errors: "400 { errors: string[] } — note invalide, hors barème",
-    usage: "Bouton « Évaluer » / modal notation dans AssignmentDetailsTeacher",
+    usage: "Page TeacherGradePage — PUT notation",
+  },
+  listGraded: {
+    method: "GET",
+    path: "/submissions",
+    role: "authentifié — filtré STUDENT vs TEACHER côté serveur",
+    response: "{ grades: AssignmentSubmission[] }",
+    usage: "Fusion notes dans mergeGradesIntoAssignments (étudiant voit Corrigé)",
   },
 };
 

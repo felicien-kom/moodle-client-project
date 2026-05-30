@@ -6,7 +6,10 @@ import {
   getAllAssignments,
   getTeacherAssignments,
   groupAssignmentsByCourse,
-  isStudentSubmitted,
+  isStudentTodo,
+  isStudentInSubmissionsTab,
+  isTeacherAssignmentTermine,
+  isTeacherAssignmentAFaire,
 } from "@/services/assignments.service";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AssignmentCard } from "./components/AssignmentCard";
@@ -63,16 +66,11 @@ export default function Assignment() {
     fetchData();
   }, [fetchData]);
 
-  const isAFaire = (a) => !isStudentSubmitted(a);
-  const isTermine = (a) => isStudentSubmitted(a);
+  const isAFaire = (a) => isStudentTodo(a);
+  const isTermine = (a) => isStudentInSubmissionsTab(a);
 
-  const isTeacherAFaire = (a) => {
-    const subCount = a.submittedCount || 0;
-    const gradCount = a.gradedCount || 0;
-    return subCount > gradCount || subCount === 0;
-  };
-  const isTeacherTermine = (a) =>
-    (a.submittedCount || 0) === (a.gradedCount || 0) && (a.submittedCount > 0);
+  const isTeacherAFaire = (a) => isTeacherAssignmentAFaire(a);
+  const isTeacherTermine = (a) => isTeacherAssignmentTermine(a);
 
   const currentList = useMemo(() => {
     if (isTeacher) {
@@ -311,7 +309,9 @@ export default function Assignment() {
             <p className="text-slate-400 text-sm mt-1 text-center max-w-md">
               {activeTab === "a-faire"
                 ? "Aucun devoir non envoyé ou en brouillon pour le moment."
-                : "Aucun devoir envoyé ou corrigé pour le moment."}
+                : isTeacher
+                  ? "Aucun devoir terminé (échéance passée et copies corrigées)."
+                  : "Aucun devoir envoyé ou corrigé pour le moment."}
             </p>
           </div>
         )}

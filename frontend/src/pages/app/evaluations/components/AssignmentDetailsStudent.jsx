@@ -65,8 +65,9 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
     buildContentSnapshot(initialParsed.body, initialParsed.remark, submissionLive?.submittedFiles || [], [])
   );
 
-  const isSubmitted = isStudentSubmitted(assignmentView);
   const submissionStatus = getStudentSubmissionStatus(assignmentView);
+  const isSubmitted = isStudentSubmitted(assignmentView);
+  const isGraded = submissionStatus === STUDENT_SUBMISSION_STATUS.GRADED;
   const isDraft = submissionStatus === STUDENT_SUBMISSION_STATUS.DRAFT;
   const maxGrade = assignment.gradeMax ?? assignment.maxGrade ?? 20;
   const requiresText = Boolean(Number(assignment.requiresText));
@@ -185,11 +186,19 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
       setIsSavingDraft(true);
       setErrorSubmit(null);
       setSuccessMessage(null);
-      await saveStudentDraft(assignment.id, {
+      const data = await saveStudentDraft(assignment.id, {
         text: textResponse,
         remark: studentRemark,
         files: selectedFiles,
       });
+      if (data?.submission) {
+        applySubmissionFromApi({
+          ...data.submission,
+          submittedFiles: data.submission.submittedFiles?.length
+            ? data.submission.submittedFiles
+            : existingFiles,
+        });
+      }
       await reloadFromServer();
       const msg = getDraftSuccessMessage();
       setSuccessMessage(msg);
@@ -261,11 +270,19 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
 
   const persistDraftIfNeeded = async () => {
     if (isSubmitted || !isDirty()) return true;
-    await saveStudentDraft(assignment.id, {
+    const data = await saveStudentDraft(assignment.id, {
       text: textResponse,
       remark: studentRemark,
       files: selectedFiles,
     });
+    if (data?.submission) {
+      applySubmissionFromApi({
+        ...data.submission,
+        submittedFiles: data.submission.submittedFiles?.length
+          ? data.submission.submittedFiles
+          : existingFiles,
+      });
+    }
     await reloadFromServer();
     return true;
   };
@@ -619,11 +636,20 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
               </div>
             </div>
           ) : (
-            <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
-              <h2 className="text-sm font-bold text-emerald-900 mb-2">Devoir remis</h2>
-              <p className="text-emerald-800 text-sm">
-                Votre travail a été transmis à l&apos;enseignant. Vous le retrouverez dans
-                l&apos;onglet « Mes soumissions ».
+            <div
+              className={`rounded-2xl border p-6 ${
+                isGraded
+                  ? "bg-emerald-50 border-emerald-200"
+                  : "bg-blue-50/50 border-blue-100"
+              }`}
+            >
+              <h2 className="text-sm font-bold text-slate-900 mb-2">
+                {isGraded ? "Devoir corrigé" : "Devoir remis"}
+              </h2>
+              <p className={`text-sm ${isGraded ? "text-emerald-800" : "text-blue-800"}`}>
+                {isGraded
+                  ? "Votre enseignant a publié une note et un commentaire."
+                  : "Votre travail a été transmis. Vous serez notifié après correction."}
               </p>
               {submittedContent.body && (
                 <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-100">
@@ -654,18 +680,22 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
                   ))}
                 </ul>
               )}
-              {assignment.submission?.grade != null && (
+              {submissionLive?.grade != null && (
                 <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-200 flex justify-between items-center">
                   <span className="font-semibold text-slate-600">Note</span>
                   <span className="text-2xl font-black text-emerald-600">
-                    {assignment.submission.grade} / {maxGrade}
+                    {submissionLive.grade} / {maxGrade}
                   </span>
                 </div>
               )}
-              {assignment.submission?.feedback && (
+              {submissionLive?.feedback && (
                 <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-100">
-                  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Commentaire</p>
-                  <p className="text-sm text-slate-700">{assignment.submission.feedback}</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-1">
+                    Commentaire de l&apos;enseignant
+                  </p>
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                    {submissionLive.feedback}
+                  </p>
                 </div>
               )}
             </div>
@@ -680,7 +710,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
             <div className="space-y-4 text-sm">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Statut</p>
-                <StudentStatusBadge assignment={assignmentView} showGrade={false} />
+                <StudentStatusBadge assignment={assignmentView} showGrade={isGraded} />
                 <p className="text-xs text-slate-500 mt-2">{getStudentStatusHint(submissionStatus)}</p>
               </div>
               <Separator />
