@@ -1,162 +1,210 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, UploadCloud, File, Trash2, Calendar, BookOpen, FileText, Clock, Download, AlertCircle } from "lucide-react";
-import { submitAssignmentDraft, submitAssignmentFinal } from "@/services/assignments.service";
-import { StudentStatusBadge } from "./StudentStatusBadge";
+import {
+  ArrowLeft,
+  UploadCloud,
+  File,
+  Trash2,
+  BookOpen,
+  FileText,
+  Eye,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+import {
+  submitAssignmentComplete,
+  isStudentSubmitted,
+} from "@/services/assignments.service";
+import { downloadFile, serveFile } from "@/services/files.service";
+import { DocumentSplitViewer } from "./DocumentSplitViewer";
 
 export function AssignmentDetailsStudent({ assignment, onRetour }) {
   const [textResponse, setTextResponse] = useState(assignment.submission?.submissionText || "");
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [existingFiles] = useState(() => assignment.submission?.submittedFiles || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorSubmit, setErrorSubmit] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const fileInputRef = useRef(null);
 
-  const isSubmitted = assignment.submission?.state === "SUBMITTED" || assignment.submission?.state === "GRADED";
-  const isDraft = assignment.submission?.state === "DRAFT";
-  const allowsText = assignment.allowedTypes === 'text' || assignment.allowedTypes === 'both' || !assignment.allowedTypes;
-  const allowsFiles = assignment.allowedTypes === 'file' || assignment.allowedTypes === 'both' || !assignment.allowedTypes;
+  const isSubmitted = isStudentSubmitted(assignment);
+  const maxGrade = assignment.gradeMax ?? assignment.maxGrade ?? 20;
+  const requiresText = Boolean(assignment.requiresText);
+  const requiresFile = Boolean(assignment.requiresFile);
 
-  // -- Validations --
   const wordCount = textResponse.trim() ? textResponse.trim().split(/\s+/).length : 0;
-  const isWordLimitExceeded = Boolean(assignment.requiresText && assignment.wordLimit && wordCount > assignment.wordLimit);
-  
-  const isMaxFilesExceeded = Boolean(assignment.maxFiles && selectedFiles.length > assignment.maxFiles);
-  const isMaxFileSizeExceeded = Boolean(assignment.maxFileSize && selectedFiles.some(f => f.size > assignment.maxFileSize));
-  const isInvalid = isWordLimitExceeded || isMaxFilesExceeded || isMaxFileSizeExceeded;
+  const isWordLimitExceeded = Boolean(
+    assignment.wordLimit && wordCount > assignment.wordLimit
+  );
+  const totalFilesCount = existingFiles.length + selectedFiles.length;
+  const isMaxFilesExceeded = Boolean(
+    assignment.maxFiles && totalFilesCount > assignment.maxFiles
+  );
+  const isMaxFileSizeExceeded = Boolean(
+    assignment.maxFileSize &&
+      selectedFiles.some((f) => f.size > assignment.maxFileSize)
+  );
 
-  // Fichiers d'instructions du professeur (introFiles)
   const introFiles = assignment.introFiles || [];
 
-  const handleFileSelect = (e) => {
-    if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files));
-    }
-  };
+  useEffect(() => {
+    return () => {
+      if (preview?.revoke) URL.revokeObjectURL(preview.url);
+    };
+  }, [preview]);
 
-  const clearFiles = () => {
-    setSelectedFiles([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+  const closePreview = useCallback(() => {
+    if (preview?.revoke) URL.revokeObjectURL(preview.url);
+    setPreview(null);
+  }, [preview]);
 
-  const handleSaveDraft = async () => {
-    try {
-      setIsSubmitting(true);
-      setErrorSubmit(null);
-      await submitAssignmentDraft(assignment.id, textResponse, selectedFiles);
-      alert("Brouillon sauvegardé avec succès.");
-      onRetour(true);
-    } catch (err) {
-      setErrorSubmit(err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSubmitFinal = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir remettre ce devoir définitivement ? Vous ne pourrez plus le modifier.")) return;
-    try {
-      setIsSubmitting(true);
-      setErrorSubmit(null);
-      await submitAssignmentFinal(assignment.id);
-      alert("Devoir remis définitivement.");
-      onRetour(true);
-    } catch (err) {
-      setErrorSubmit(err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Formatage de la date d'échéance
-  const formatDueDate = () => {
-    if (!assignment.dueDate) return "Pas de date limite";
-    return new Date(assignment.dueDate * 1000).toLocaleString('fr-FR', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+  const openLocalFilePreview = (file) => {
+    closePreview();
+    const url = URL.createObjectURL(file);
+    setPreview({
+      url,
+      filename: file.name,
+      mimeType: file.type,
+      revoke: true,
     });
   };
 
-  // Calcul du temps restant
-  const getTimeRemaining = () => {
-    if (!assignment.dueDate) return null;
-    const now = Math.floor(Date.now() / 1000);
-    const diff = assignment.dueDate - now;
-    if (diff < 0) return "Délai dépassé";
-    const days = Math.floor(diff / 86400);
-    const hours = Math.floor((diff % 86400) / 3600);
-    if (days > 0) return `${days} jour${days > 1 ? "s" : ""} et ${hours}h restants`;
-    return `${hours}h restantes`;
+  const openServerFilePreview = async (file) => {
+    try {
+      setLoadingPreview(true);
+      closePreview();
+      try {
+        await downloadFile(file.id);
+      } catch {
+        /* déjà en cache possible */
+      }
+      const url = await serveFile(file.id);
+      setPreview({
+        url,
+        filename: file.filename,
+        mimeType: file.mimeType || "",
+        revoke: false,
+      });
+    } catch (err) {
+      alert(err.message || "Impossible d'ouvrir ce fichier");
+    } finally {
+      setLoadingPreview(false);
+    }
   };
 
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-      {/* HEADER */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-start justify-between gap-4">
-        <div>
-          <button
-            onClick={() => onRetour(false)}
-            className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors uppercase tracking-widest mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" /> Retour aux évaluations
-          </button>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            {assignment.name}
-          </h1>
-          <p className="mt-2 text-lg text-slate-500 font-medium">{assignment.course?.title || assignment.course?.shortName}</p>
-        </div>
-        <div className="shrink-0 pt-2">
-          <StudentStatusBadge assignment={assignment} />
-        </div>
+  const handleFileSelect = (e) => {
+    if (e.target.files) {
+      setSelectedFiles((prev) => [...prev, ...Array.from(e.target.files)]);
+    }
+    e.target.value = "";
+  };
+
+  const removeSelectedFile = (index) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (
+      !confirm(
+        "Confirmer la remise de ce devoir ? Vous ne pourrez plus le modifier après envoi."
+      )
+    ) {
+      return;
+    }
+
+    if (requiresText && !textResponse.trim()) {
+      setErrorSubmit("Une réponse textuelle est requise.");
+      return;
+    }
+    if (requiresFile && totalFilesCount === 0) {
+      setErrorSubmit("Au moins un fichier est requis.");
+      return;
+    }
+    if (isWordLimitExceeded || isMaxFilesExceeded || isMaxFileSizeExceeded) {
+      setErrorSubmit("Vérifiez les contraintes du devoir avant de remettre.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setErrorSubmit(null);
+      await submitAssignmentComplete(assignment.id, textResponse, selectedFiles);
+      onRetour(true);
+    } catch (err) {
+      setErrorSubmit(err.message || "Erreur lors de la remise du devoir.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatDueDate = () => {
+    if (!assignment.dueDate) return "Pas de date limite";
+    return new Date(assignment.dueDate * 1000).toLocaleString("fr-FR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const maxFileSizeMb = assignment.maxFileSize
+    ? Math.round(assignment.maxFileSize / 1024 / 1024)
+    : 10;
+
+  const detailContent = (
+    <>
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => onRetour(false)}
+          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" /> Retour
+        </button>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+          {assignment.name}
+        </h1>
+        <p className="mt-1 text-slate-500">{assignment.course?.title}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* COLONNE GAUCHE */}
-        <div className="lg:col-span-2 space-y-6 col-span-1">
-          {/* Alerte de conflit d'édition */}
-          {assignment.submission?.sync_status === "CONFLICT" && (
-            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 md:p-6 shadow-sm flex items-start gap-4 text-amber-950 animate-in slide-in-from-top-3 duration-300">
-              <AlertCircle className="w-6 h-6 shrink-0 text-amber-600 mt-0.5 animate-pulse" />
-              <div>
-                <h3 className="font-extrabold text-sm uppercase tracking-wider text-amber-900">Conflit d'édition résolu (Serveur Prioritaire)</h3>
-                <p className="text-sm mt-1.5 font-medium leading-relaxed text-amber-800">
-                  Une double modification a eu lieu simultanément sur cette soumission. Conformément aux règles de synchronisation, <strong>la version officielle enregistrée sur le serveur a prévalu</strong>. Vos modifications locales en conflit ont été écrasées pour éviter tout écart de notation.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Instructions du professeur */}
-          <div className="bg-white rounded-3xl border border-slate-200/60 p-6 md:p-8 shadow-sm">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-4">Instructions</h2>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 space-y-5">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
+              Consignes
+            </h2>
             <div
-              className="prose prose-slate max-w-none text-slate-600 prose-p:leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: assignment.intro || "Aucune instruction n'a été définie pour ce devoir." }}
+              className="prose prose-slate max-w-none text-slate-600 prose-p:leading-relaxed text-sm"
+              dangerouslySetInnerHTML={{
+                __html: assignment.intro || assignment.activity || "Aucune consigne définie.",
+              }}
             />
 
-            {/* Fichiers joints du professeur */}
             {introFiles.length > 0 && (
-              <div className="mt-6 pt-5 border-t border-slate-100">
+              <div className="mt-5 pt-4 border-t border-slate-100">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                  Fichiers joints ({introFiles.length})
+                  Documents du professeur
                 </p>
-                <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                <ul className="space-y-2">
                   {introFiles.map((file) => (
-                    <li key={file.id} className="flex items-center justify-between py-3 px-4 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <FileText className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span className="text-sm font-medium text-slate-700 truncate">{file.filename}</span>
-                        {file.filesize && (
-                          <span className="text-[10px] text-slate-400 font-medium shrink-0">
-                            {Math.round(file.filesize / 1024)} Ko
-                          </span>
-                        )}
-                      </div>
-                      <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-700">
-                        <Download className="w-3.5 h-3.5" />
-                      </Button>
+                    <li key={file.id}>
+                      <button
+                        type="button"
+                        disabled={loadingPreview}
+                        onClick={() => openServerFilePreview(file)}
+                        className="w-full flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-left hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+                      >
+                        <FileText className="w-4 h-4 text-indigo-500 shrink-0" />
+                        <span className="text-sm font-medium text-slate-800 truncate flex-1">
+                          {file.filename}
+                        </span>
+                        <Eye className="w-4 h-4 text-slate-400 shrink-0" />
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -164,101 +212,198 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
             )}
           </div>
 
-          {/* Zone de soumission (visible uniquement si pas encore soumis) */}
-          {!isSubmitted && (
-            <div className="bg-white rounded-3xl border border-blue-100 p-6 md:p-8 shadow-sm shadow-blue-50">
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">Votre travail</h2>
+          {!isSubmitted ? (
+            <div className="bg-white rounded-2xl border border-indigo-100 p-6 shadow-sm">
+              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
+                Votre remise
+              </h2>
 
-              {errorSubmit && (
-                <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-600 text-sm font-bold border border-red-100">
-                  {errorSubmit}
-                </div>
-              )}
-
-              {allowsText && (
-                <div className="mb-6">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Texte en ligne</label>
-                  <Textarea
-                    placeholder="Saisissez votre réponse ici..."
-                    className="min-h-[150px] resize-y rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                    value={textResponse}
-                    onChange={(e) => setTextResponse(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {allowsFiles && (
-                <div className="mb-8">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Fichiers joints</label>
-
-                  <div className="mt-2 flex justify-center rounded-2xl border border-dashed border-slate-300 px-6 py-10 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                    <div className="text-center">
-                      <UploadCloud className="mx-auto h-10 w-10 text-blue-500" aria-hidden="true" />
-                      <div className="mt-4 flex text-sm leading-6 text-slate-600 justify-center">
-                        <label className="relative cursor-pointer rounded-md font-semibold text-blue-600 focus-within:outline-none hover:text-blue-500">
-                          <span>Sélectionner des fichiers</span>
-                          <input ref={fileInputRef} type="file" multiple className="sr-only" onChange={handleFileSelect} />
-                        </label>
-                        <p className="pl-1">ou glissez-déposez</p>
-                      </div>
-                      <p className="text-xs text-slate-500 mt-2">PDF, DOC, ZIP (Max {assignment.maxFileSize ? Math.round(assignment.maxFileSize / 1024 / 1024) : 10}MB)</p>
-                    </div>
-                  </div>
-
-                  {selectedFiles.length > 0 && (
-                    <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200">
-                      {selectedFiles.map((file, idx) => (
-                        <li key={idx} className="flex items-center justify-between py-3 pl-4 pr-3 text-sm">
-                          <div className="flex w-0 flex-1 items-center">
-                            <File className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-                            <span className="ml-2 w-0 flex-1 truncate font-medium">{file.name}</span>
-                          </div>
-                          <div className="ml-4 flex shrink-0">
-                            <button type="button" onClick={(e) => { e.stopPropagation(); clearFiles(); }} className="text-red-500 hover:text-red-700">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+              {(requiresText || requiresFile) && (
+                <div className="mb-5 p-3 rounded-xl bg-slate-50 text-xs text-slate-600 space-y-1">
+                  {requiresText && (
+                    <p>
+                      Texte requis
+                      {assignment.wordLimit ? ` — max ${assignment.wordLimit} mots` : ""}
+                    </p>
+                  )}
+                  {requiresFile && (
+                    <p>
+                      Fichier(s) requis
+                      {assignment.maxFiles ? ` — max ${assignment.maxFiles} fichier(s)` : ""}
+                      {` — max ${maxFileSizeMb} Mo par fichier`}
+                    </p>
                   )}
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-slate-100">
-                <Button
-                  onClick={handleSaveDraft}
-                  disabled={isSubmitting}
-                  variant="outline"
-                  className="w-full sm:w-auto rounded-xl h-12 font-bold text-slate-700 border-slate-200"
-                >
-                  Enregistrer un brouillon
-                </Button>
-                <Button
-                  onClick={handleSubmitFinal}
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto rounded-xl h-12 font-bold bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {isSubmitting ? "Envoi en cours..." : "Remettre le devoir"}
-                </Button>
-              </div>
-            </div>
-          )}
+              {errorSubmit && (
+                <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-700 text-sm border border-red-100">
+                  {errorSubmit}
+                </div>
+              )}
 
-          {/* Confirmation de soumission */}
-          {isSubmitted && (
-            <div className="bg-emerald-50 rounded-3xl border border-emerald-100 p-6 md:p-8 shadow-sm">
-              <h2 className="text-sm font-bold text-emerald-900 uppercase tracking-widest mb-2">Devoir remis</h2>
-              <p className="text-emerald-700 font-medium">Vous avez soumis ce travail. Il n'est plus modifiable.</p>
+              {(requiresText || !requiresFile) && (
+                <div className="mb-5">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Réponse textuelle
+                    {requiresText && <span className="text-red-500 ml-1">*</span>}
+                  </label>
+                  <Textarea
+                    placeholder="Saisissez votre réponse..."
+                    className="min-h-[140px] rounded-xl border-slate-200"
+                    value={textResponse}
+                    onChange={(e) => setTextResponse(e.target.value)}
+                  />
+                  {assignment.wordLimit && (
+                    <p
+                      className={`text-xs mt-1.5 ${
+                        isWordLimitExceeded ? "text-red-600 font-semibold" : "text-slate-400"
+                      }`}
+                    >
+                      {wordCount} / {assignment.wordLimit} mots
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {(requiresFile || selectedFiles.length > 0 || existingFiles.length > 0) && (
+                <div className="mb-6">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Fichiers
+                    {requiresFile && <span className="text-red-500 ml-1">*</span>}
+                  </label>
+
+                  {existingFiles.length > 0 && (
+                    <ul className="mb-3 space-y-2">
+                      {existingFiles.map((file) => (
+                        <li key={file.id}>
+                          <button
+                            type="button"
+                            onClick={() => openServerFilePreview(file)}
+                            className="w-full flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-2.5 text-left hover:bg-slate-50"
+                          >
+                            <File className="w-4 h-4 text-slate-400" />
+                            <span className="text-sm truncate flex-1">{file.filename}</span>
+                            <Eye className="w-4 h-4 text-slate-400" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div
+                    className="rounded-xl border border-dashed border-slate-300 px-6 py-8 text-center hover:bg-slate-50 cursor-pointer transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <UploadCloud className="mx-auto h-8 w-8 text-indigo-500 mb-2" />
+                    <p className="text-sm font-medium text-slate-600">
+                      Cliquez pour ajouter des fichiers
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      PDF, DOC, images — max {maxFileSizeMb} Mo
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      className="sr-only"
+                      onChange={handleFileSelect}
+                    />
+                  </div>
+
+                  {selectedFiles.length > 0 && (
+                    <ul className="mt-3 space-y-2">
+                      {selectedFiles.map((file, idx) => (
+                        <li
+                          key={`${file.name}-${idx}`}
+                          className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2"
+                        >
+                          <File className="w-4 h-4 text-slate-400 shrink-0" />
+                          <button
+                            type="button"
+                            onClick={() => openLocalFilePreview(file)}
+                            className="text-sm font-medium text-slate-800 truncate flex-1 text-left hover:text-indigo-600"
+                          >
+                            {file.name}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeSelectedFile(idx)}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {isMaxFilesExceeded && (
+                    <p className="text-xs text-red-600 mt-2 font-medium">
+                      Maximum {assignment.maxFiles} fichier(s) autorisé(s).
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting || isWordLimitExceeded || isMaxFilesExceeded || isMaxFileSizeExceeded}
+                className="w-full sm:w-auto rounded-xl h-12 font-bold bg-indigo-600 hover:bg-indigo-700"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Envoi en cours...
+                  </>
+                ) : (
+                  "Remettre le devoir"
+                )}
+              </Button>
+            </div>
+          ) : (
+            <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+              <h2 className="text-sm font-bold text-emerald-900 mb-2">Devoir remis</h2>
+              <p className="text-emerald-800 text-sm">
+                Votre travail a été transmis à l&apos;enseignant. Vous le retrouverez dans
+                l&apos;onglet « Mes soumissions ».
+              </p>
+              {assignment.submission?.submissionText && (
+                <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">Votre texte</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                    {assignment.submission.submissionText}
+                  </p>
+                </div>
+              )}
+              {existingFiles.length > 0 && (
+                <ul className="mt-4 space-y-2">
+                  {existingFiles.map((file) => (
+                    <li key={file.id}>
+                      <button
+                        type="button"
+                        onClick={() => openServerFilePreview(file)}
+                        className="w-full flex items-center gap-3 rounded-xl bg-white border border-emerald-100 px-4 py-2.5 text-left hover:bg-emerald-50"
+                      >
+                        <File className="w-4 h-4 text-emerald-600" />
+                        <span className="text-sm truncate">{file.filename}</span>
+                        <Eye className="w-4 h-4 text-slate-400 ml-auto" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {assignment.submission?.grade != null && (
-                <div className="mt-6 p-4 bg-white rounded-xl border border-emerald-200 flex items-center justify-between">
-                  <span className="font-bold text-slate-600">Note obtenue :</span>
-                  <span className="text-2xl font-black text-emerald-600">{assignment.submission.grade} / {assignment.gradeMax || 20}</span>
+                <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-200 flex justify-between items-center">
+                  <span className="font-semibold text-slate-600">Note</span>
+                  <span className="text-2xl font-black text-emerald-600">
+                    {assignment.submission.grade} / {maxGrade}
+                  </span>
                 </div>
               )}
               {assignment.submission?.feedback && (
-                <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-200">
-                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Feedback du professeur</span>
+                <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Commentaire</p>
                   <p className="text-sm text-slate-700">{assignment.submission.feedback}</p>
                 </div>
               )}
@@ -266,73 +411,56 @@ export function AssignmentDetailsStudent({ assignment, onRetour }) {
           )}
         </div>
 
-        {/* COLONNE DROITE : Sidebar */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">Détails de remise</h2>
-
-            <div className="space-y-5">
-              {/* Statut */}
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
+              Informations
+            </h2>
+            <div className="space-y-4 text-sm">
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Statut</p>
-                <p className="text-sm font-bold text-slate-900">
-                  {isSubmitted
-                    ? "Remis pour évaluation"
-                    : isDraft
-                      ? "Brouillon enregistré"
-                      : "Aucune tentative"}
+                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Statut</p>
+                <p className="font-semibold text-slate-900">
+                  {isSubmitted ? "Envoyé" : "Non envoyé"}
                 </p>
               </div>
               <Separator />
-
-              {/* Échéance */}
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Échéance</p>
-                <p className="text-sm font-bold text-slate-900">{formatDueDate()}</p>
-                {!isSubmitted && getTimeRemaining() && (
-                  <p className="text-xs font-medium text-slate-500 mt-1">{getTimeRemaining()}</p>
-                )}
+                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Échéance</p>
+                <p className="font-semibold text-slate-900">{formatDueDate()}</p>
               </div>
               <Separator />
-
-              {/* Cours */}
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Cours</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Cours</p>
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                  <p className="text-sm font-bold text-slate-900">{assignment.course?.title || "—"}</p>
+                  <p className="font-semibold text-slate-900">{assignment.course?.title}</p>
                 </div>
-                {assignment.course?.shortName && (
-                  <p className="text-xs text-slate-500 mt-0.5 ml-5.5">{assignment.course.shortName}</p>
-                )}
               </div>
               <Separator />
-
-              {/* Note max */}
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Note maximale</p>
-                <p className="text-sm font-bold text-slate-900">{assignment.gradeMax || 20} points</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Note max</p>
+                <p className="font-semibold text-slate-900">{maxGrade} pts</p>
               </div>
-
-              {/* Dernière modification de la soumission */}
-              {assignment.submission?.updatedAt && (
-                <>
-                  <Separator />
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dernière modification</p>
-                    <p className="text-sm font-bold text-slate-900">
-                      {new Date(assignment.submission.updatedAt).toLocaleString('fr-FR', {
-                        day: 'numeric', month: 'long', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                </>
-              )}
             </div>
           </div>
+
+          {assignment.submission?.sync_status === "CONFLICT" && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-900 leading-relaxed">
+                Une version plus récente existe sur le serveur. La version officielle a été
+                conservée.
+              </p>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <DocumentSplitViewer preview={preview} onClose={closePreview}>
+      {detailContent}
+    </DocumentSplitViewer>
   );
 }

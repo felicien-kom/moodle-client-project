@@ -1,10 +1,19 @@
 import { Calendar, ArrowLeft } from "lucide-react";
-import { StudentStatusBadge } from "./StudentStatusBadge";
+import { stripHtml } from "@/services/assignments.service";
 
 export function AssignmentCard({ assignment, onClick, role }) {
   const isTeacher = role === "teacher";
-  const now = new Date().getTime() / 1000;
-  const isLate = assignment.dueDate && now > assignment.dueDate && (!assignment.submission || assignment.submission.state === "DRAFT");
+  const now = Date.now() / 1000;
+  const isLate =
+    assignment.dueDate &&
+    now > assignment.dueDate &&
+    (!assignment.submission ||
+      assignment.submission.state === "DRAFT" ||
+      !assignment.submission.state);
+
+  const introPreview =
+    stripHtml(assignment.intro || assignment.activity) ||
+    "Aucune description fournie pour cette évaluation.";
 
   return (
     <div
@@ -15,7 +24,6 @@ export function AssignmentCard({ assignment, onClick, role }) {
         <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase tracking-widest shrink-0">
           {assignment.course?.shortName || "Cours"}
         </span>
-        {!isTeacher && <StudentStatusBadge assignment={assignment} />}
         {isTeacher && (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-extrabold bg-indigo-50 text-indigo-700 uppercase tracking-widest ring-1 ring-inset ring-indigo-600/20">
             {assignment.submittedCount || 0}/{assignment.totalCount || 0} Remis
@@ -28,7 +36,7 @@ export function AssignmentCard({ assignment, onClick, role }) {
       </h3>
 
       <p className="text-sm font-medium text-slate-500 line-clamp-2 mb-6 leading-relaxed">
-        {assignment.intro || "Aucune description fournie pour cette évaluation."}
+        {introPreview}
       </p>
 
       <div className="mt-auto pt-5 border-t border-slate-100 flex items-center justify-between">

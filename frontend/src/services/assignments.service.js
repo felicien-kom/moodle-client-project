@@ -3,45 +3,97 @@ import { getAllLocalCourses, getAssignmentsByCourse } from "./courses.service";
 import { API_CONFIG } from "@/config/api.config";
 import { buildHeaders } from "@/utils/api.utils";
 
+/** Retire les balises HTML pour les aperçus de cartes */
+export function stripHtml(html) {
+  if (!html || typeof html !== "string") return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Devoir remis par l'étudiant (SUBMITTED ou GRADED) */
+export function isStudentSubmitted(assignment) {
+  const state = assignment?.submission?.state;
+  return state === "SUBMITTED" || state === "GRADED";
+}
+
+/** Regroupe les devoirs par cours inscrit */
+export function groupAssignmentsByCourse(assignments) {
+  const map = new Map();
+
+  for (const assignment of assignments) {
+    const courseId = assignment.course?.id;
+    if (!courseId) continue;
+
+    if (!map.has(courseId)) {
+      map.set(courseId, {
+        course: assignment.course,
+        assignments: [],
+      });
+    }
+    map.get(courseId).assignments.push(assignment);
+  }
+
+  return Array.from(map.values()).sort((a, b) =>
+    (a.course.title || "").localeCompare(b.course.title || "", "fr")
+  );
+}
+
+function normalizeAssignment(raw, course, { moodleUserId } = {}) {
+  const submissions = raw.submissions || [];
+  const userSubmission =
+    submissions.find((s) => moodleUserId && s.moodleUserId === moodleUserId) ||
+    submissions.find((s) => s.state === "DRAFT" || s.state === "SUBMITTED" || s.state === "GRADED") ||
+    submissions[0] ||
+    null;
+
+  const submittedCount = submissions.filter(
+    (s) => s.state === "SUBMITTED" || s.state === "GRADED"
+  ).length;
+  const gradedCount = submissions.filter((s) => s.state === "GRADED").length;
+
+  return {
+    ...raw,
+    course,
+    gradeMax: raw.maxGrade ?? raw.gradeMax ?? 20,
+    submission: userSubmission
+      ? {
+          ...userSubmission,
+          submittedFiles: userSubmission.submittedFiles || [],
+        }
+      : null,
+    submittedCount,
+    gradedCount,
+    totalCount: submissions.length,
+    allSubmissions: submissions,
+  };
+}
+
 /**
- * Récupère tous les devoirs de l'étudiant en interrogeant les devoirs 
- * de tous les cours auxquels il est inscrit localement.
+ * Récupère tous les devoirs de l'utilisateur via les cours locaux synchronisés.
  */
-export async function getAllAssignments() {
+export async function getAllAssignments({ moodleUserId } = {}) {
   try {
     const courses = await getAllLocalCourses();
-    
-    // Récupération en parallèle pour optimiser
+
     const promises = courses.map(async (course) => {
       try {
         const assignments = await getAssignmentsByCourse(course.id);
-        if (assignments && assignments.length > 0) {
-          return assignments.map(a => {
-            // Le backend renvoie 'submissions' (tableau) pour les devoirs locaux
-            // Pour l'étudiant, on prend généralement la première soumission qui lui appartient
-            const submissions = a.submissions || [];
-            const userSubmission = submissions.length > 0 ? submissions[0] : null;
-
-            return { 
-              ...a, 
-              course,
-              submission: userSubmission, // Pour la logique étudiante
-              // Statistiques calculées pour la vue professeur
-              submittedCount: submissions.filter(sub => sub.state === "SUBMITTED" || sub.state === "GRADED").length,
-              gradedCount: submissions.filter(sub => sub.state === "GRADED").length,
-              totalCount: submissions.length,
-              allSubmissions: submissions
-            };
-          });
-        }
+        if (!assignments?.length) return [];
+        return assignments.map((a) => normalizeAssignment(a, course, { moodleUserId }));
       } catch (err) {
         console.warn(`Impossible de charger les devoirs pour le cours ${course.id}`, err);
+        return [];
       }
-      return [];
     });
-    
+
     const results = await Promise.all(promises);
-    return results.flat();
+    return results
+      .flat()
+      .sort((a, b) => {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate - b.dueDate;
+      });
   } catch (error) {
     console.error("Erreur lors de la récupération de tous les devoirs:", error);
     throw error;
@@ -88,6 +140,14 @@ export async function submitAssignmentDraft(assignmentId, text, files = []) {
     console.error("Erreur d'envoi du devoir:", error);
     throw error;
   }
+}
+
+/**
+ * Remise complète : enregistre le contenu puis passe en SUBMITTED (envoyé à l'enseignant).
+ */
+export async function submitAssignmentComplete(assignmentId, text, files = []) {
+  await submitAssignmentDraft(assignmentId, text, files);
+  return submitAssignmentFinal(assignmentId);
 }
 
 /**

@@ -166,9 +166,11 @@ export const getLocalCourseById = async (prisma, localId) => {
 export const getLocalAssignmentsByCourse = async (prisma, localCourseId) => {
   return prisma.assignment.findMany({
     where:   { courseId: localCourseId },
-    include: { 
-      submissions: true,
-      introFiles: true // Les consignes PDF du prof
+    include: {
+      submissions: {
+        include: { submittedFiles: true },
+      },
+      introFiles: true,
     },
     orderBy: { dueDate: "asc" },
   });

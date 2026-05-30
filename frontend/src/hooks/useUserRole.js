@@ -6,12 +6,13 @@ import { useAuth } from "@/hooks/useAuth";
  */
 export function useUserRole() {
   const { user } = useAuth();
+  const normalizedRole = String(user?.role || "").toLowerCase();
 
   return {
-    isStudent: user?.role === "student",
-    isTeacher: user?.role === "teacher",
-    isAdmin: user?.role === "admin",
-    role: user?.role,
+    isStudent: normalizedRole === "student",
+    isTeacher: normalizedRole === "teacher",
+    isAdmin: normalizedRole === "admin",
+    role: normalizedRole,
     user,
   };
 }
