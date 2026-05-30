@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 
 // ─── Composant : Section Photo de profil ─────────────────────────────────────
@@ -294,7 +293,6 @@ export default function ProfilePage() {
         <SectionMotDePasse />
         <SectionSuppression />
       </div>
-      <Toaster />
     </div>
   );
 }

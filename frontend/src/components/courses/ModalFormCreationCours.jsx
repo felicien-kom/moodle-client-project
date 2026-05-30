@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { X, Upload } from "lucide-react";
+import { X } from "lucide-react";
+import { FileUploadZone } from "@/components/upload/FileUploadZone";
 import { createLocalCourse } from "@/services/courses.service";
 
 const CATEGORIES = ["Catégorie 1", "Catégorie 2", "Catégorie 3", "Mathématiques", "Informatique"];
@@ -260,17 +261,14 @@ export default function CreateCourseModal({ open, onOpenChange, onCourseCreated 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-start">
                 <Label className="sm:pt-2 text-sm font-medium">Image de cours</Label>
                 <div className="sm:col-span-2">
-                  <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                    <Upload size={22} className="text-gray-400 mb-1" />
-                    <span className="text-xs text-gray-500">
-                      {form.image ? form.image.name : "Glissez un fichier ou cliquez pour en choisir un"}
-                    </span>
-                    <span className="text-[11px] text-gray-400 mt-0.5">
-                      JPG, JPEG, PNG, GIF, SVG acceptés
-                    </span>
-                    <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.gif,.svg"
-                      onChange={(e) => set("image", e.target.files?.[0] ?? null)} />
-                  </label>
+                  <FileUploadZone
+                    accept=".jpg,.jpeg,.png,.gif,.svg"
+                    maxFileSize={5 * 1024 * 1024}
+                    title={form.image ? form.image.name : "Glissez un fichier ou cliquez pour en choisir un"}
+                    hint="JPG, JPEG, PNG, GIF, SVG acceptés"
+                    className="h-28"
+                    onFilesSelected={(files) => set("image", files[0] ?? null)}
+                  />
                 </div>
               </div>
             </div>

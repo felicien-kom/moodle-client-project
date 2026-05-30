@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ImagePlus, CheckCircle2 } from "lucide-react";
+import { FileUploadZone } from "@/components/upload/FileUploadZone";
 import { CreateCourse } from "@/services/courses.service";
 
 /**
@@ -52,16 +53,6 @@ export function CourseForm({ initialData, onSubmit, isLoading: propIsLoading, is
     }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        image: file,
-      }));
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -94,31 +85,33 @@ export function CourseForm({ initialData, onSubmit, isLoading: propIsLoading, is
         <label className="text-sm font-semibold text-indigo-900">
           Image de couverture
         </label>
-        <div 
-          className={`relative border-2 border-dashed rounded-xl p-8 transition-all flex flex-col items-center justify-center cursor-pointer group ${formData.image ? 'border-indigo-600 bg-indigo-50/50' : 'border-indigo-100 bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200'}`}
-          onClick={() => document.querySelector('input[type="file"]').click()}
+        <FileUploadZone
+          accept="image/*"
+          title="Cliquez ou glissez pour importer une image"
+          hint="PNG, JPG ou WEBP (Max. 5 Mo)"
+          onFilesSelected={(files) => {
+            const file = files[0];
+            if (file) {
+              setFormData((prev) => ({ ...prev, image: file }));
+            }
+          }}
+          className={formData.image ? "border-indigo-600 bg-indigo-50/50" : ""}
         >
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
           {formData.image ? (
-            <div className="flex items-center gap-3 text-indigo-900 font-medium">
+            <div className="flex items-center justify-center gap-3 text-indigo-900 font-medium">
               <CheckCircle2 className="w-6 h-6 text-indigo-600" />
               <span>{formData.image.name || "Image sélectionnée"}</span>
             </div>
           ) : (
-            <div className="flex flex-col items-center text-slate-500 group-hover:text-indigo-900 transition-colors">
-              <div className="w-12 h-12 mb-3 rounded-full bg-white shadow-[0_2px_8px_rgb(0,0,0,0.05)] border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors">
+            <div className="flex flex-col items-center text-slate-500">
+              <div className="w-12 h-12 mb-3 rounded-full bg-white shadow-[0_2px_8px_rgb(0,0,0,0.05)] border border-slate-100 flex items-center justify-center text-slate-400">
                 <ImagePlus className="w-6 h-6" />
               </div>
-              <p className="text-sm font-medium">Cliquez pour importer une image</p>
+              <p className="text-sm font-medium">Cliquez ou glissez pour importer une image</p>
               <p className="text-xs text-slate-400 mt-1">PNG, JPG ou WEBP (Max. 5Mo)</p>
             </div>
           )}
-        </div>
+        </FileUploadZone>
       </div>
 
       <div className="space-y-6">

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createCourse, addSection, addActivity } from "@/services/courses.service";
 import { useAuth } from "@/hooks/useAuth";
 import { PATHS } from "@/router/paths";
+import { FileUploadZone } from "@/components/upload/FileUploadZone";
 import {
   ArrowLeft,
   ArrowRight,
@@ -50,8 +51,8 @@ const ACTIVITY_TYPES = [
 function StepInfo({ data, onChange, errors }) {
   const [preview, setPreview] = useState(data.imagePreview || null);
 
-  const handleFile = (e) => {
-    const file = e.target.files?.[0];
+  const handleImageSelected = (files) => {
+    const file = files[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
     setPreview(url);
@@ -63,38 +64,37 @@ function StepInfo({ data, onChange, errors }) {
       {/* Image de couverture */}
       <div>
         <label className="block text-sm font-semibold text-slate-800 mb-2">Image de couverture</label>
-        <div
-          className="relative rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden cursor-pointer hover:border-slate-400 hover:bg-slate-100 transition-all duration-200 group"
-          onClick={() => document.getElementById("course-image-input").click()}
-          style={{ aspectRatio: "16/7" }}
+        <FileUploadZone
+          accept="image/*"
+          maxFileSize={5 * 1024 * 1024}
+          className="overflow-hidden"
+          onFilesSelected={handleImageSelected}
         >
-          <input
-            id="course-image-input"
-            type="file"
-            accept="image/*"
-            onChange={handleFile}
-            className="hidden"
-          />
-          {preview ? (
-            <>
-              <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="flex items-center gap-2 bg-white text-slate-800 text-sm font-semibold px-4 py-2 rounded-full">
-                  <Upload className="h-4 w-4" />
-                  Changer l'image
+          <div
+            className="relative w-full group"
+            style={{ aspectRatio: "16/7" }}
+          >
+            {preview ? (
+              <>
+                <img src={preview} alt="Preview" className="w-full h-full object-cover rounded-xl" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                  <div className="flex items-center gap-2 bg-white text-slate-800 text-sm font-semibold px-4 py-2 rounded-full">
+                    <Upload className="h-4 w-4" />
+                    Changer l&apos;image
+                  </div>
                 </div>
+              </>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                <div className="h-14 w-14 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-3 shadow-sm">
+                  <ImagePlus className="h-6 w-6" />
+                </div>
+                <p className="text-sm font-semibold">Glissez ou cliquez pour importer une image</p>
+                <p className="text-xs text-slate-400 mt-1">PNG, JPG ou WEBP — max 5 Mo — 16:9 recommandé</p>
               </div>
-            </>
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 group-hover:text-slate-600 transition-colors">
-              <div className="h-14 w-14 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-3 shadow-sm">
-                <ImagePlus className="h-6 w-6" />
-              </div>
-              <p className="text-sm font-semibold">Cliquez pour importer une image</p>
-              <p className="text-xs text-slate-400 mt-1">PNG, JPG ou WEBP — max 5 Mo — 16:9 recommandé</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </FileUploadZone>
       </div>
 
       {/* Titre */}

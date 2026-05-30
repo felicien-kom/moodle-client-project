@@ -5,15 +5,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft,
-  UploadCloud,
   File,
-  Trash2,
   BookOpen,
   FileText,
   Eye,
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { FileUploadZone } from "@/components/upload/FileUploadZone";
 import {
   submitAssignmentComplete,
   saveStudentDraft,
@@ -60,7 +59,6 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
   const [successMessage, setSuccessMessage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const fileInputRef = useRef(null);
   const lastSavedSnapshot = useRef(
     buildContentSnapshot(initialParsed.body, initialParsed.remark, submissionLive?.submittedFiles || [], [])
   );
@@ -81,11 +79,6 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
   const isMaxFilesExceeded = Boolean(
     assignment.maxFiles && totalFilesCount > assignment.maxFiles
   );
-  const isMaxFileSizeExceeded = Boolean(
-    assignment.maxFileSize &&
-      selectedFiles.some((f) => f.size > assignment.maxFileSize)
-  );
-
   const introFiles = assignment.introFiles || [];
 
   const submittedContent = useMemo(
@@ -172,7 +165,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
       }
     }
 
-    if (isWordLimitExceeded || isMaxFilesExceeded || isMaxFileSizeExceeded) {
+    if (isWordLimitExceeded || isMaxFilesExceeded) {
       setErrorSubmit("Vérifiez les contraintes du devoir.");
       return false;
     }
@@ -223,17 +216,6 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
     setPreview(null);
   }, [preview]);
 
-  const openLocalFilePreview = (file) => {
-    closePreview();
-    const url = URL.createObjectURL(file);
-    setPreview({
-      url,
-      filename: file.name,
-      mimeType: file.type,
-      revoke: true,
-    });
-  };
-
   const openServerFilePreview = async (file) => {
     try {
       setLoadingPreview(true);
@@ -257,15 +239,21 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
     }
   };
 
-  const handleFileSelect = (e) => {
-    if (e.target.files) {
-      setSelectedFiles((prev) => [...prev, ...Array.from(e.target.files)]);
+  const handleUploadFiles = async (files) => {
+    const data = await saveStudentDraft(assignment.id, {
+      text: textResponse,
+      remark: studentRemark,
+      files,
+    });
+    if (data?.submission) {
+      applySubmissionFromApi({
+        ...data.submission,
+        submittedFiles: data.submission.submittedFiles?.length
+          ? data.submission.submittedFiles
+          : existingFiles,
+      });
     }
-    e.target.value = "";
-  };
-
-  const removeSelectedFile = (index) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    await reloadFromServer();
   };
 
   const persistDraftIfNeeded = async () => {
@@ -536,52 +524,16 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
                     </ul>
                   )}
 
-                  <div
-                    className="rounded-xl border border-dashed border-slate-300 px-6 py-8 text-center hover:bg-slate-50 cursor-pointer transition-colors"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <UploadCloud className="mx-auto h-8 w-8 text-indigo-500 mb-2" />
-                    <p className="text-sm font-medium text-slate-600">
-                      Cliquez pour ajouter des fichiers
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      PDF, DOC, images — max {maxFileSizeMb} Mo
-                    </p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      className="sr-only"
-                      onChange={handleFileSelect}
-                    />
-                  </div>
-
-                  {selectedFiles.length > 0 && (
-                    <ul className="mt-3 space-y-2">
-                      {selectedFiles.map((file, idx) => (
-                        <li
-                          key={`${file.name}-${idx}`}
-                          className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2"
-                        >
-                          <File className="w-4 h-4 text-slate-400 shrink-0" />
-                          <button
-                            type="button"
-                            onClick={() => openLocalFilePreview(file)}
-                            className="text-sm font-medium text-slate-800 truncate flex-1 text-left hover:text-indigo-600"
-                          >
-                            {file.name}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeSelectedFile(idx)}
-                            className="text-red-500 hover:text-red-700 p-1"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  <FileUploadZone
+                    multiple
+                    disabled={loadingDraft || isSavingDraft}
+                    maxFileSize={assignment.maxFileSize || undefined}
+                    maxFiles={assignment.maxFiles || undefined}
+                    currentFileCount={existingFiles.length}
+                    title="Glissez vos fichiers ici ou cliquez pour parcourir"
+                    hint={`PDF, DOC, images — max ${maxFileSizeMb} Mo par fichier`}
+                    onUpload={handleUploadFiles}
+                  />
 
                   {isMaxFilesExceeded && (
                     <p className="text-xs text-red-600 mt-2 font-medium">
@@ -599,8 +551,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
                     isSavingDraft ||
                     isSubmitting ||
                     isWordLimitExceeded ||
-                    isMaxFilesExceeded ||
-                    isMaxFileSizeExceeded
+                    isMaxFilesExceeded
                   }
                   className="rounded-xl h-12 font-semibold border-slate-300"
                 >
@@ -619,8 +570,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
                     isSubmitting ||
                     isSavingDraft ||
                     isWordLimitExceeded ||
-                    isMaxFilesExceeded ||
-                    isMaxFileSizeExceeded
+                    isMaxFilesExceeded
                   }
                   className="rounded-xl h-12 font-bold bg-indigo-600 hover:bg-indigo-700"
                 >

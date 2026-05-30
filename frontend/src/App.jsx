@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { BrowserRouter } from 'react-router-dom';
 import AllRoutes from './router/AllRoutes';
+import { Toaster } from '@/components/ui/sonner';
 
 function App() {
 
@@ -13,6 +14,7 @@ function App() {
         <ThemeProvider>
           <LanguageProvider>
             <AllRoutes />
+            <Toaster position="top-left" richColors closeButton />
           </LanguageProvider>
         </ThemeProvider>
       </AuthProvider>

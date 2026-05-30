@@ -9,8 +9,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
-  ClipboardList, Folder, File, Link, Upload, Calendar as CalendarIcon, X,
+  ClipboardList, Folder, File, Link, Calendar as CalendarIcon, X,
 } from "lucide-react";
+import { FileUploadZone } from "@/components/upload/FileUploadZone";
+import { uploadSuccess, uploadError } from "@/utils/uploadToast";
 import { addModule } from "@/services/courses.service";
 
 const ACTIVITES = [
@@ -101,15 +103,8 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
     resetForm();
   };
 
-  const handleFileUpload = (formType) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.onchange = (e) => {
-      const files = Array.from(e.target.files);
-      setSelectedFiles(prev => ({ ...prev, [formType]: files }));
-    };
-    input.click();
+  const setFormTypeFiles = (formType, files) => {
+    setSelectedFiles((prev) => ({ ...prev, [formType]: files }));
   };
 
   const handleInputChange = (field, value) => {
@@ -157,14 +152,14 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
         externalUrl: formData.externalUrl,
         files: selectedFiles[formType] || [],
       });
-      alert("Module créé avec succès !");
+      uploadSuccess("Module créé avec succès");
       handleCloseForm();
       if (onModuleAdded) {
         onModuleAdded();
       }
     } catch (error) {
       console.error("Erreur lors de la création du module:", error);
-      alert("Erreur lors de la création du module: " + (error.message || error));
+      uploadError(error.message || "Erreur lors de la création du module");
     } finally {
       setIsSubmitting(false);
     }
@@ -251,23 +246,18 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
             </div>
             <div className="space-y-2">
               <Label>Sélectionner des fichiers</Label>
-              <div 
-                onClick={() => handleFileUpload('fichier')}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-              >
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">
-                  Glissez-déposez des fichiers ici ou cliquez pour sélectionner
+              <FileUploadZone
+                multiple
+                maxFileSize={100 * 1024 * 1024}
+                title="Glissez-déposez des fichiers ici ou cliquez pour sélectionner"
+                hint="Taille maximale : 100 Mo"
+                onFilesSelected={(files) => setFormTypeFiles("fichier", files)}
+              />
+              {selectedFiles.fichier?.length > 0 && (
+                <p className="text-sm text-green-600">
+                  {selectedFiles.fichier.length} fichier(s) sélectionné(s)
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Taille maximale: 100 Mo
-                </p>
-                {selectedFiles.fichier && selectedFiles.fichier.length > 0 && (
-                  <p className="text-sm text-green-600 mt-2">
-                    {selectedFiles.fichier.length} fichier(s) sélectionné(s)
-                  </p>
-                )}
-              </div>
+              )}
             </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-0">
@@ -316,23 +306,17 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
             </div>
             <div className="space-y-2">
               <Label>Contenu du dossier</Label>
-              <div 
-                onClick={() => handleFileUpload('dossier')}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-              >
-                <Folder className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">
-                  Glissez-déposez des fichiers ici ou cliquez pour sélectionner
+              <FileUploadZone
+                multiple
+                title="Glissez-déposez des fichiers ici ou cliquez pour sélectionner"
+                hint="Ajoutez des fichiers au dossier"
+                onFilesSelected={(files) => setFormTypeFiles("dossier", files)}
+              />
+              {selectedFiles.dossier?.length > 0 && (
+                <p className="text-sm text-green-600">
+                  {selectedFiles.dossier.length} fichier(s) sélectionné(s)
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Ajoutez des fichiers au dossier
-                </p>
-                {selectedFiles.dossier && selectedFiles.dossier.length > 0 && (
-                  <p className="text-sm text-green-600 mt-2">
-                    {selectedFiles.dossier.length} fichier(s) sélectionné(s)
-                  </p>
-                )}
-              </div>
+              )}
             </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-0">
@@ -435,23 +419,17 @@ export default function AddActivityModal({ open, onOpenChange, courseId, section
             </div>
             <div className="space-y-2">
               <Label>Fichiers de devoir</Label>
-              <div 
-                onClick={() => handleFileUpload('devoir')}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-              >
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">
-                  Glissez-déposez des fichiers ici ou cliquez pour sélectionner
+              <FileUploadZone
+                multiple
+                title="Glissez-déposez des fichiers ici ou cliquez pour sélectionner"
+                hint="Ajoutez des fichiers supplémentaires pour le devoir"
+                onFilesSelected={(files) => setFormTypeFiles("devoir", files)}
+              />
+              {selectedFiles.devoir?.length > 0 && (
+                <p className="text-sm text-green-600">
+                  {selectedFiles.devoir.length} fichier(s) sélectionné(s)
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Ajoutez des fichiers supplémentaires pour le devoir
-                </p>
-                {selectedFiles.devoir && selectedFiles.devoir.length > 0 && (
-                  <p className="text-sm text-green-600 mt-2">
-                    {selectedFiles.devoir.length} fichier(s) sélectionné(s)
-                  </p>
-                )}
-              </div>
+              )}
             </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-0">
