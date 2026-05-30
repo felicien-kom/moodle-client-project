@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { getUserMediaDir, getUserSubmissionsDir } from "../utils/storage.js";
 
-export const saveLocalDraft = async (prisma, userEmail, localAssignId, text, files) => {
+export const saveLocalDraft = async (prisma, userEmail, localAssignId, text, files, moodleUserId) => {
   const assignment = await prisma.assignment.findUnique({ where: { id: localAssignId } });
   if (!assignment) throw new Error("Assignment not found");
 
@@ -38,8 +38,8 @@ export const saveLocalDraft = async (prisma, userEmail, localAssignId, text, fil
 
   submission = await prisma.assignmentSubmission.upsert({
     where: { id: submission?.id || -1 },
-    update: { submissionText: text, state: "DRAFT", sync_status: "PENDING_PUSH" },
-    create: { assignmentId: localAssignId, submissionText: text, state: "DRAFT", sync_status: "PENDING_PUSH" }
+    update: { submissionText: text, state: "DRAFT", sync_status: "PENDING_PUSH", moodleUserId: moodleUserId },
+    create: { assignmentId: localAssignId, submissionText: text, state: "DRAFT", sync_status: "PENDING_PUSH", moodleUserId: moodleUserId }
   });
 
   // Sauvegarde physique des fichiers locaux dans le sous-dossier

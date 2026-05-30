@@ -7,6 +7,7 @@ export const saveDraft = async (req, res) => {
   const { id } = req.params;
   const { text } = req.body; 
   const files = req.files;   // Géré en amont par le middleware Multer
+  const moodleUserId = req.moodleUserId;
 
   // 1. Validation des entrées
   const { errors, parsedId: localAssignId } = validateSaveDraft({ id, text });
@@ -21,7 +22,8 @@ export const saveDraft = async (req, res) => {
     req.user.email, 
     localAssignId, 
     text, 
-    files
+    files,
+    moodleUserId
   );
   
   res.json({ message: "Draft saved locally. Ready for sync.", submission });

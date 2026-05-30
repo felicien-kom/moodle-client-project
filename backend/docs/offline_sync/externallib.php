@@ -75,7 +75,14 @@ class local_offline_sync_external extends external_api {
         // Si c'est un devoir, on injecte les valeurs par défaut obligatoires de Moodle en BDD
         if ($params['modname'] === 'assign') {
             $defaults = array(
-                'requiresubmissionstatement'  => 0, // <-- LA LIGNE MANQUANTE AJOUTÉE ICI
+                // --- ACTIVATION DES SOUS-PLUGINS DE REMISE ---
+                'assignsubmission_file_enabled'       => 1, // Active la remise de fichiers
+                'assignsubmission_onlinetext_enabled' => 0, // Active la saisie de texte en ligne
+                'assignsubmission_file_maxfiles'      => 5, // Nombre maximum de fichiers autorisés
+                'assignsubmission_file_maxsizebytes'  => 0, // 0 = Limite globale du cours/site
+                // ---------------------------------------------
+                
+                'requiresubmissionstatement'  => 0,
                 'nosubmissions'               => 0,
                 'cutoffdate'                  => 0,
                 'gradingduedate'              => 0,
@@ -96,6 +103,8 @@ class local_offline_sync_external extends external_api {
                 'preventsubmissionnotingroup' => 0,
                 'timelimit'                   => 0
             );
+            
+            // Applique les valeurs par défaut si le client (l'app JS) ne les a pas envoyées
             foreach ($defaults as $key => $val) {
                 if (!isset($moddata->{$key})) {
                     $moddata->{$key} = $val;

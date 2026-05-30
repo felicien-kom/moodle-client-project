@@ -31,6 +31,7 @@ export const authenticate = async (req, res, next) => {
     // Injecter le token Moodle pour les routes qui en ont besoin (online)
     const localUser = await req.prisma.localUser.findFirst();
     req.moodleToken = localUser?.moodleToken ?? null;
+    req.moodleUserId = localUser?.moodleUserId ?? null;
 
     next();
   } catch {
