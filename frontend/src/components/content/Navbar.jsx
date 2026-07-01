@@ -301,7 +301,7 @@ export function Navbar() {
           <DropdownMenuContent align="end" className="w-56 p-1 relative z-[100] bg-white border-slate-200 shadow-xl rounded-xl">
             <DropdownMenuLabel className="font-normal px-2.5 py-2.5">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none text-slate-900">{user.name || "Utilisateur"}</p>
+                <p className="text-sm font-medium leading-none text-slate-800">{user.name || "Utilisateur"}</p>
                 <p className="text-xs leading-none text-slate-500">{user.email || user.username || "Connecté"}</p>
               </div>
             </DropdownMenuLabel>
@@ -403,7 +403,7 @@ export function Navbar() {
       <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-900">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-800">
               <LogOut className="h-5 w-5 text-rose-500" />
               Confirmation de déconnexion
             </DialogTitle>

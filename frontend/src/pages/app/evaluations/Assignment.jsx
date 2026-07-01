@@ -166,11 +166,11 @@ export default function Assignment() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Évaluations</h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 tracking-tight">Évaluations</h1>
+            <p className="text-sm font-medium text-slate-500 mt-2">
               {isTeacher
                 ? "Suivez les remises et corrigez les copies de vos étudiants."
                 : "Parcourez vos cours, consultez les consignes et remettez vos travaux."}
@@ -181,21 +181,21 @@ export default function Assignment() {
             size="sm"
             onClick={fetchData}
             disabled={loading}
-            className="rounded-xl shrink-0"
+            className="rounded-xl shrink-0 h-10 px-4 border-slate-200 text-slate-700 font-semibold shadow-sm"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Actualiser
           </Button>
         </div>
 
-        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="inline-flex bg-slate-100/80 p-1 rounded-xl max-w-fit border border-slate-200/50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="inline-flex bg-white p-1 rounded-2xl max-w-fit border border-slate-200/60 shadow-sm">
             <button
               onClick={() => handleTabChange("a-faire")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
                 activeTab === "a-faire"
-                  ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-900/5"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-[#2A78C2]/10 text-[#2A78C2]"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
               }`}
             >
               <ListTodo className="w-4 h-4" />
@@ -203,10 +203,10 @@ export default function Assignment() {
             </button>
             <button
               onClick={() => handleTabChange("termines")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
                 activeTab === "termines"
-                  ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-900/5"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-[#2A78C2]/10 text-[#2A78C2]"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
               }`}
             >
               <ClipboardCheck className="w-4 h-4" />
@@ -245,18 +245,18 @@ export default function Assignment() {
             <button
               type="button"
               onClick={() => setSelectedCourseGroup(null)}
-              className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 mb-6 transition-colors"
+              className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#2A78C2] mb-6 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Retour aux cours
             </button>
 
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-indigo-600" />
+              <div className="w-12 h-12 rounded-xl bg-[#2A78C2]/10 flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-[#2A78C2]" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-900">{selectedCourseGroup.course.title}</h2>
+                <h2 className="text-xl font-bold text-slate-800">{selectedCourseGroup.course.title}</h2>
                 <p className="text-sm text-slate-500">
                   {selectedCourseGroup.assignments.length} devoir
                   {selectedCourseGroup.assignments.length > 1 ? "s" : ""} —{" "}

@@ -174,7 +174,7 @@ export default function ProfileSelectionScreen() {
           </div>
 
           <div className="mt-4 text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-white">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-white">
               Bonjour, qui êtes-vous ?
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-primary-foreground/90 sm:text-base">

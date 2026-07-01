@@ -57,7 +57,7 @@ export default function EventModal({
 
         {/* En-tête bleu sombre */}
         <div className=" px-5 py-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-black">
+          <h3 className="text-sm font-semibold text-slate-800">
             {mode === "add" ? "Nouvel événement" : "Modifier l'événement"}
           </h3>
           <button

@@ -146,7 +146,7 @@ export function CourseCard({
         {/* Overlay "Voir le cours" au hover */}
         {canViewDetails && !isHovering && (
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm text-slate-900 font-semibold text-sm px-4 py-2 rounded-full shadow-lg">
+            <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm text-slate-800 font-semibold text-sm px-4 py-2 rounded-full shadow-lg">
               <Play className="h-4 w-4 fill-slate-900" />
               Voir le cours
             </div>
@@ -192,7 +192,7 @@ export function CourseCard({
         </div>
 
         {/* Titre */}
-        <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 group-hover:text-slate-700 transition-colors duration-200 min-h-[2.5rem]">
+        <h3 className="font-bold text-slate-800 text-sm leading-snug line-clamp-2 group-hover:text-slate-700 transition-colors duration-200 min-h-[2.5rem]">
           {title}
         </h3>
 

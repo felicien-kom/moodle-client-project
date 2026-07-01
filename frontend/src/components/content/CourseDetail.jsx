@@ -98,7 +98,7 @@ function CourseSection({ section, sectionRef }) {
       >
         <div className="flex items-center gap-3">
           <Layers className="w-4 h-4 text-gray-500 flex-shrink-0" />
-          <span className="text-[15px] font-bold text-gray-900">{section.titre}</span>
+          <span className="text-[15px] font-bold text-slate-800">{section.titre}</span>
         </div>
         {open
           ? <ChevronUp   className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -117,7 +117,7 @@ function CourseSection({ section, sectionRef }) {
                 <ContentIcon type={item.type} />
                 <div>
                   <p className="text-sm font-medium text-gray-700
-                    group-hover:text-indigo-600 transition-colors">
+                    group-hover:text-[#2A78C2] transition-colors">
                     {item.nom}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">{item.detail}</p>
@@ -139,13 +139,13 @@ function NavItem({ label, active, onClick, isDetails }) {
       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium
         transition-all text-left
         ${active
-          ? "bg-indigo-50 text-indigo-700"
-          : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-700"
+          ? "bg-[#2A78C2]/10 text-[#2A78C2]"
+          : "text-gray-600 hover:bg-[#2A78C2]/10 hover:text-[#2A78C2]"
         }`}
     >
       {isDetails
-        ? <Info    className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-indigo-600" : "text-gray-400"}`} />
-        : <Layers  className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-indigo-600" : "text-gray-400"}`} />
+        ? <Info    className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-[#2A78C2]" : "text-gray-400"}`} />
+        : <Layers  className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-[#2A78C2]" : "text-gray-400"}`} />
       }
       {label}
     </button>
@@ -182,7 +182,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
             <ArrowLeft className="w-4 h-4" />
             Retour à l'espace cours
           </button>
-          <h1 className="text-xl font-extrabold mb-1.5">{cours.title}</h1>
+          <h1 className="text-xl font-bold mb-1.5">{cours.title}</h1>
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <User className="w-3.5 h-3.5" />
             <span>Enseignant : {cours.animateur ?? "ledoux segning"}</span>
@@ -239,31 +239,31 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
             className="border border-gray-200 shadow-none rounded-xl"
           >
             <CardContent className="p-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-5">Détails du cours</h2>
+              <h2 className="text-lg font-bold text-slate-800 mb-5">Détails du cours</h2>
 
               {/* Grille 2 colonnes */}
               <div className="grid grid-cols-2 gap-x-10 gap-y-5">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Nom court</p>
-                  <p className="text-[15px] font-semibold text-gray-900">
+                  <p className="text-[15px] font-semibold text-slate-800">
                     {cours.shortName ?? cours.title?.slice(0, 8)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Sections</p>
-                  <p className="text-[15px] font-semibold text-gray-900">
+                  <p className="text-[15px] font-semibold text-slate-800">
                     {sectionsData.length}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Début</p>
-                  <p className="text-[15px] font-semibold text-gray-900">
+                  <p className="text-[15px] font-semibold text-slate-800">
                     {cours.startDate ? new Date(cours.startDate * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : "Non définie"}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Fin</p>
-                  <p className="text-[15px] font-semibold text-gray-900">
+                  <p className="text-[15px] font-semibold text-slate-800">
                     {cours.endDate ? new Date(cours.endDate * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : "Non définie"}
                   </p>
                 </div>

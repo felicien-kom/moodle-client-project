@@ -354,11 +354,11 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
           type="button"
           onClick={handleBack}
           disabled={isSavingDraft || isSubmitting}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors mb-4 disabled:opacity-50"
+          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#2A78C2] transition-colors mb-4 disabled:opacity-50"
         >
           <ArrowLeft className="w-4 h-4" /> Retour
         </button>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">
           {assignment.name}
         </h1>
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -392,9 +392,9 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
                         type="button"
                         disabled={loadingPreview}
                         onClick={() => openServerFilePreview(file)}
-                        className="w-full flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-left hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+                        className="w-full flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-left hover:bg-[#2A78C2]/10 hover:border-[#2A78C2]/30 transition-colors"
                       >
-                        <FileText className="w-4 h-4 text-indigo-500 shrink-0" />
+                        <FileText className="w-4 h-4 text-[#2A78C2] shrink-0" />
                         <span className="text-sm font-medium text-slate-800 truncate flex-1">
                           {file.filename}
                         </span>
@@ -408,7 +408,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
           </div>
 
           {!isSubmitted ? (
-            <div className="bg-white rounded-2xl border border-indigo-100 p-6 shadow-sm">
+            <div className="bg-white rounded-2xl border border-[#2A78C2]/30 p-6 shadow-sm">
               <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
                 Votre remise
               </h2>
@@ -572,7 +572,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
                     isWordLimitExceeded ||
                     isMaxFilesExceeded
                   }
-                  className="rounded-xl h-12 font-bold bg-indigo-600 hover:bg-indigo-700"
+                  className="rounded-xl h-12 font-bold bg-[#2A78C2] hover:bg-[#1F69AE]"
                 >
                   {isSubmitting ? (
                     <>
@@ -593,7 +593,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
                   : "bg-blue-50/50 border-blue-100"
               }`}
             >
-              <h2 className="text-sm font-bold text-slate-900 mb-2">
+              <h2 className="text-sm font-bold text-slate-800 mb-2">
                 {isGraded ? "Devoir corrigé" : "Devoir remis"}
               </h2>
               <p className={`text-sm ${isGraded ? "text-emerald-800" : "text-blue-800"}`}>
@@ -633,7 +633,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
               {submissionLive?.grade != null && (
                 <div className="mt-4 p-4 bg-white rounded-xl border border-emerald-200 flex justify-between items-center">
                   <span className="font-semibold text-slate-600">Note</span>
-                  <span className="text-2xl font-black text-emerald-600">
+                  <span className="text-2xl font-bold text-emerald-600">
                     {submissionLive.grade} / {maxGrade}
                   </span>
                 </div>
@@ -666,20 +666,20 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
               <Separator />
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Échéance</p>
-                <p className="font-semibold text-slate-900">{formatDueDate()}</p>
+                <p className="font-semibold text-slate-800">{formatDueDate()}</p>
               </div>
               <Separator />
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Cours</p>
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                  <p className="font-semibold text-slate-900">{assignment.course?.title}</p>
+                  <p className="font-semibold text-slate-800">{assignment.course?.title}</p>
                 </div>
               </div>
               <Separator />
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Note max</p>
-                <p className="font-semibold text-slate-900">{maxGrade} pts</p>
+                <p className="font-semibold text-slate-800">{maxGrade} pts</p>
               </div>
             </div>
           </div>

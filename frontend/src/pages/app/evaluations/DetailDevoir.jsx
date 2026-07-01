@@ -22,7 +22,7 @@ export default function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{devoir.name}</h1>
+            <h1 className="text-2xl font-bold text-slate-800">{devoir.name}</h1>
             <p className="text-sm text-gray-500 mt-0.5">
               {devoir.course.title} ({devoir.course.shortName}) · Moodle
             </p>
@@ -69,7 +69,7 @@ export default function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
                   <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
                     Cours
                   </p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-slate-800">
                     {devoir.course.shortName}
                   </p>
                 </div>
@@ -95,7 +95,7 @@ export default function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
                   <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
                     Échéance
                   </p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-slate-800">
                     {devoir.dueDate ? new Date(devoir.dueDate * 1000).toLocaleDateString('fr-FR') : 'Non définie'}
                   </p>
                 </div>
@@ -121,7 +121,7 @@ export default function DetailDevoir({ devoir, onRetour, onVoirSoumission }) {
                 >
                   <Avatar initiales={s.studentInitials} />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{s.studentName}</p>
+                    <p className="text-sm font-medium text-slate-800">{s.studentName}</p>
                     <p className="text-xs text-gray-400">{s.submittedAt ? new Date(s.submittedAt * 1000).toLocaleDateString('fr-FR') : 'Non définie'}</p>
                   </div>
                   {s.state === "GRADED" ? (

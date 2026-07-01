@@ -52,7 +52,7 @@ function getFileTypeConfig(filename, mimeType) {
     return { icon: FileText, bg: "bg-emerald-50 text-emerald-600 border-emerald-100", label: "Tableur" };
   }
   if (["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext) || mime.includes("image")) {
-    return { icon: Image, bg: "bg-purple-50 text-purple-600 border-purple-100", label: "Image" };
+    return { icon: Image, bg: "bg-[#2A78C2]/10 text-[#2A78C2] border-[#2A78C2]/20", label: "Image" };
   }
   if (["mp4", "mkv", "avi", "mov", "webm"].includes(ext) || mime.includes("video")) {
     return { icon: Video, bg: "bg-pink-50 text-pink-600 border-pink-100", label: "Vidéo" };
@@ -229,7 +229,7 @@ export default function Mediatheque() {
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 tracking-tight">
             Médiathèque globale
           </h1>
           <p className="mt-1 text-slate-500 font-medium">
@@ -278,7 +278,7 @@ export default function Mediatheque() {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fichiers indexés</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{totalFiles}</h3>
+              <h3 className="text-2xl font-bold text-slate-800 mt-0.5">{totalFiles}</h3>
             </div>
           </div>
         </Card>
@@ -290,7 +290,7 @@ export default function Mediatheque() {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Dispo hors-ligne</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{offlineFilesCount}</h3>
+              <h3 className="text-2xl font-bold text-slate-800 mt-0.5">{offlineFilesCount}</h3>
             </div>
           </div>
         </Card>
@@ -302,7 +302,7 @@ export default function Mediatheque() {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">En ligne seulement</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{onlineOnlyCount}</h3>
+              <h3 className="text-2xl font-bold text-slate-800 mt-0.5">{onlineOnlyCount}</h3>
             </div>
           </div>
         </Card>
@@ -393,7 +393,7 @@ export default function Mediatheque() {
       ) : filteredFiles.length === 0 ? (
         <Card className="border-0 rounded-2xl p-16 text-center shadow-none bg-white">
           <CloudOff className="mx-auto h-12 w-12 text-slate-300 mb-4" />
-          <h3 className="text-lg font-bold text-slate-900">Aucun fichier trouvé</h3>
+          <h3 className="text-lg font-bold text-slate-800">Aucun fichier trouvé</h3>
           <p className="text-sm text-slate-500 max-w-sm mx-auto mt-2">
             Aucun média ne correspond à vos critères ou les répertoires sont actuellement vides.
           </p>

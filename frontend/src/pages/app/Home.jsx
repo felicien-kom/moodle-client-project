@@ -11,7 +11,7 @@ const STATS = [
     value: "50+",
     label: "Cours d'Experts",
     desc: "Des formations conçues et animées par des professionnels reconnus dans leur domaine.",
-    circleColor: "bg-indigo-100 text-indigo-700",
+    circleColor: "bg-[#2A78C2]/20 text-[#2A78C2]",
   },
   {
     value: "10k+",
@@ -62,7 +62,7 @@ function Avatar({ name }) {
     .join("")
     .toUpperCase();
   return (
-    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm flex-shrink-0">
+    <div className="w-10 h-10 rounded-full bg-[#2A78C2]/20 flex items-center justify-center text-[#2A78C2] font-semibold text-sm flex-shrink-0">
       {initials}
     </div>
   );
@@ -106,13 +106,13 @@ export function HeroSection() {
             </span>
  
             {/* Titre */}
-            <h1 className="text-5xl md:text-6xl font-black text-gray-900
+            <h1 className="text-5xl md:text-6xl font-bold text-slate-800
                            leading-[1.1] tracking-tight mb-2">
               Maîtrisez les
             </h1>
-            <h1 className="text-5xl md:text-6xl font-black leading-[1.1] tracking-tight mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight mb-6">
               <span className="text-indigo-900">compétences</span>
-              <span className="text-gray-900"> qui comptent.</span>
+              <span className="text-slate-800"> qui comptent.</span>
             </h1>
  
             {/* Sous-titre */}
@@ -155,7 +155,7 @@ export function HeroSection() {
                 { val: "4.9★", txt: "note moyenne" },
               ].map(({ val, txt }) => (
                 <div key={txt} className="flex items-baseline gap-1.5">
-                  <span className="text-base font-extrabold text-indigo-900">{val}</span>
+                  <span className="text-base font-bold text-indigo-900">{val}</span>
                   <span className="text-xs text-gray-400">{txt}</span>
                 </div>
               ))}
@@ -173,7 +173,7 @@ export function HeroSection() {
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
                 Module actif
               </p>
-              <p className="text-sm font-bold text-gray-900 leading-snug">
+              <p className="text-sm font-bold text-slate-800 leading-snug">
                 Développement Web Full-Stack
               </p>
               {/* Barre de progression */}
@@ -209,7 +209,7 @@ function StatsSection() {
       <div className="max-w-5xl mx-auto">
         {/* Titre */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">
+          <h2 className="text-3xl font-bold text-slate-800 mb-3">
             Pourquoi notre plateforme est unique&nbsp;?
           </h2>
           <p className="text-gray-500 text-base">
@@ -226,11 +226,11 @@ function StatsSection() {
             >
               <CardContent className="pt-8 pb-8 px-7 flex flex-col items-center text-center">
                 <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-extrabold mb-5 ${s.circleColor}`}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mb-5 ${s.circleColor}`}
                 >
                   {s.value}
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">{s.label}</h3>
+                <h3 className="text-base font-bold text-slate-800 mb-2">{s.label}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{s.desc}</p>
               </CardContent>
             </Card>
@@ -250,7 +250,7 @@ function FeaturedCourseSection() {
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           {/* Visuel placeholder */}
-          <div className="bg-indigo-50 rounded-2xl h-72 flex items-center justify-center border border-indigo-100">
+          <div className="bg-[#2A78C2]/10 rounded-2xl h-72 flex items-center justify-center border border-[#2A78C2]/30">
             <div className="text-center text-indigo-300">
               <div className="text-6xl mb-3">🖥️</div>
               <span className="text-sm font-medium text-indigo-400">
@@ -261,10 +261,10 @@ function FeaturedCourseSection() {
 
           {/* Contenu */}
           <div>
-            <Badge className="bg-indigo-100 text-indigo-900 text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-md mb-4 hover:bg-indigo-100">
+            <Badge className="bg-[#2A78C2]/20 text-indigo-900 text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-md mb-4 hover:bg-[#2A78C2]/20">
               Cours en vedette
             </Badge>
-            <h2 className="text-3xl font-extrabold text-gray-900 leading-snug mb-4">
+            <h2 className="text-3xl font-bold text-slate-800 leading-snug mb-4">
               Masterclass : Développement Web Moderne
             </h2>
             <p className="text-gray-500 text-sm leading-relaxed mb-6">
@@ -305,7 +305,7 @@ function TestimonialsSection() {
       <div className="max-w-5xl mx-auto">
         {/* Titre */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">
+          <h2 className="text-3xl font-bold text-slate-800 mb-3">
             Ils ont transformé leur carrière
           </h2>
           <p className="text-gray-500 text-base">
@@ -335,7 +335,7 @@ function TestimonialsSection() {
                 <div className="flex items-center gap-3">
                   <Avatar name={t.name} />
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{t.name}</p>
+                    <p className="text-sm font-semibold text-slate-800">{t.name}</p>
                     <p className="text-xs text-gray-500">{t.role}</p>
                   </div>
                 </div>
@@ -367,7 +367,7 @@ function CtaSection() {
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-800/60 via-transparent to-purple-900/40 pointer-events-none" />
 
           <div className="relative z-10">
-            <h2 className="text-4xl font-extrabold text-white mb-4 leading-tight">
+            <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
               Prêt à transformer votre avenir&nbsp;?
             </h2>
             <p className="text-indigo-200 text-base mb-8 max-w-xl mx-auto">

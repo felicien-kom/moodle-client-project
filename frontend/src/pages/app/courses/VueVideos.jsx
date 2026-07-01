@@ -88,7 +88,7 @@ export default function VueVideos({ fileId, fileName, onRetour }) {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-xl shadow-md max-w-md">
           <p className="text-red-600 font-semibold mb-4">{error}</p>
-          <Button onClick={onRetour} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+          <Button onClick={onRetour} className="bg-[#2A78C2] hover:bg-[#1F69AE] text-white">
             Retour
           </Button>
         </div>

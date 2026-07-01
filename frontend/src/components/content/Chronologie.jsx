@@ -122,7 +122,7 @@ export function Chronologie({ events = [], onEventClick }) {
   return (
     <Card className="bg-white border border-gray-200 shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-bold text-black">
+        <CardTitle className="text-lg font-bold text-slate-800">
           Chronologie des activités
         </CardTitle>
       </CardHeader>
@@ -149,7 +149,7 @@ export function Chronologie({ events = [], onEventClick }) {
             <SelectTrigger className="w-full bg-gray-50 border-gray-200">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-white border border-gray-200 shadow-sm text-black">
+            <SelectContent className="bg-white border border-gray-200 shadow-sm text-slate-800">
               <SelectItem value="tous">Tous les types</SelectItem>
               <SelectItem value="cours">Cours</SelectItem>
               <SelectItem value="site">Site</SelectItem>
@@ -190,7 +190,7 @@ export function Chronologie({ events = [], onEventClick }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium text-black truncate">
+                        <span className="text-sm font-medium text-slate-800 truncate">
                           {event.name || event.title || "Événement sans titre"}
                         </span>
                         <Badge className={`text-xs shrink-0 border-0 ${typeColor}`}>

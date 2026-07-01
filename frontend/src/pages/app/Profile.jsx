@@ -56,7 +56,7 @@ function SectionProfil({ profil }) {
 
         {/* Profile Info */}
         <div className="space-y-1.5">
-          <h2 className="text-2xl font-bold text-slate-900">{profil.nom}</h2>
+          <h2 className="text-2xl font-bold text-slate-800">{profil.nom}</h2>
           <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
             <Mail className="h-4 w-4" />
             {profil.email}
@@ -105,7 +105,7 @@ function SectionMotDePasse() {
   return (
     <Card className="border border-gray-200 shadow-none rounded-xl">
       <CardHeader className="pb-0">
-        <CardTitle className="text-lg font-bold text-gray-900">
+        <CardTitle className="text-lg font-bold text-slate-800">
           Mettre à jour le mot de passe
         </CardTitle>
         <CardDescription className="text-sm text-gray-500">

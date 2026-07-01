@@ -224,11 +224,11 @@ export function AssignmentDetailsTeacher({
           <button
             type="button"
             onClick={() => onRetour()}
-            className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors uppercase tracking-widest mb-4"
+            className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[#2A78C2] transition-colors uppercase tracking-widest mb-4"
           >
             <ArrowLeft className="w-4 h-4" /> Retour aux évaluations
           </button>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 tracking-tight">
             {assignment.name}
           </h1>
           <p className="mt-2 text-lg text-slate-500 font-medium">
@@ -261,7 +261,7 @@ export function AssignmentDetailsTeacher({
         <div className="lg:col-span-3 space-y-6">
           {(assignment.intro || assignment.activity) && (
             <div className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-4">
+              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4">
                 Consignes du devoir
               </h2>
               <div
@@ -295,7 +295,7 @@ export function AssignmentDetailsTeacher({
 
           <div className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest">
+              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">
                 Travaux des étudiants
               </h2>
               <div className="relative w-full sm:w-64">
@@ -330,7 +330,7 @@ export function AssignmentDetailsTeacher({
 
                     return (
                       <tr key={row.key} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-4 py-4 font-bold text-slate-900 max-w-[200px]">
+                        <td className="px-4 py-4 font-bold text-slate-800 max-w-[200px]">
                           <span className="line-clamp-1">{row.studentName}</span>
                           {row.participant?.email && (
                             <p className="text-xs font-normal text-slate-400 truncate">
@@ -347,7 +347,7 @@ export function AssignmentDetailsTeacher({
                         <td className="px-4 py-4 text-slate-600">
                           {fileCount > 0 ? `${fileCount} fichier(s)` : "—"}
                         </td>
-                        <td className="px-4 py-4 font-black text-slate-900">
+                        <td className="px-4 py-4 font-bold text-slate-800">
                           {grade != null ? `${grade}/${maxGrade}` : "—"}
                         </td>
                         <td className="px-4 py-4 text-right">
@@ -387,7 +387,7 @@ export function AssignmentDetailsTeacher({
 
         <div className="space-y-6">
           <div className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">
+            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-6">
               Aperçu
             </h2>
             <div className="space-y-5">
@@ -395,14 +395,14 @@ export function AssignmentDetailsTeacher({
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Étudiants inscrits
                 </p>
-                <p className="text-2xl font-black text-slate-900">{enrolledCount}</p>
+                <p className="text-2xl font-bold text-slate-800">{enrolledCount}</p>
               </div>
               <Separator />
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Remises définitives
                 </p>
-                <p className="text-2xl font-black text-slate-900">{submittedCount}</p>
+                <p className="text-2xl font-bold text-slate-800">{submittedCount}</p>
                 {enrolledCount > 0 && (
                   <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5">
                     <div
@@ -419,7 +419,7 @@ export function AssignmentDetailsTeacher({
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   À évaluer
                 </p>
-                <p className="text-xl font-bold text-indigo-600">
+                <p className="text-xl font-bold text-[#2A78C2]">
                   {pendingCount} copie{pendingCount !== 1 ? "s" : ""}
                 </p>
               </div>
@@ -459,14 +459,14 @@ export function AssignmentDetailsTeacher({
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Note maximale
                 </p>
-                <p className="text-sm font-bold text-slate-900">{maxGrade} pts</p>
+                <p className="text-sm font-bold text-slate-800">{maxGrade} pts</p>
               </div>
               <Separator />
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Échéance
                 </p>
-                <p className="text-sm font-bold text-slate-900">{formatDueDate(assignment.dueDate)}</p>
+                <p className="text-sm font-bold text-slate-800">{formatDueDate(assignment.dueDate)}</p>
               </div>
             </div>
           </div>

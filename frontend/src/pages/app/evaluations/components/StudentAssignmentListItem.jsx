@@ -19,14 +19,14 @@ export function StudentAssignmentListItem({ assignment, onClick, showGrade = fal
     <button
       type="button"
       onClick={onClick}
-      className="group w-full text-left flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-0.5 transition-all duration-300"
+      className="group w-full text-left flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-[#2A78C2]/30 hover:-translate-y-0.5 transition-all duration-300"
     >
-      <div className="w-10 h-10 rounded-lg bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center shrink-0 transition-colors">
-        <FileText className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+      <div className="w-10 h-10 rounded-lg bg-slate-50 group-hover:bg-[#2A78C2]/10 flex items-center justify-center shrink-0 transition-colors">
+        <FileText className="w-5 h-5 text-slate-400 group-hover:text-[#2A78C2] transition-colors" />
       </div>
 
       <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors line-clamp-1">
+        <h4 className="font-bold text-slate-800 group-hover:text-[#2A78C2] transition-colors line-clamp-1">
           {assignment.name}
         </h4>
         <p className="text-sm text-slate-500 line-clamp-1 mt-0.5">
@@ -50,12 +50,12 @@ export function StudentAssignmentListItem({ assignment, onClick, showGrade = fal
 
       {showGradeOnList && grade != null && (
         <div className="shrink-0 text-right">
-          <p className="text-lg font-black text-emerald-600">{grade}</p>
+          <p className="text-lg font-bold text-emerald-600">{grade}</p>
           <p className="text-[10px] text-slate-400 font-medium">/{maxGrade}</p>
         </div>
       )}
 
-      <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 shrink-0 transition-colors" />
+      <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#2A78C2] shrink-0 transition-colors" />
     </button>
   );
 }

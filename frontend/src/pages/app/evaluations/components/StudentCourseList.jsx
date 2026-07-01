@@ -13,20 +13,20 @@ export function StudentCourseList({ courseGroups, onSelectCourse }) {
             key={course.id}
             type="button"
             onClick={() => onSelectCourse({ course, assignments })}
-            className="group text-left flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-0.5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+            className="group text-left flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-[#2A78C2]/30 hover:-translate-y-0.5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
             style={{ animationDelay: `${index * 60}ms`, animationFillMode: "backwards" }}
           >
             <div className="flex items-start justify-between gap-3 mb-4">
-              <div className="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition-colors">
-                <BookOpen className="w-5 h-5 text-indigo-600" />
+              <div className="w-11 h-11 rounded-xl bg-[#2A78C2]/10 flex items-center justify-center shrink-0 group-hover:bg-[#2A78C2]/20 transition-colors">
+                <BookOpen className="w-5 h-5 text-[#2A78C2]" />
               </div>
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-[#2A78C2] bg-[#2A78C2]/10 px-2.5 py-1 rounded-full">
                 <ClipboardList className="w-3 h-3" />
                 {assignments.length} devoir{assignments.length > 1 ? "s" : ""}
               </span>
             </div>
 
-            <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-700 transition-colors line-clamp-2 mb-1">
+            <h3 className="text-lg font-bold text-slate-800 group-hover:text-[#2A78C2] transition-colors line-clamp-2 mb-1">
               {course.title}
             </h3>
             {course.shortName && (
@@ -46,7 +46,7 @@ export function StudentCourseList({ courseGroups, onSelectCourse }) {
               </p>
             )}
 
-            <div className="flex items-center justify-end mt-3 text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center justify-end mt-3 text-[#2A78C2] opacity-0 group-hover:opacity-100 transition-opacity">
               <span className="text-xs font-semibold mr-1">Voir les devoirs</span>
               <ChevronRight className="w-4 h-4" />
             </div>
