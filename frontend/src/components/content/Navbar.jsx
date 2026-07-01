@@ -8,6 +8,14 @@ import {
   NavigationMenuList,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -62,6 +70,7 @@ export function Navbar() {
   const [syncMessage, setSyncMessage] = useState("");
   const [syncPhase, setSyncPhase] = useState(""); // "INIT", "PUSH", "PULL", "COMPLETE"
   const [syncError, setSyncError] = useState(null);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   // Fonctions de navigation
   const goToHome = () => navigate(PATHS.app.dashboard);
@@ -146,7 +155,8 @@ export function Navbar() {
             setSyncProgress(0);
             setSyncMessage("");
             setSyncPhase("");
-          }, 2500);
+            window.location.reload();
+          }, 1000);
           unsubscribe();
         },
         onError: (err) => {
@@ -296,12 +306,12 @@ export function Navbar() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-slate-100" />
-            <DropdownMenuItem onClick={goToProfile} className="cursor-pointer gap-2 py-2 text-slate-600 focus:bg-slate-50 focus:text-primary rounded-md">
+            <DropdownMenuItem onClick={goToProfile} className="cursor-pointer gap-2 py-2 text-slate-600 focus:bg-slate-50 focus:text-[#2A78C2] rounded-md">
               <UserIcon className="h-4 w-4" />
               <span>Mon Profil</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-slate-100" />
-            <DropdownMenuItem onClick={() => {logout(); goToLogin();}} className="cursor-pointer gap-2 py-2 text-rose-600 focus:bg-rose-50 focus:text-rose-700 rounded-md">
+            <DropdownMenuItem onClick={() => setIsLogoutModalOpen(true)} className="cursor-pointer gap-2 py-2 text-rose-600 focus:bg-rose-50 focus:text-rose-700 rounded-md">
               <LogOut className="h-4 w-4" />
               <span>Déconnexion</span>
             </DropdownMenuItem>
@@ -388,6 +398,42 @@ export function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Modal de déconnexion */}
+      <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-900">
+              <LogOut className="h-5 w-5 text-rose-500" />
+              Confirmation de déconnexion
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 mt-2">
+              Êtes-vous sûr de vouloir vous déconnecter de votre profil local ? Vous serez redirigé vers l'écran de sélection de profil.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 flex gap-3 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="text-slate-600 font-medium"
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setIsLogoutModalOpen(false);
+                logout();
+                goToLogin();
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-medium shadow-sm transition-colors"
+            >
+              Se déconnecter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
