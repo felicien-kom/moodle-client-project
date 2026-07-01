@@ -87,8 +87,8 @@ export default function Mediatheque() {
       setFiles(data);
     } catch (error) {
       console.error("Erreur réceptacle médiathèque:", error);
-      toast.error("Erreur de chargement", {
-        description: "Impossible de récupérer la liste des fichiers locaux.",
+      toast.error("Problème de chargement", {
+        description: "Impossible d'afficher la liste de vos fichiers pour le moment.",
       });
     } finally {
       if (!silent) setLoading(false);
@@ -105,8 +105,8 @@ export default function Mediatheque() {
 
   const handleDownload = async (fileId) => {
     if (!isOnline) {
-      toast.error("Connexion requise", {
-        description: "Vous devez être connecté à Internet pour télécharger ce fichier.",
+      toast.error("Connexion Internet requise", {
+        description: "Ce fichier n'est pas encore sur votre appareil. Connectez-vous à Internet pour le télécharger.",
       });
       return;
     }
@@ -118,8 +118,8 @@ export default function Mediatheque() {
       toast.success("Fichier prêt hors-ligne !");
       await loadFiles(true); // reload list silently
     } catch (error) {
-      toast.error("Échec du téléchargement", {
-        description: error.message || "Une erreur est survenue.",
+      toast.error("Problème de téléchargement", {
+        description: "Nous n'avons pas pu enregistrer ce fichier. Réessayez plus tard.",
       });
     } finally {
       setDownloadingIds((prev) => {
@@ -138,8 +138,8 @@ export default function Mediatheque() {
         window.URL.revokeObjectURL(blobUrl);
       }, 1000);
     } catch (error) {
-      toast.error("Erreur d'ouverture", {
-        description: error.message || "Impossible de lire le fichier.",
+      toast.error("Impossible d'ouvrir le fichier", {
+        description: "Le fichier semble indisponible ou endommagé.",
       });
     }
   };

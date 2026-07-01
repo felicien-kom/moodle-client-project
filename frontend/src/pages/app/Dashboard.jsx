@@ -45,7 +45,7 @@ export default function Dashboard() {
 
       setEvents(enrichedEvents);
     } catch (err) {
-      setError(err.message || "Erreur lors du chargement du tableau de bord");
+      setError(err?.message && !String(err.message).includes("500") ? err.message : "Le tableau de bord est temporairement indisponible.");
       console.error("Erreur chargement dashboard:", err);
     } finally {
       setLoading(false);

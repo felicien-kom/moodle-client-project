@@ -150,7 +150,7 @@ export function AssignmentDetailsTeacher({
       setParticipants(parts || []);
     } catch (err) {
       console.error(err);
-      toast.error("Erreur de chargement", { description: err.message });
+      toast.error("Problème de chargement", { description: "Un problème est survenu lors de la récupération des notes." });
     } finally {
       setLoading(false);
     }
@@ -201,7 +201,7 @@ export function AssignmentDetailsTeacher({
         description: `${fileIds.length} fichier(s) en cours de récupération.`,
       });
     } catch (err) {
-      toast.error("Échec du téléchargement", { description: err.message });
+      toast.error("Problème de téléchargement", { description: "Impossible de lancer le téléchargement de ces fichiers." });
     } finally {
       setBulkLoading(false);
     }

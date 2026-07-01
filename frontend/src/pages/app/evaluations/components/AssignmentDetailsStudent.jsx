@@ -199,7 +199,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
     } catch (err) {
       const msg = err.message || "Impossible d'enregistrer le brouillon.";
       setErrorSubmit(msg);
-      toast.error("Échec du brouillon", { description: msg });
+      toast.error("Problème de sauvegarde", { description: "Votre brouillon n'a pas pu être enregistré. Assurez-vous d'être connecté et essayez à nouveau." });
     } finally {
       setIsSavingDraft(false);
     }
@@ -288,8 +288,8 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
           description: "Vos modifications ont été sauvegardées.",
         });
       } catch (err) {
-        toast.error("Enregistrement impossible", {
-          description: err.message || "Le brouillon n'a pas pu être sauvegardé.",
+        toast.error("Sauvegarde interrompue", {
+          description: "Le système n'a pas réussi à enregistrer les dernières modifications. Réessayez.",
         });
         return;
       } finally {
@@ -325,7 +325,7 @@ export function AssignmentDetailsStudent({ assignment, onRetour, moodleUserId: m
     } catch (err) {
       const msg = err.message || "Erreur lors de la remise du devoir.";
       setErrorSubmit(msg);
-      toast.error("Remise impossible", { description: msg });
+      toast.error("Problème de remise", { description: "Le devoir n'a pas pu être envoyé. Réessayez plus tard." });
     } finally {
       setIsSubmitting(false);
     }

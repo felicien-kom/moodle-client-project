@@ -50,17 +50,17 @@ export function normalizeError(error) {
   if (error?.isApiError) return error;
 
   if (error?.name === "AbortError") {
-    return { isApiError: true, status: 408, message: "La requête a expiré.", data: null };
+    return { isApiError: true, status: 408, message: "Le traitement prend plus de temps que prévu. Veuillez patienter et réessayer.", data: null };
   }
 
   if (!navigator.onLine || error?.message === "Failed to fetch") {
-    return { isApiError: true, status: 0, message: "Pas de connexion réseau.", data: null };
+    return { isApiError: true, status: 0, message: "Votre appareil n'est pas connecté à Internet.", data: null };
   }
 
   return {
     isApiError: true,
     status:     error?.status  ?? null,
-    message:    error?.message ?? "Une erreur inattendue est survenue.",
+    message:    "Un problème empêche la mise à jour des données. Ne vous inquiétez pas, vos informations sont en sécurité.",
     data:       null,
   };
 }

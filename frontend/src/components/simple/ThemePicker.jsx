@@ -1,7 +1,7 @@
 // src/components/ThemePicker.jsx
 
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext";
+import { useTheme } from "next-themes";
 import { ContrastTheme } from "@/components/content/elements";
 import { IconLabelPicker } from "@/components/custom/IconLabelPicker";
 import { useTranslation } from "react-i18next";
