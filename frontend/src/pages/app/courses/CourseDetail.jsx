@@ -169,7 +169,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
             ) : isFileDownloadedState ? (
               <><Eye className="w-3.5 h-3.5 mr-1.5" /> Ouvrir</>
             ) : (
-              <><CloudDownload className="w-3.5 h-3.5 mr-1.5" /> T�l�charger</>
+              <><CloudDownload className="w-3.5 h-3.5 mr-1.5" /> Telecharger</>
             )}
           </Button>
         )}

@@ -1,5 +1,5 @@
 // components/Navbar.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PATHS } from "@/router/paths";
 import {
@@ -62,6 +62,79 @@ export function Navbar() {
   const [syncMessage, setSyncMessage] = useState("");
   const [syncPhase, setSyncPhase] = useState(""); // "INIT", "PUSH", "PULL", "COMPLETE"
   const [syncError, setSyncError] = useState(null);
+
+  // Écouter les lancements de synchronisation automatique en arrière-plan
+  useEffect(() => {
+    const handleAutoSyncStarted = (e) => {
+      const { syncId } = e.detail;
+      if (!syncId) return;
+
+      setIsSyncing(true);
+      setSyncProgress(0);
+      setSyncMessage("Démarrage de la synchronisation...");
+      setSyncPhase("INIT");
+      setSyncError(null);
+
+      const unsubscribe = subscribeSyncProgress(syncId, {
+        onProgress: (data) => {
+          console.log("[SSE AutoSync] Progress event:", data);
+          if (data.phase) {
+            setSyncPhase(data.phase);
+            if (data.progress !== undefined) {
+              setSyncProgress(prev => {
+                const diff = data.progress - prev;
+                if (Math.abs(diff) > 10) {
+                  return prev + (diff * 0.3);
+                }
+                return data.progress;
+              });
+            }
+            if (data.phase === "INIT") {
+              const statusMessages = {
+                checking_server: "Vérification du serveur...",
+                fetching_server_time: "Synchronisation horaire...",
+                ready: "Initialisation terminée",
+              };
+              setSyncMessage(statusMessages[data.status] || "Initialisation...");
+            } else if (data.phase === "PUSH") {
+              setSyncMessage(data.message || `Envoi des modifications (${data.pushed || 0} éléments)`);
+            } else if (data.phase === "PULL") {
+              setSyncMessage(data.message || `Récupération des nouveautés (${data.pulled || 0} éléments)`);
+            } else {
+              setSyncMessage(data.message || "Synchronisation en cours...");
+            }
+          }
+        },
+        onComplete: () => {
+          console.log("[SSE AutoSync] Sync complète");
+          setSyncPhase("COMPLETE");
+          setSyncProgress(100);
+          setSyncMessage("À jour");
+          toast.success("Synchronisation automatique terminée", {
+            description: "Tous vos cours et devoirs ont été mis à jour."
+          });
+          setTimeout(() => {
+            setIsSyncing(false);
+            setSyncProgress(0);
+            setSyncMessage("");
+            setSyncPhase("");
+          }, 2500);
+          unsubscribe();
+        },
+        onError: (err) => {
+          console.error("[SSE AutoSync] Erreur:", err);
+          setSyncError(err?.message || "Erreur inconnue");
+          setSyncPhase("ERROR");
+          setIsSyncing(false);
+          toast.error("Erreur de synchronisation automatique", { description: err?.message || "La synchro reprendra plus tard." });
+          unsubscribe();
+        }
+      });
+    };
+
+    window.addEventListener("sync:started", handleAutoSyncStarted);
+    return () => window.removeEventListener("sync:started", handleAutoSyncStarted);
+  }, []);
 
   // Fonctions de navigation
   const goToHome = () => navigate(PATHS.app.dashboard);

@@ -48,11 +48,11 @@ const TYPE_MAPPING = {
 const TYPE_DISPLAY_NAMES = {
   "cours": "Cours",
   "site": "Site",
-  "categorie": "Catégorie",
+ // "categorie": "Catégorie",
   "utilisateur": "Utilisateur",
-  "groupe": "Groupe",
+  //"groupe": "Groupe",
   "due": "Échéance",
-  "gradingdue": "Correction",
+  //"gradingdue": "Correction",
   "default": "Événement"
 };
 
@@ -153,10 +153,11 @@ export function Chronologie({ events = [], onEventClick }) {
               <SelectItem value="tous">Tous les types</SelectItem>
               <SelectItem value="cours">Cours</SelectItem>
               <SelectItem value="site">Site</SelectItem>
-              <SelectItem value="categorie">Catégorie</SelectItem>
+            {/*  <SelectItem value="categorie">Catégorie</SelectItem>
+               <SelectItem value="gradingdue">Correction</SelectItem>
+            */}
               <SelectItem value="utilisateur">Utilisateur</SelectItem>
               <SelectItem value="due">Échéance</SelectItem>
-              <SelectItem value="gradingdue">Correction</SelectItem>
             </SelectContent>
           </Select>
         </div>
