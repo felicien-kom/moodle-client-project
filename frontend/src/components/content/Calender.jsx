@@ -41,7 +41,7 @@ const EV_COLORS = [
   { bg: "bg-teal-100", text: "text-teal-800" },
   { bg: "bg-pink-100", text: "text-pink-800" },
   { bg: "bg-yellow-100", text: "text-yellow-800" },
-  { bg: "bg-indigo-100", text: "text-indigo-800" },
+  { bg: "bg-[#2A78C2]/20", text: "text-[#1F69AE]" },
 ];
 
 
@@ -105,7 +105,7 @@ function DayCell({ day, events = [], isToday, isSelected, onClick, onEventClick 
               </span>
             ) : (
               <span className={`text-sm font-medium ${
-                isSelected ? "text-blue-700" : "text-black"
+                isSelected ? "text-blue-700" : "text-slate-800"
               }`}>
                 {day}
               </span>
@@ -402,15 +402,15 @@ export default function Calender({
 
       {/* ── Barre du haut ── */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2.5">
-        <h2 className="text-lg font-bold text-black">Calendrier</h2>
+        <h2 className="text-lg font-bold text-slate-800">Calendrier</h2>
         
         <div className="flex items-center gap-2">
           {/* Dropdown de filtrage */}
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-[185px] bg-white text-black border-gray-200">
+            <SelectTrigger className="w-[185px] bg-white text-slate-800 border-gray-200">
               <SelectValue placeholder="Tous les événements" />
             </SelectTrigger>
-            <SelectContent className="bg-white border border-gray-200 shadow-sm text-black">
+            <SelectContent className="bg-white border border-gray-200 shadow-sm text-slate-800">
               <SelectItem value="tous">Tous les événements</SelectItem>
               <SelectItem value="cours">Cours</SelectItem>
               <SelectItem value="utilisateur">Utilisateur</SelectItem>
@@ -439,7 +439,7 @@ export default function Calender({
             type="number"
             value={year}
             onChange={handleYearInput}
-            className="w-20 text-center p-1.5 rounded-lg border border-gray-200 bg-gray-50 text-sm font-semibold text-gray-900 outline-none"
+            className="w-20 text-center p-1.5 rounded-lg border border-gray-200 bg-gray-50 text-sm font-semibold text-slate-800 outline-none"
           />
           <NavBtn onClick={goToNextYear} title="Année suivante">»</NavBtn>
         </div>
@@ -450,7 +450,7 @@ export default function Calender({
           <select
             value={month}
             onChange={handleMonthSelect}
-            className="px-2 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-900 outline-none cursor-pointer min-w-[110px] text-center"
+            className="px-2 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-slate-800 outline-none cursor-pointer min-w-[110px] text-center"
           >
             {MONTH_NAMES.map((n, i) => (
               <option key={i} value={i}>{n}</option>
@@ -500,9 +500,9 @@ export default function Calender({
           }
         }
       }}>
-        <DialogContent className="sm:max-w-[425px] bg-white text-black border border-gray-200 shadow-lg">
+        <DialogContent className="sm:max-w-[425px] bg-white text-slate-800 border border-gray-200 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900">
+            <DialogTitle className="text-xl font-bold text-slate-800">
               {editingEventId 
                 ? (isReadOnly ? "Détails de l'événement" : "Modifier l'événement personnel")
                 : "Créer un nouvel événement"
@@ -534,7 +534,7 @@ export default function Calender({
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
                 disabled={isReadOnly}
-                className="w-full bg-white text-black border-slate-200 focus:border-primary focus:ring-primary"
+                className="w-full bg-white text-slate-800 border-slate-200 focus:border-primary focus:ring-primary"
               />
             </div>
 
@@ -548,7 +548,7 @@ export default function Calender({
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 disabled={isReadOnly}
-                className="w-full bg-white text-black border-slate-200 focus:border-primary focus:ring-primary min-h-[80px]"
+                className="w-full bg-white text-slate-800 border-slate-200 focus:border-primary focus:ring-primary min-h-[80px]"
               />
             </div>
 
@@ -564,7 +564,7 @@ export default function Calender({
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   required
                   disabled={isReadOnly}
-                  className="w-full bg-white text-black border-slate-200 focus:border-primary focus:ring-primary"
+                  className="w-full bg-white text-slate-800 border-slate-200 focus:border-primary focus:ring-primary"
                 />
               </div>
 
@@ -579,7 +579,7 @@ export default function Calender({
                   onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                   required
                   disabled={isReadOnly}
-                  className="w-full bg-white text-black border-slate-200 focus:border-primary focus:ring-primary"
+                  className="w-full bg-white text-slate-800 border-slate-200 focus:border-primary focus:ring-primary"
                 />
               </div>
             </div>
@@ -593,10 +593,10 @@ export default function Calender({
                 onValueChange={(val) => setFormData({ ...formData, eventType: val, courseId: "" })}
                 disabled={isReadOnly}
               >
-                <SelectTrigger className="w-full bg-white text-black border-slate-200" disabled={isReadOnly}>
+                <SelectTrigger className="w-full bg-white text-slate-800 border-slate-200" disabled={isReadOnly}>
                   <SelectValue placeholder="Utilisateur" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-sm text-black">
+                <SelectContent className="bg-white border border-gray-200 shadow-sm text-slate-800">
                   <SelectItem value="user">Utilisateur (personnel)</SelectItem>
                   <SelectItem value="course">Cours</SelectItem>
                 </SelectContent>
@@ -613,10 +613,10 @@ export default function Calender({
                   onValueChange={(val) => setFormData({ ...formData, courseId: val })}
                   disabled={isReadOnly}
                 >
-                  <SelectTrigger className="w-full bg-white text-black border-slate-200" disabled={isReadOnly}>
+                  <SelectTrigger className="w-full bg-white text-slate-800 border-slate-200" disabled={isReadOnly}>
                     <SelectValue placeholder="Choisir un cours" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-200 shadow-sm text-black">
+                  <SelectContent className="bg-white border border-gray-200 shadow-sm text-slate-800">
                     {courses.map((course) => (
                       <SelectItem key={course.id} value={String(course.id)}>
                         {course.title || course.fullname || "Cours sans titre"}

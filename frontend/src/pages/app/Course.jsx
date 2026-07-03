@@ -91,7 +91,7 @@ function ContentIcon({ type }) {
     pdf:    { icon: <FileText className="w-4 h-4" />,      bg: "bg-red-100",    text: "text-red-600" },
     video:  { icon: <Video className="w-4 h-4" />,          bg: "bg-blue-100",   text: "text-blue-600" },
     quiz:   { icon: <HelpCircle className="w-4 h-4" />,     bg: "bg-amber-100",  text: "text-amber-600" },
-    link:   { icon: <Link className="w-4 h-4" />,           bg: "bg-purple-100", text: "text-purple-600" },
+    link:   { icon: <Link className="w-4 h-4" />,           bg: "bg-[#2A78C2]/10", text: "text-[#2A78C2]" },
     assign: { icon: <ClipboardList className="w-4 h-4" />,  bg: "bg-emerald-100",text: "text-emerald-600" },
   };
   const { icon, bg, text } = map[type] || map.link;
@@ -113,10 +113,10 @@ function CourseSection({ section }) {
       >
         <div className="flex items-center gap-3">
           <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white
-            ${section.isFinal ? "bg-red-600" : "bg-indigo-600"}`}>
+            ${section.isFinal ? "bg-red-600" : "bg-[#2A78C2]"}`}>
             {section.isFinal ? "✦" : section.id}
           </span>
-          <span className="text-sm font-semibold text-gray-900">{section.titre}</span>
+          <span className="text-sm font-semibold text-slate-800">{section.titre}</span>
         </div>
         {open
           ? <ChevronUp className="w-4 h-4 text-gray-400" />
@@ -130,7 +130,7 @@ function CourseSection({ section }) {
                 className="flex items-center gap-3 py-3 cursor-pointer group first:pt-2">
                 <ContentIcon type={item.type} />
                 <div>
-                  <p className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">
+                  <p className="text-sm font-medium text-gray-700 group-hover:text-[#2A78C2] transition-colors">
                     {item.nom}
                   </p>
                   <p className="text-xs text-gray-400">{item.detail}</p>
@@ -156,7 +156,7 @@ function CourseCard({ cours, showMath, onClick }) {
         ? <MathBackground />
         : <div className="w-full h-32 bg-blue-100 flex items-center justify-center text-3xl">🖥️</div>}
       <CardContent className="p-4">
-        <p className="text-sm font-bold text-gray-900 mb-0.5">{cours.title}</p>
+        <p className="text-sm font-bold text-slate-800 mb-0.5">{cours.title}</p>
         <p className="text-xs text-gray-400 mb-2">{cours.categoryName}</p>
         {/*
         {cours.debut && (
@@ -200,13 +200,13 @@ function EspaceCours({ onOuvrirCours }) {
         {/* Top bar */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-2 cursor-pointer hover:text-indigo-600">
+            <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-2 cursor-pointer hover:text-[#2A78C2]">
               <ArrowLeft className="w-4 h-4" />
               Retour au tableau de bord
             </div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">Espace Cours</h1>
+            <h1 className="text-4xl font-bold text-slate-800 tracking-tight">Espace Cours</h1>
           </div>
-          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-5 font-semibold gap-2">
+          <Button className="bg-[#2A78C2] hover:bg-[#1F69AE] text-white rounded-xl h-11 px-5 font-semibold gap-2">
             <Plus className="w-4 h-4" />
             Créer un nouveau cours
           </Button>
@@ -222,7 +222,7 @@ function EspaceCours({ onOuvrirCours }) {
               placeholder="Rechercher un cours..."
               className="border-none shadow-none focus-visible:ring-0 text-sm"
             />
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-10 px-5">
+            <Button className="bg-[#2A78C2] hover:bg-[#1F69AE] text-white rounded-lg h-10 px-5">
               Rechercher
             </Button>
           </CardContent>
@@ -231,7 +231,7 @@ function EspaceCours({ onOuvrirCours }) {
         {/* Vos cours créés */}
         {crees.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Vos cours créés</h2>
+            <h2 className="text-base font-bold text-slate-800 mb-3">Vos cours créés</h2>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {crees.map(c => (
@@ -244,7 +244,7 @@ function EspaceCours({ onOuvrirCours }) {
         {/* Cours inscrits */}
         {inscrits.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Cours inscrits</h2>
+            <h2 className="text-base font-bold text-slate-800 mb-3">Cours inscrits</h2>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {inscrits.map(c => (
@@ -257,7 +257,7 @@ function EspaceCours({ onOuvrirCours }) {
         {/* Explorer */}
         {explorer.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Explorer d'autres cours</h2>
+            <h2 className="text-base font-bold text-slate-800 mb-3">Explorer d'autres cours</h2>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {explorer.map(c => (

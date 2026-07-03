@@ -25,13 +25,13 @@ export function AssignmentCard({ assignment, onClick, role }) {
           {assignment.course?.shortName || "Cours"}
         </span>
         {isTeacher && (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-extrabold bg-indigo-50 text-indigo-700 uppercase tracking-widest ring-1 ring-inset ring-indigo-600/20">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-[#2A78C2]/10 text-[#2A78C2] uppercase tracking-widest ring-1 ring-inset ring-[#2A78C2]/20">
             {assignment.submittedCount || 0}/{assignment.totalCount || 0} Remis
           </span>
         )}
       </div>
 
-      <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors mb-2 line-clamp-2">
+      <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors mb-2 line-clamp-2">
         {assignment.name}
       </h3>
 

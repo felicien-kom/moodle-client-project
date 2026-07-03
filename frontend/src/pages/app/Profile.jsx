@@ -1,157 +1,77 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { getLocalUser } from "@/utils/api.utils";
 
-// ─── Composant : Section Photo de profil ─────────────────────────────────────
-function PhotoProfil({ nom, photo, onPhotoChange }) {
-  const fileRef = useRef(null);
+import { Info, Mail } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
-  const initiales = nom
-    .split(" ")
-    .map((w) => w[0]?.toUpperCase() || "")
-    .join("")
-    .slice(0, 2);
-
-  return (
-    <div className="flex gap-8">
-      {/* Titre section */}
-      <div className="w-48 flex-shrink-0">
-        <p className="text-sm font-semibold text-gray-900">Photo de profil</p>
-        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-          Une photo de profil aide les autres à vous reconnaître.
-        </p>
-      </div>
-
-      {/* Contenu */}
-      <div className="flex items-center gap-5">
-        <Avatar className="w-16 h-16 border-2 border-indigo-200">
-          {photo && <AvatarImage src={photo} alt={nom} />}
-          <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xl font-bold">
-            {initiales}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col gap-1">
-          <span className="text-xs text-gray-500">Photo de profil actuelle</span>
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="text-indigo-600 text-sm font-medium hover:underline text-left"
-          >
-            Changer la photo
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = (ev) => onPhotoChange(ev.target.result);
-              reader.readAsDataURL(file);
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
+// --- Utilitaires communs d'Avatar (idéalement à mutualiser) ---
+function initialsFrom(name) {
+  if (!name) return "?";
+  return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 }
 
-// ─── Composant : Informations personnelles ───────────────────────────────────
-function InformationsPersonnelles({ nom, email, onNomChange, onEmailChange, onSave }) {
-  return (
-    <div className="flex gap-8">
-      {/* Titre section */}
-      <div className="w-48 flex-shrink-0">
-        <p className="text-sm font-semibold text-gray-900">Informations personnelles</p>
-        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-          Vos nom et adresse e-mail.
-        </p>
-      </div>
-
-      {/* Formulaire */}
-      <div className="flex-1 flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="nom" className="text-sm text-gray-700">
-            Nom complet
-          </Label>
-          <Input
-            id="nom"
-            value={nom}
-            onChange={(e) => onNomChange(e.target.value)}
-            className="rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="email" className="text-sm text-gray-700">
-            Adresse e-mail
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
-            className="rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-          />
-        </div>
-        <div className="flex justify-end mt-1">
-          <Button
-            onClick={onSave}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg"
-          >
-            Enregistrer
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+function avatarColorFrom(name) {
+  if (!name) return "from-slate-400 to-slate-600";
+  const colors = [
+    "from-blue-500 to-indigo-500",
+    "from-emerald-500 to-teal-500",
+    "from-violet-500 to-purple-500",
+    "from-amber-500 to-orange-500",
+    "from-rose-500 to-red-500",
+    "from-cyan-500 to-blue-500"
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
 }
 
-// ─── Composant : Section Profil (photo + infos) ───────────────────────────────
-function SectionProfil({ profil, onUpdate }) {
-  const [nom, setNom] = useState(profil.nom);
-  const [email, setEmail] = useState(profil.email);
-  const [photo, setPhoto] = useState(profil.photo);
-
-  function handleSave() {
-    if (!nom.trim() || !email.trim()) {
-      toast.error("Veuillez remplir tous les champs.");
-      return;
-    }
-    onUpdate({ nom, email, photo });
-    toast.success("Profil enregistré avec succès.");
-  }
-
-  function handlePhotoChange(src) {
-    setPhoto(src);
-    toast.success("Votre photo de profil a été changée.");
-  }
+// ─── Composant : Section Profil ───────────────────────────────────────────────
+function SectionProfil({ profil }) {
+  const initiales = initialsFrom(profil.nom);
+  const userColor = avatarColorFrom(profil.nom);
 
   return (
-    <Card className="border border-gray-200 shadow-none rounded-xl">
-      <CardHeader className="pb-0">
-        <CardTitle className="text-lg font-bold text-gray-900">Profil</CardTitle>
-        <CardDescription className="text-sm text-gray-500 leading-relaxed">
-          Modifiez ici vos informations personnelles. Ces informations seront visibles par les
-          autres utilisateurs sur la plateforme.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pt-4">
-        <Separator className="mb-6" />
-        <PhotoProfil nom={nom} photo={photo} onPhotoChange={handlePhotoChange} />
+    <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
+      {/* Cover background */}
+      <div className="h-32 w-full bg-slate-100 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50" />
+      </div>
+
+      <CardContent className="relative px-6 sm:px-8 pb-8 pt-0">
+        {/* Overlapping Avatar */}
+        <div className="relative -mt-12 mb-5 flex justify-between items-end">
+          <div className={`flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br shadow-md ${userColor}`}>
+            <span className="text-3xl font-bold text-white tracking-wide">{initiales}</span>
+          </div>
+            👋
+        </div>
+
+        {/* Profile Info */}
+        <div className="space-y-1.5">
+          <h2 className="text-2xl font-bold text-slate-800">{profil.nom}</h2>
+          <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
+            <Mail className="h-4 w-4" />
+            {profil.email}
+          </p>
+        </div>
+        
         <Separator className="my-6" />
-        <InformationsPersonnelles
-          nom={nom}
-          email={email}
-          onNomChange={setNom}
-          onEmailChange={setEmail}
-          onSave={handleSave}
-        />
+        
+        <div className="text-sm text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-start gap-3">
+          <Info className="h-5 w-5 text-[#2A78C2] shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            <strong className="text-slate-800">Informations gérées par Moodle.</strong><br/>
+            Votre nom, votre adresse e-mail et votre avatar sont synchronisés automatiquement depuis votre institution. Vous ne pouvez pas les modifier ici.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
@@ -185,11 +105,11 @@ function SectionMotDePasse() {
   return (
     <Card className="border border-gray-200 shadow-none rounded-xl">
       <CardHeader className="pb-0">
-        <CardTitle className="text-lg font-bold text-gray-900">
+        <CardTitle className="text-lg font-bold text-slate-800">
           Mettre à jour le mot de passe
         </CardTitle>
         <CardDescription className="text-sm text-gray-500">
-          Assurez-vous que votre compte utilise un mot de passe long et aléatoire pour rester sécurisé.
+          Assurez-vous que votre compte local utilise un mot de passe sécurisé.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
@@ -204,7 +124,7 @@ function SectionMotDePasse() {
               type="password"
               value={currentPwd}
               onChange={(e) => setCurrentPwd(e.target.value)}
-              className="rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+              className="rounded-lg border-gray-300 focus:border-[#2A78C2] focus:ring-[#2A78C2]"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -216,7 +136,7 @@ function SectionMotDePasse() {
               type="password"
               value={newPwd}
               onChange={(e) => setNewPwd(e.target.value)}
-              className="rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+              className="rounded-lg border-gray-300 focus:border-[#2A78C2] focus:ring-[#2A78C2]"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -228,13 +148,13 @@ function SectionMotDePasse() {
               type="password"
               value={confirmPwd}
               onChange={(e) => setConfirmPwd(e.target.value)}
-              className="rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+              className="rounded-lg border-gray-300 focus:border-[#2A78C2] focus:ring-[#2A78C2]"
             />
           </div>
           <div className="mt-1">
             <Button
               onClick={handleSave}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg"
+              className="bg-[#2A78C2] hover:bg-[#1F69AE] text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm"
             >
               Enregistrer
             </Button>
@@ -245,53 +165,19 @@ function SectionMotDePasse() {
   );
 }
 
-// ─── Composant : Suppression de compte ───────────────────────────────────────
-function SectionSuppression() {
-  function handleDelete() {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) {
-      toast.error("Votre compte a été supprimé définitivement.");
-    }
-  }
-
-  return (
-    <Card className="border border-red-200 shadow-none rounded-xl">
-      <CardHeader className="pb-0">
-        <CardTitle className="text-lg font-bold text-gray-900">
-          Suppression de compte
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-4">
-        <Separator className="mb-5 bg-red-100" />
-        <p className="text-sm text-gray-700 leading-relaxed mb-5">
-          Une fois votre compte supprimé, toutes ses ressources et données seront
-          définitivement supprimées. Avant de supprimer votre compte, veuillez télécharger
-          toutes les données ou informations que vous souhaitez conserver.
-        </p>
-        <Button
-          onClick={handleDelete}
-          className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg border border-red-600"
-        >
-          Supprimer le compte
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function ProfilePage() {
-  const [profil, setProfil] = useState({
-    nom: "ledoux segning",
-    email: "djouledoux@gmail.com",
-    photo: null,
-  });
+  const user = getLocalUser() || {};
+  const profil = {
+    nom: user.name || user.username || "Utilisateur Anonyme",
+    email: user.email || user.username || "Pas d'adresse e-mail",
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-6">
+    <div className="min-h-screen bg-gray-50 py-10 px-6">
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
-        <SectionProfil profil={profil} onUpdate={setProfil} />
+        <SectionProfil profil={profil} />
         <SectionMotDePasse />
-        <SectionSuppression />
       </div>
     </div>
   );

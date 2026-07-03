@@ -30,7 +30,7 @@ export default function DetailSoumission({ soumission, devoir, onRetour, onSauve
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-slate-800">
               {soumission.studentName}
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
@@ -69,7 +69,7 @@ export default function DetailSoumission({ soumission, devoir, onRetour, onSauve
                   <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
                     Étudiant
                   </p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-slate-800">
                     {soumission.studentName}
                   </p>
                 </div>
@@ -82,7 +82,7 @@ export default function DetailSoumission({ soumission, devoir, onRetour, onSauve
                   <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
                     Devoir
                   </p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-slate-800">
                     {devoir.name}
                   </p>
                 </div>

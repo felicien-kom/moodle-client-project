@@ -134,7 +134,7 @@ export function TeacherGradePage({
   const statusClass =
     submission?.state === "GRADED"
       ? "bg-emerald-100 text-emerald-800"
-      : "bg-indigo-100 text-indigo-800";
+      : "bg-[#2A78C2]/20 text-[#1F69AE]";
 
   return (
     <div className="min-h-screen bg-slate-50/80 font-sans">
@@ -144,7 +144,7 @@ export function TeacherGradePage({
           <button
             type="button"
             onClick={onRetour}
-            className="inline-flex items-center gap-1.5 hover:text-indigo-600 transition-colors"
+            className="inline-flex items-center gap-1.5 hover:text-[#2A78C2] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Retour au devoir
@@ -154,7 +154,7 @@ export function TeacherGradePage({
             {assignment?.name}
           </span>
           <span className="text-slate-300">/</span>
-          <span className="text-slate-900 font-semibold truncate max-w-[180px]">
+          <span className="text-slate-800 font-semibold truncate max-w-[180px]">
             {studentName}
           </span>
         </nav>
@@ -167,7 +167,7 @@ export function TeacherGradePage({
                 <User className="w-5 h-5 text-slate-500" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
                   {studentName}
                 </h1>
                 <p className="text-sm text-slate-500 flex items-center gap-1.5 mt-0.5">
@@ -264,11 +264,11 @@ export function TeacherGradePage({
                           onClick={() => openFile(file)}
                           className={`w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                             preview?.filename === file.filename
-                              ? "border-indigo-300 bg-indigo-50/50"
+                              ? "border-[#2A78C2]/30 bg-[#2A78C2]/10/50"
                               : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                           }`}
                         >
-                          <FileText className="w-4 h-4 text-indigo-500 shrink-0" />
+                          <FileText className="w-4 h-4 text-[#2A78C2] shrink-0" />
                           <span className="text-sm font-medium text-slate-800 truncate flex-1">
                             {file.filename}
                           </span>
@@ -376,7 +376,7 @@ export function TeacherGradePage({
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full h-12 rounded-xl font-semibold bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+                className="w-full h-12 rounded-xl font-semibold bg-[#2A78C2] hover:bg-[#1F69AE] shadow-sm"
               >
                 {saving ? (
                   <>

@@ -1,6 +1,6 @@
 import './App.css';
 import { LanguageProvider } from './context/LanguageContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './context/AuthContext';
 import { BrowserRouter } from 'react-router-dom';
 import AllRoutes from './router/AllRoutes';
@@ -13,7 +13,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <AutoSync intervalMs={60000} /> {/* 5 secondes pour tester */}
-        <ThemeProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <LanguageProvider>
             <AllRoutes />
             <Toaster position="top-left" richColors closeButton />

@@ -541,7 +541,7 @@ function CreateCourse() {
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between gap-4">
           <button
             onClick={() => navigate(PATHS.app.courses.list)}
-            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-sm font-medium transition group"
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm font-medium transition group"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
             Annuler
@@ -583,7 +583,7 @@ function CreateCourse() {
       <div className="max-w-3xl mx-auto px-4 md:px-8 py-10">
         {/* Titre de la section */}
         <div className="mb-8">
-          <h1 className="text-2xl font-extrabold text-slate-900">
+          <h1 className="text-2xl font-bold text-slate-800">
             {STEPS[currentStep - 1].label}
           </h1>
           <p className="text-slate-500 text-sm mt-1">{STEPS[currentStep - 1].description}</p>

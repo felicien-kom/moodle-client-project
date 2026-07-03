@@ -43,7 +43,7 @@ export function StudentStatusBadge({ assignment, showGrade = true }) {
   return (
     <span
       title={getStudentStatusHint(status)}
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-widest ring-1 ring-inset shrink-0 ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest ring-1 ring-inset shrink-0 ${className}`}
     >
       <Icon className="w-3.5 h-3.5" />
       {label}

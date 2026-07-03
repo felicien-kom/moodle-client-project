@@ -21,7 +21,7 @@ const INITIAL_FORM = {
 };
 
 export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
-  const { createProfile, isLoading, isOnline } = useAuth();
+  const { createProfile, isLoading } = useAuth();
   const [form, setForm] = useState(INITIAL_FORM);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -31,7 +31,6 @@ export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
   useEffect(() => {
     if (open) {
       setForm(INITIAL_FORM);
-      setError("");
       setSuccess(false);
       setShowServerPassword(false);
       setShowLocalPassword(false);
@@ -42,14 +41,13 @@ export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
 
   const canSubmit = useMemo(() => {
     return (
-      isOnline &&
       form.username.trim() &&
       form.email.trim() &&
       form.moodlePassword.trim() &&
       form.localPassword.trim().length >= 8 &&
       passwordsMatch
     );
-  }, [form, isOnline, passwordsMatch]);
+  }, [form, passwordsMatch]);
 
   const update = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -60,10 +58,6 @@ export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
     event.preventDefault();
 
     if (!canSubmit) {
-      if (!isOnline) {
-        setError("Connexion internet requise pour creer un profil.");
-        return;
-      }
       setError("Veuillez remplir correctement tous les champs.");
       return;
     }
@@ -96,15 +90,6 @@ export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
           </DialogDescription>
         </DialogHeader>
 
-        {!isOnline && (
-          <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
-            <WifiOff className="mt-0.5 h-4 w-4 text-warning" />
-            <div className="text-warning">
-              Creation impossible hors ligne. Reconnectez-vous a internet.
-            </div>
-          </div>
-        )}
-
         {success ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
@@ -129,7 +114,7 @@ export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
                     value={form.username}
                     onChange={(e) => update("username", e.target.value)}
                     placeholder="prenom.nom"
-                    disabled={isLoading || !isOnline}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -141,7 +126,7 @@ export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
                     value={form.email}
                     onChange={(e) => update("email", e.target.value)}
                     placeholder="prenom.nom@universite.edu"
-                    disabled={isLoading || !isOnline}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -156,7 +141,7 @@ export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
                     onChange={(e) => update("moodlePassword", e.target.value)}
                     placeholder="Mot de passe Moodle"
                     className="pr-10"
-                    disabled={isLoading || !isOnline}
+                    disabled={isLoading}
                   />
                   <Button
                     type="button"
@@ -189,7 +174,7 @@ export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
                       onChange={(e) => update("localPassword", e.target.value)}
                       placeholder="Minimum 8 caracteres"
                       className="pr-10"
-                      disabled={isLoading || !isOnline}
+                      disabled={isLoading}
                     />
                     <Button
                       type="button"
@@ -213,7 +198,7 @@ export default function CreateProfileDialog({ open, onOpenChange, onSuccess }) {
                     onChange={(e) => update("confirmLocalPassword", e.target.value)}
                     placeholder="Confirmer"
                     className={!passwordsMatch && form.confirmLocalPassword ? "border-destructive focus-visible:ring-destructive" : ""}
-                    disabled={isLoading || !isOnline}
+                    disabled={isLoading}
                   />
                   {!passwordsMatch && form.confirmLocalPassword && (
                     <p className="text-xs text-destructive">Les mots de passe ne correspondent pas.</p>

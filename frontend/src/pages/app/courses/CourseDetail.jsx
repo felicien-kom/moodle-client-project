@@ -205,7 +205,7 @@ function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFil
           <div className="p-2 rounded-lg bg-primary/10 text-primary group-data-[state=open]:bg-white group-data-[state=open]:shadow-sm transition-all">
             <Layers className="w-4 h-4" />
           </div>
-          <span className="text-base font-bold text-slate-900">{section.titre}</span>
+          <span className="text-base font-bold text-slate-800">{section.titre}</span>
         </div>
         <div className="flex items-center gap-2">
           {/* Menu déroulant pour ajouter un module */}
@@ -271,13 +271,13 @@ function NavItem({ label, active, onClick, isDetails }) {
       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium
         transition-all text-left
         ${active
-          ? "bg-indigo-50 text-indigo-700"
-          : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-700"
+          ? "bg-[#2A78C2]/10 text-[#2A78C2]"
+          : "text-gray-600 hover:bg-[#2A78C2]/10 hover:text-[#2A78C2]"
         }`}
     >
       {isDetails
-        ? <Info className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-indigo-600" : "text-gray-400"}`} />
-        : <Layers className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-indigo-600" : "text-gray-400"}`} />
+        ? <Info className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-[#2A78C2]" : "text-gray-400"}`} />
+        : <Layers className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "text-[#2A78C2]" : "text-gray-400"}`} />
       }
       {label}
     </button>
@@ -558,7 +558,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
           <p className="text-red-600 font-semibold mb-4">{error}</p>
           <Button
             onClick={() => loadCourseData()}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="bg-[#2A78C2] hover:bg-[#1F69AE] text-white"
           >
             Réessayer
           </Button>
@@ -589,12 +589,12 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
               <Button
                 variant="ghost"
                 onClick={() => setSelectedFolder(null)}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-gray-600 hover:text-slate-800"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Retour
               </Button>
-              <h1 className="text-xl font-bold text-gray-900">{coursData.title || cours.title}</h1>
+              <h1 className="text-xl font-bold text-slate-800">{coursData.title || cours.title}</h1>
               <div className="w-20"></div>
             </div>
           </div>
@@ -621,7 +621,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
           <TabsContent value="participants">
             {userRole() === "teacher" ? (
               <div className="bg-white p-6 rounded-xl border border-slate-200">
-                <h3 className="text-base font-bold text-slate-900 mb-4">Membres du cours</h3>
+                <h3 className="text-base font-bold text-slate-800 mb-4">Membres du cours</h3>
                 {participants.length > 0 ? (
                   <ul className="divide-y divide-slate-100">
                     {participants.map((p) => (
@@ -656,12 +656,12 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
             <Button
               variant="ghost"
               onClick={onRetour}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-slate-800"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Retour à l'espace cours
             </Button>
-            <h1 className="text-xl font-bold text-gray-900">{coursData.title || cours.title}</h1>
+            <h1 className="text-xl font-bold text-slate-800">{coursData.title || cours.title}</h1>
             {/* Bouton d'inscription (uniquement pour les cours du catalogue/explorer) */}
             {coursData.serverId && (
               <Button
@@ -721,31 +721,31 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
                 className="border border-gray-200 shadow-none rounded-xl"
               >
                 <CardContent className="p-6">
-                  <h2 className="text-lg font-bold text-gray-900 mb-5">Détails du cours</h2>
+                  <h2 className="text-lg font-bold text-slate-800 mb-5">Détails du cours</h2>
 
                   {/* Grille 2 colonnes */}
                   <div className="grid grid-cols-2 gap-x-10 gap-y-5">
                     <div>
                       <p className="text-xs text-gray-400 mb-1">Nom court</p>
-                      <p className="text-[15px] font-semibold text-gray-900">
+                      <p className="text-[15px] font-semibold text-slate-800">
                         {coursData.shortName ?? coursData.title?.slice(0, 8)}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 mb-1">Sections</p>
-                      <p className="text-[15px] font-semibold text-gray-900">
+                      <p className="text-[15px] font-semibold text-slate-800">
                         {displaySections.length}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 mb-1">Début</p>
-                      <p className="text-[15px] font-semibold text-gray-900">
+                      <p className="text-[15px] font-semibold text-slate-800">
                         {coursData.startDate ? new Date(coursData.startDate * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : "Non définie"}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 mb-1">Fin</p>
-                      <p className="text-[15px] font-semibold text-gray-900">
+                      <p className="text-[15px] font-semibold text-slate-800">
                         {coursData.endDate ? new Date(coursData.endDate * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : "Non définie"}
                       </p>
                     </div>
@@ -804,7 +804,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
               {/* ── Bouton Ajouter une section ── */}
               {/*<Button
                 onClick={handleAddSectionClick}
-                className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-base border-2 border-dashed border-indigo-300 rounded-xl flex items-center justify-center gap-2"
+                className="w-full py-6 bg-[#2A78C2] hover:bg-[#1F69AE] text-white font-semibold text-base border-2 border-dashed border-[#2A78C2]/30 rounded-xl flex items-center justify-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 Ajouter une section
@@ -818,7 +818,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
          
             <Card className="border border-gray-200 shadow-none rounded-xl">
               <CardContent className="p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Liste des participants</h3>
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Liste des participants</h3>
                 {participants.length > 0 ? (
                   <ul className="divide-y divide-gray-100">
                     {participants.map((participant) => (
@@ -922,7 +922,7 @@ export default function CourseDetail({ cours = defaultCours, onRetour }) {
             <Button
               onClick={handleCreateSection}
               disabled={isCreatingSection || !newSectionName.trim()}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-[#2A78C2] hover:bg-[#1F69AE] text-white"
             >
               {isCreatingSection ? "Création..." : "Créer"}
             </Button>

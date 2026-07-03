@@ -95,11 +95,11 @@ export function CourseForm({ initialData, onSubmit, isLoading: propIsLoading, is
               setFormData((prev) => ({ ...prev, image: file }));
             }
           }}
-          className={formData.image ? "border-indigo-600 bg-indigo-50/50" : ""}
+          className={formData.image ? "border-indigo-600 bg-[#2A78C2]/10/50" : ""}
         >
           {formData.image ? (
             <div className="flex items-center justify-center gap-3 text-indigo-900 font-medium">
-              <CheckCircle2 className="w-6 h-6 text-indigo-600" />
+              <CheckCircle2 className="w-6 h-6 text-[#2A78C2]" />
               <span>{formData.image.name || "Image sélectionnée"}</span>
             </div>
           ) : (
@@ -143,7 +143,7 @@ export function CourseForm({ initialData, onSubmit, isLoading: propIsLoading, is
               name="category"
               value={formData.category}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-900 focus:ring-2 focus:ring-indigo-900/20 transition-all shadow-sm appearance-none font-medium text-slate-900"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-900 focus:ring-2 focus:ring-indigo-900/20 transition-all shadow-sm appearance-none font-medium text-slate-800"
             >
               <option value="" className="text-slate-400">Choisir une catégorie...</option>
               <option value="Developpement">Développement logiciel</option>
@@ -208,7 +208,7 @@ export function CourseForm({ initialData, onSubmit, isLoading: propIsLoading, is
       </div>
 
       {/* Boutons d'action en bas */}
-      <div className="flex flex-col sm:flex-row gap-4 pt-8 mt-4 border-t border-indigo-100">
+      <div className="flex flex-col sm:flex-row gap-4 pt-8 mt-4 border-t border-[#2A78C2]/30">
         <button 
           type="button" 
           onClick={() => window.history.back()}

@@ -8,6 +8,14 @@ import {
   NavigationMenuList,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -62,6 +70,7 @@ export function Navbar() {
   const [syncMessage, setSyncMessage] = useState("");
   const [syncPhase, setSyncPhase] = useState(""); // "INIT", "PUSH", "PULL", "COMPLETE"
   const [syncError, setSyncError] = useState(null);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   // Écouter les lancements de synchronisation automatique en arrière-plan
   useEffect(() => {
@@ -148,7 +157,7 @@ export function Navbar() {
   // Fonction de synchronisation
   const handleSync = async () => {
     if (!isMoodleOnline) {
-      toast.error("Mode Hors-ligne", { description: "La synchronisation nécessite une connexion Internet." });
+      toast.error("Mode Hors-ligne", { description: "La mise à jour de vos cours nécessite une connexion Internet. Veuillez vous reconnecter." });
       return;
     }
   
@@ -211,7 +220,7 @@ export function Navbar() {
           setSyncPhase("COMPLETE");
           setSyncProgress(100);
           setSyncMessage("À jour");
-          toast.success("Synchronisation terminée avec succès", {
+          toast.success("Mise à jour terminée", {
             description: "Tous vos cours et devoirs ont été mis à jour."
           });
           setTimeout(() => {
@@ -219,7 +228,8 @@ export function Navbar() {
             setSyncProgress(0);
             setSyncMessage("");
             setSyncPhase("");
-          }, 2500);
+            window.location.reload();
+          }, 1000);
           unsubscribe();
         },
         onError: (err) => {
@@ -227,7 +237,7 @@ export function Navbar() {
           setSyncError(err?.message || "Erreur inconnue");
           setSyncPhase("ERROR");
           setIsSyncing(false);
-          toast.error("Erreur de synchronisation", { description: err?.message || "La synchro reprendra plus tard." });
+          toast.error("Problème de mise à jour", { description: "Nous n'avons pas pu tout récupérer. Réessayez plus tard." });
           unsubscribe();
         }
       });
@@ -236,7 +246,7 @@ export function Navbar() {
       console.error("[SYNC] Exception:", error);
       setSyncError(error?.message || "Erreur inconnue");
       setSyncPhase("ERROR");
-      toast.error("Erreur lors de la synchronisation", { description: error?.message || "Erreur inconnue" });
+      toast.error("Problème de mise à jour", { description: "Impossible de lancer la mise à jour pour le moment." });
       setIsSyncing(false);
     }
   };
@@ -248,26 +258,26 @@ export function Navbar() {
 
   return (
     <div className="flex flex-col relative z-50">
-      <nav className="w-full bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)]">
+      <nav className="w-full bg-white px-6 md:px-8 py-3.5 flex items-center justify-between border-b border-slate-200/80 backdrop-blur-md">
         {/* Logo + Liens */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-10 lg:gap-14">
         <div 
-          className="flex items-center cursor-pointer transition-transform hover:scale-[1.02] active:scale-95" 
+          className="flex items-center cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95" 
           onClick={goToHome}
         >
-          <MainLogo size={24} />
+          <MainLogo size={26} />
         </div>
 
-        <NavigationMenu>
-          <NavigationMenuList className="flex gap-1.5">
+        <NavigationMenu className="hidden md:flex">
+          <NavigationMenuList className="flex gap-8">
             <NavigationMenuItem>
               <NavigationMenuLink
                 onClick={goToHome}
-                className={`px-3.5 py-2 text-sm font-medium rounded-lg cursor-pointer transition-all ${
-                  isActiveRoute(PATHS.app.dashboard)
-                    ? "text-primary bg-primary/10 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
+                className={`relative py-1 cursor-pointer text-[14px] font-semibold transition-colors duration-[250ms] ease-out
+                ${isActiveRoute(PATHS.app.dashboard) ? "text-[#2A78C2]" : "text-slate-500 hover:text-[#2A78C2]"}
+                after:absolute after:left-0 after:-bottom-1.5 after:h-[2px] after:w-full after:bg-[#2A78C2] 
+                after:transition-transform after:duration-[250ms] after:ease-out after:origin-left
+                ${isActiveRoute(PATHS.app.dashboard) ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}
               >
                 Tableau de bord
               </NavigationMenuLink>
@@ -275,11 +285,11 @@ export function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuLink
                 onClick={goToCourse}
-                className={`px-3.5 py-2 text-sm font-medium rounded-lg cursor-pointer transition-all ${
-                  isActiveRoute(PATHS.app.course)
-                    ? "text-primary bg-primary/10 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
+                className={`relative py-1 cursor-pointer text-[14px] font-semibold transition-colors duration-[250ms] ease-out
+                ${isActiveRoute(PATHS.app.course) ? "text-[#2A78C2]" : "text-slate-500 hover:text-[#2A78C2]"}
+                after:absolute after:left-0 after:-bottom-1.5 after:h-[2px] after:w-full after:bg-[#2A78C2] 
+                after:transition-transform after:duration-[250ms] after:ease-out after:origin-left
+                ${isActiveRoute(PATHS.app.course) ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}
               >
                 Cours
               </NavigationMenuLink>
@@ -287,11 +297,11 @@ export function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuLink
                 onClick={goToEvaluations}
-                className={`px-3.5 py-2 text-sm font-medium rounded-lg cursor-pointer transition-all ${
-                  isActiveRoute(PATHS.app.assignment)
-                    ? "text-primary bg-primary/10 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
+                className={`relative py-1 cursor-pointer text-[14px] font-semibold transition-colors duration-[250ms] ease-out
+                ${isActiveRoute(PATHS.app.assignment) ? "text-[#2A78C2]" : "text-slate-500 hover:text-[#2A78C2]"}
+                after:absolute after:left-0 after:-bottom-1.5 after:h-[2px] after:w-full after:bg-[#2A78C2] 
+                after:transition-transform after:duration-[250ms] after:ease-out after:origin-left
+                ${isActiveRoute(PATHS.app.assignment) ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}
               >
                 Devoirs
               </NavigationMenuLink>
@@ -299,11 +309,11 @@ export function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuLink
                 onClick={goToMediatheque}
-                className={`px-3.5 py-2 text-sm font-medium rounded-lg cursor-pointer transition-all ${
-                  isActiveRoute(PATHS.app.mediatheque)
-                    ? "text-primary bg-primary/10 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
+                className={`relative py-1 cursor-pointer text-[14px] font-semibold transition-colors duration-[250ms] ease-out
+                ${isActiveRoute(PATHS.app.mediatheque) ? "text-[#2A78C2]" : "text-slate-500 hover:text-[#2A78C2]"}
+                after:absolute after:left-0 after:-bottom-1.5 after:h-[2px] after:w-full after:bg-[#2A78C2] 
+                after:transition-transform after:duration-[250ms] after:ease-out after:origin-left
+                ${isActiveRoute(PATHS.app.mediatheque) ? "after:scale-x-100" : "after:scale-x-0 hover:after:scale-x-100"}`}
               >
                 Médiathèque
               </NavigationMenuLink>
@@ -313,56 +323,50 @@ export function Navbar() {
       </div>
 
       {/* Icônes droite */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-5">
         {/* Indicateur de statut réseau (Antenne active/déconnectée) */}
         {isMoodleOnline ? (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-xs font-semibold select-none shadow-sm">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-500 select-none">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <Wifi className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">En ligne</span>
+            <span className="opacity-80">En ligne</span>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 text-xs font-semibold select-none shadow-sm">
-            <WifiOff className="h-3.5 w-3.5 text-slate-400 animate-pulse" />
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100 text-xs font-semibold select-none">
+            <WifiOff className="h-3.5 w-3.5 opacity-70" />
             <span>Hors-ligne</span>
           </div>
         )}
 
-        <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
-
-        {/* Bouton de Synchronisation amélioré */}
+        {/* Bouton de Synchronisation amélioré (Principal CTA) */}
         <Button
-          variant={isSyncing ? "secondary" : "default"}
-          className={`flex items-center gap-2 text-sm font-medium transition-all shadow-sm min-w-fit whitespace-nowrap ${
+          className={`flex items-center gap-2 rounded-full px-6 h-10 text-[14px] font-semibold transition-all duration-[250ms] ease-out ${
             !isMoodleOnline
-              ? "bg-slate-100 text-slate-400 opacity-70 cursor-not-allowed hidden sm:flex"
+              ? "bg-slate-100 text-slate-400 hover:bg-slate-100 cursor-not-allowed hidden sm:flex shadow-none"
               : isSyncing
                 ? syncPhase === "ERROR"
-                  ? "bg-red-100 text-red-600 hover:bg-red-100"
-                  : "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                  ? "bg-rose-500 text-white hover:bg-rose-600 shadow-sm shadow-rose-500/20"
+                  : "bg-[#2A78C2]/80 text-white shadow-none cursor-wait"
+                : "bg-[#2A78C2] text-white hover:bg-[#1F69AE] hover:-translate-y-[2px] hover:shadow-md hover:shadow-[#2A78C2]/30 shadow-sm"
           }`}
           onClick={handleSync}
           disabled={isSyncing || !isMoodleOnline}
           title={!isMoodleOnline ? "Mode Hors-ligne" : isSyncing ? "Synchronisation en cours..." : "Synchroniser les données"}
         >
-          <RefreshCw className={`h-4 w-4 flex-shrink-0 ${isSyncing ? 'animate-spin' : ''} ${syncPhase === "ERROR" ? "text-red-600" : syncPhase === "COMPLETE" ? "text-emerald-600" : "text-current"}`} />
+          <RefreshCw className={`h-4 w-4 flex-shrink-0 ${isSyncing ? 'animate-spin' : ''} ${syncPhase === "COMPLETE" ? "text-emerald-300" : ""}`} />
           <span className="hidden sm:inline-block">
-            {isSyncing ? "Synchronisation..." : "Synchroniser"}
+            {isSyncing ? "Sync..." : syncPhase === "COMPLETE" ? "À jour" : "Synchroniser"}
           </span>
         </Button>
 
-        <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2.5 text-sm text-slate-700 hover:bg-slate-100 px-2 pl-3 py-1.5 h-auto rounded-full ring-1 ring-slate-200 transition-all hover:ring-primary/30">
-              <span className="font-medium hidden md:block">{user.name || "Utilisateur"}</span>
+            <Button variant="ghost" className="flex items-center gap-2.5 text-sm text-slate-700 bg-white hover:bg-slate-50 px-2 pl-3 py-1.5 h-auto rounded-full ring-1 ring-slate-200/80 hover:ring-slate-300 transition-all duration-300 ease-out hover:shadow-sm">
+              <span className="font-semibold hidden md:block">{user.name || "Utilisateur"}</span>
               <div className={`flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-linear-to-br shadow-inner ${avatarColorFrom(user.name)}`}>
-                <span className="text-xs font-bold text-white">{initialsFrom(user.name)}</span>
+                <span className="text-xs font-bold text-white tracking-wide">{initialsFrom(user.name)}</span>
               </div>
               <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
             </Button>
@@ -370,17 +374,17 @@ export function Navbar() {
           <DropdownMenuContent align="end" className="w-56 p-1 relative z-[100] bg-white border-slate-200 shadow-xl rounded-xl">
             <DropdownMenuLabel className="font-normal px-2.5 py-2.5">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none text-slate-900">{user.name || "Utilisateur"}</p>
+                <p className="text-sm font-medium leading-none text-slate-800">{user.name || "Utilisateur"}</p>
                 <p className="text-xs leading-none text-slate-500">{user.email || user.username || "Connecté"}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-slate-100" />
-            <DropdownMenuItem onClick={goToProfile} className="cursor-pointer gap-2 py-2 text-slate-600 focus:bg-slate-50 focus:text-primary rounded-md">
+            <DropdownMenuItem onClick={goToProfile} className="cursor-pointer gap-2 py-2 text-slate-600 focus:bg-slate-50 focus:text-[#2A78C2] rounded-md">
               <UserIcon className="h-4 w-4" />
               <span>Mon Profil</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-slate-100" />
-            <DropdownMenuItem onClick={() => {logout(); goToLogin();}} className="cursor-pointer gap-2 py-2 text-rose-600 focus:bg-rose-50 focus:text-rose-700 rounded-md">
+            <DropdownMenuItem onClick={() => setIsLogoutModalOpen(true)} className="cursor-pointer gap-2 py-2 text-rose-600 focus:bg-rose-50 focus:text-rose-700 rounded-md">
               <LogOut className="h-4 w-4" />
               <span>Déconnexion</span>
             </DropdownMenuItem>
@@ -467,6 +471,42 @@ export function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Modal de déconnexion */}
+      <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-800">
+              <LogOut className="h-5 w-5 text-rose-500" />
+              Confirmation de déconnexion
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 mt-2">
+              Êtes-vous sûr de vouloir vous déconnecter de votre profil local ? Vous serez redirigé vers l'écran de sélection de profil.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 flex gap-3 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="text-slate-600 font-medium"
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setIsLogoutModalOpen(false);
+                logout();
+                goToLogin();
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-medium shadow-sm transition-colors"
+            >
+              Se déconnecter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

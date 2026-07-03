@@ -1,136 +1,195 @@
 // src/sync/pull/pullAssignments.js
+// Pull des devoirs et soumissions existantes.
+
 import { moodleFetch } from "../../config/moodleApi.js";
 import { diagnose, diagnoseNew, SyncCase } from "../diagnose.js";
 import { resolveConflict } from "../resolve.js";
 
-export const pullAssignments = async ({ prisma, token, cursor, servertime, emitter }) => {
+export const pullAssignments = async ({ prisma, token, moodleUserId, cursor, emitter }) => {
   emitter.emit("progress", { step: "PULL", entity: "assignments", status: "start" });
 
-  const enrollments = await prisma.courseEnrollment.findMany({ where: { syncEnabled: true } });
-  const courseIds = enrollments.map(e => e.courseServerId);
-  if (courseIds.length === 0) return { pulled: 0, conflicts: 0 };
+  const enabledServerIds = await _getEnabledCourseServerIds(prisma);
+  const localCourses = await prisma.course.findMany({
+    where:  { server_id: { in: enabledServerIds } },
+    select: { id: true, server_id: true },
+  });
+
+  if (localCourses.length === 0) {
+    emitter.emit("progress", { step: "PULL", entity: "assignments", status: "done", pulled: 0 });
+    return { pulled: 0, conflicts: 0 };
+  }
+
+  const { data: response } = await moodleFetch(
+    "mod_assign_get_assignments",
+    { courseids: localCourses.map(c => c.server_id) },
+    token
+  );
 
   let pulled = 0;
   let conflicts = 0;
 
-  const { data: result } = await moodleFetch("mod_assign_get_assignments", { courseids: courseIds }, token);
-  const courses = result.courses || [];
-
-  for (const courseData of courses) {
-    const localCourse = await prisma.course.findUnique({ where: { server_id: courseData.id } });
+  for (const serverCourse of response.courses ?? []) {
+    const localCourse = localCourses.find(c => c.server_id === serverCourse.id);
     if (!localCourse) continue;
 
-    for (const assign of courseData.assignments || []) {
-      const serverTimemodified = assign.timemodified ?? 0;
-      const parentModule = await prisma.module.findUnique({ where: { server_id: assign.cmid } });
+    for (const serverAssign of serverCourse.assignments ?? []) {
+      const serverTimemodified = serverAssign.timemodified ?? 0;
+      const local = await prisma.assignment.findFirst({ where: { server_id: serverAssign.id } });
+      let action;
 
-      // 1. Extraction propre des configurations complexes (Online Text & File submission)
-      let requiresText = false;
-      let wordLimit = null;
-      let requiresFile = false;
-      let maxFiles = null;
-      let maxFileSize = null;
-
-      for (const config of assign.configs || []) {
-        if (config.plugin === "onlinetext") {
-          if (config.name === "enabled" && config.value === "1") requiresText = true;
-          if (config.name === "wordlimit" && parseInt(config.value) > 0) wordLimit = parseInt(config.value);
+      if (!local) {
+        action = diagnoseNew();
+      } else {
+        if (local.sync_status === "SYNCED" && local.last_synced_at >= cursor) continue;
+        action = diagnose(local, serverTimemodified, cursor);
+        if (action === SyncCase.CONFLICT) {
+          action = resolveConflict("assignment");
+          conflicts++;
+          emitter.emit("progress", { step: "CONFLICT", entity: "assignment", id: serverAssign.id, resolution: action });
         }
-        if (config.plugin === "file") {
-          if (config.name === "enabled" && config.value === "1") requiresFile = true;
-          if (config.name === "maxfilesubmissions") maxFiles = parseInt(config.value);
-          if (config.name === "maxsubmissionsizebytes") maxFileSize = parseInt(config.value);
-        }
-      }
-
-      const local = await prisma.assignment.findFirst({ where: { server_id: assign.id } });
-      let action = local ? diagnose(local, serverTimemodified, cursor) : diagnoseNew();
-
-      if (action === SyncCase.CONFLICT) {
-        action = resolveConflict("assignment");
       }
 
       if (action === SyncCase.PULL) {
-        // 2. Synchronisation des métadonnées complètes du devoir
-        const savedAssign = await prisma.assignment.upsert({
-          where:  { server_id: assign.id },
+        // Détecter le type de soumission autorisé
+        const pluginTypes = serverAssign.configs
+          ?.filter(c => c.plugin === "onlinetext" && c.subtype === "assignsubmission" && c.name === "enabled" && c.value === "1")
+          .length > 0 ? "text" : null;
+        const filePlugin = serverAssign.configs
+          ?.filter(c => c.plugin === "file" && c.subtype === "assignsubmission" && c.name === "enabled" && c.value === "1")
+          .length > 0;
+        const allowedTypes = pluginTypes && filePlugin ? "both" : pluginTypes ? "text" : filePlugin ? "file" : null;
+
+        await prisma.assignment.upsert({
+          where:  { server_id: serverAssign.id },
           update: {
-            courseId:                 localCourse.id,
-            moduleId:                 parentModule ? parentModule.id : null,
-            name:                     assign.name,
-            intro:                    assign.intro ? _stripHtml(assign.intro) : null,
-            activity:                 assign.activity ? _stripHtml(assign.activity) : null,
-            allowSubmissionsFromDate: assign.allowsubmissionsfromdate || null,
-            dueDate:                  assign.duedate || null,
-            cutoffDate:               assign.cutoffdate || null,
-            maxAttempts:              assign.maxattempts || null,
-            maxGrade:                 assign.grade || null,
-            requiresText, 
-            wordLimit, 
-            requiresFile, 
-            maxFiles, 
-            maxFileSize,
-            server_timemodified:      serverTimemodified,
-            sync_status:              "SYNCED",
-            last_synced_at:           servertime,
+            name:                serverAssign.name,
+            intro:               _stripHtml(serverAssign.intro) ?? null,
+            dueDate:             serverAssign.duedate    ?? null,
+            cutoffDate:          serverAssign.cutoffdate ?? null,
+            maxGrade:            serverAssign.grade      ?? null,
+            allowedTypes:        allowedTypes,
+            server_timemodified: serverTimemodified,
+            sync_status:         "SYNCED",
+            last_synced_at:      serverTimemodified,
           },
           create: {
-            courseId:                 localCourse.id,
-            moduleId:                 parentModule ? parentModule.id : null,
-            server_id:                assign.id,
-            name:                     assign.name,
-            intro:                    assign.intro ? _stripHtml(assign.intro) : null,
-            activity:                 assign.activity ? _stripHtml(assign.activity) : null,
-            allowSubmissionsFromDate: assign.allowsubmissionsfromdate || null,
-            dueDate:                  assign.duedate || null,
-            cutoffDate:               assign.cutoffdate || null,
-            maxAttempts:              assign.maxattempts || null,
-            maxGrade:                 assign.grade || null,
-            requiresText, 
-            wordLimit, 
-            requiresFile, 
-            maxFiles, 
-            maxFileSize,
-            server_timemodified:      serverTimemodified,
-            sync_status:              "SYNCED",
-            last_synced_at:           servertime,
+            courseId:            localCourse.id,
+            server_id:           serverAssign.id,
+            name:                serverAssign.name,
+            intro:               _stripHtml(serverAssign.intro) ?? null,
+            dueDate:             serverAssign.duedate    ?? null,
+            cutoffDate:          serverAssign.cutoffdate ?? null,
+            maxGrade:            serverAssign.grade      ?? null,
+            allowedTypes:        allowedTypes,
+            server_timemodified: serverTimemodified,
+            sync_status:         "SYNCED",
+            last_synced_at:      serverTimemodified,
           },
         });
         pulled++;
-
-        // 3. RECORRIGÉ : Gestion et persistance des pièces jointes aux consignes (Sujets PDF)
-        const introFiles = assign.introattachments || [];
-        for (const f of introFiles) {
-          if (!f.fileurl) continue;
-
-          await prisma.localFile.upsert({
-            where: { moodleUrl: f.fileurl },
-            update: {
-              assignmentId:        savedAssign.id,
-              filename:            f.filename,
-              mimeType:            f.mimetype ?? null,
-              fileSize:            f.filesize ?? null,
-              server_timemodified: serverTimemodified,
-              last_synced_at:      servertime,
-            },
-            create: {
-              assignmentId:        savedAssign.id,
-              filename:            f.filename,
-              moodleUrl:           f.fileurl,
-              mimeType:            f.mimetype ?? null,
-              fileSize:            f.filesize ?? null,
-              sync_status:         "SYNCED",
-              server_timemodified: serverTimemodified,
-              last_synced_at:      servertime,
-            }
-          });
-        }
+        emitter.emit("progress", { step: "PULL", entity: "assignment", id: serverAssign.id, name: serverAssign.name });
       }
     }
   }
 
-  emitter.emit("progress", { step: "PULL", entity: "assignments", status: "done", pulled });
+  // Pull des soumissions existantes de l'utilisateur
+  const localAssignments = await prisma.assignment.findMany({
+    where:  { server_id: { not: null } },
+    select: { id: true, server_id: true },
+  });
+
+  const assignmentServerIds = localAssignments.map(a => a.server_id);
+  
+  // RÃ©cupÃ©rer aussi les notes pour toutes ces soumissions !
+  let serverGrades = [];
+  if (assignmentServerIds.length > 0) {
+    try {
+      const { data: gradesResp } = await moodleFetch(
+        "mod_assign_get_grades",
+        { assignmentids: assignmentServerIds },
+        token
+      );
+      serverGrades = gradesResp.assignments ?? [];
+    } catch { /* Ignore les erreurs si pas de droit  */ }
+  }
+
+  for (const localAssign of localAssignments) {
+    try {
+      const { data: submResp } = await moodleFetch(
+        "mod_assign_get_submissions",
+        { assignmentids: [localAssign.server_id], status: "" },
+        token
+      );
+      const moodleSubmissions = submResp.assignments?.[0]?.submissions ?? [];
+      const userSubmission = moodleSubmissions.find(s => s.userid === moodleUserId);
+
+      if (userSubmission) {
+        // RÃ©cupÃ©rer la note de ce devoir spÃ©cifique pour cet utilisateur
+        const assignGradeData = serverGrades.find(g => g.assignmentid === localAssign.server_id);
+        const userGrade = assignGradeData?.grades?.find(g => g.userid === moodleUserId);
+        const grade = userGrade && userGrade.grade !== "-1.00000" ? parseFloat(userGrade.grade) : null;
+        const gradedAt = userGrade ? userGrade.timemodified : null;
+
+        // La date de modification Moodle globale est le max entre la soumission et la note
+        const serverTimemodified = Math.max(userSubmission.timemodified ?? 0, gradedAt ?? 0);
+        
+        const local = await prisma.assignmentSubmission.findFirst({ where: { server_id: userSubmission.id } });
+        let action = local ? diagnose(local, serverTimemodified, cursor) : diagnoseNew();
+
+        if (action === SyncCase.CONFLICT) {
+          action = resolveConflict("assignment_submission");
+          conflicts++;
+        }
+
+        if (action === SyncCase.PULL) {
+          const textPlugin = userSubmission.plugins?.find(p => p.type === "onlinetext");
+          // Conserver le prÃ©cÃ©dent s'il existe (pour le hors-ligne d'un type non-texte par exemple)
+          const submissionText = textPlugin?.editorfields?.[0]?.value ?? local?.submissionText ?? null;
+          
+          const state = userSubmission.status === "submitted" ? "SUBMITTED"
+            : userSubmission.status === "graded" || userGrade ? "GRADED" : "DRAFT";
+
+          await prisma.assignmentSubmission.upsert({
+            where:  { server_id: userSubmission.id },
+            update: {
+              submissionText,
+              state,
+              grade,
+              gradedAt,
+              server_timemodified: serverTimemodified,
+              sync_status:         "SYNCED",
+              last_synced_at:      serverTimemodified,
+            },
+            create: {
+              assignmentId:        localAssign.id,
+              server_id:           userSubmission.id,
+              submissionText,
+              state,
+              grade,
+              gradedAt,
+              server_timemodified: serverTimemodified,
+              sync_status:         "SYNCED",
+              last_synced_at:      serverTimemodified,
+            },
+          });
+          pulled++;
+        }
+      }
+    } catch { /* Un devoir sans soumission ne bloque pas */ }
+  }
+
+  emitter.emit("progress", { step: "PULL", entity: "assignments", status: "done", pulled, conflicts });
   return { pulled, conflicts };
 };
 
-const _stripHtml = (str) => str ? str.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() || null : null;
+const _getEnabledCourseServerIds = async (prisma) => {
+  const enrollments = await prisma.courseEnrollment.findMany({
+    where: { syncEnabled: true }, select: { courseServerId: true },
+  });
+  return enrollments.map(e => e.courseServerId);
+};
+
+const _stripHtml = (str) => {
+  if (!str) return null;
+  return str.replace(/&lt;[^&gt;]*&gt;/g, " ").replace(/\s+/g, " ").trim() || null;
+};

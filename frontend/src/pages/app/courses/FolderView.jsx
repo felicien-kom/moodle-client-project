@@ -23,7 +23,7 @@ function FileItem({ file, onDownload, onOpen, isDownloaded }) {
           <IconComponent className="w-full h-full" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-900 truncate">
+          <p className="text-sm font-medium text-slate-800 truncate">
             {filename}
           </p>
           <p className="text-xs text-gray-500">{filesize}</p>
@@ -130,7 +130,7 @@ export default function FolderView({ folder, onRetour, downloadedFiles = new Set
       <div>
         <button
           onClick={onRetour}
-          className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors mb-4"
+          className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-slate-800 transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
          Retour
@@ -138,7 +138,7 @@ export default function FolderView({ folder, onRetour, downloadedFiles = new Set
         
         <Card className="border border-gray-200 shadow-none rounded-xl">
           <CardContent className="p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-slate-800 mb-2">
               {folder.nom || "Dossier"}
             </h1>
             {folder.detail && (
@@ -157,7 +157,7 @@ export default function FolderView({ folder, onRetour, downloadedFiles = new Set
       
       {/* Liste des fichiers */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
+        <h2 className="text-lg font-semibold text-slate-800 mb-3">
           Fichiers
         </h2>
         

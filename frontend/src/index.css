@@ -243,8 +243,8 @@
         font-family: inherit;
         outline: none;
     }
-    a{
-        @apply underline;
+    a {
+        text-decoration: inherit;
     }
 }
 

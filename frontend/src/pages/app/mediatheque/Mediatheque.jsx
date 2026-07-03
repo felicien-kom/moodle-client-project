@@ -52,7 +52,7 @@ function getFileTypeConfig(filename, mimeType) {
     return { icon: FileText, bg: "bg-emerald-50 text-emerald-600 border-emerald-100", label: "Tableur" };
   }
   if (["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext) || mime.includes("image")) {
-    return { icon: Image, bg: "bg-purple-50 text-purple-600 border-purple-100", label: "Image" };
+    return { icon: Image, bg: "bg-[#2A78C2]/10 text-[#2A78C2] border-[#2A78C2]/20", label: "Image" };
   }
   if (["mp4", "mkv", "avi", "mov", "webm"].includes(ext) || mime.includes("video")) {
     return { icon: Video, bg: "bg-pink-50 text-pink-600 border-pink-100", label: "Vidéo" };
@@ -87,8 +87,8 @@ export default function Mediatheque() {
       setFiles(data);
     } catch (error) {
       console.error("Erreur réceptacle médiathèque:", error);
-      toast.error("Erreur de chargement", {
-        description: "Impossible de récupérer la liste des fichiers locaux.",
+      toast.error("Problème de chargement", {
+        description: "Impossible d'afficher la liste de vos fichiers pour le moment.",
       });
     } finally {
       if (!silent) setLoading(false);
@@ -105,8 +105,8 @@ export default function Mediatheque() {
 
   const handleDownload = async (fileId) => {
     if (!isOnline) {
-      toast.error("Connexion requise", {
-        description: "Vous devez être connecté à Internet pour télécharger ce fichier.",
+      toast.error("Connexion Internet requise", {
+        description: "Ce fichier n'est pas encore sur votre appareil. Connectez-vous à Internet pour le télécharger.",
       });
       return;
     }
@@ -118,8 +118,8 @@ export default function Mediatheque() {
       toast.success("Fichier prêt hors-ligne !");
       await loadFiles(true); // reload list silently
     } catch (error) {
-      toast.error("Échec du téléchargement", {
-        description: error.message || "Une erreur est survenue.",
+      toast.error("Problème de téléchargement", {
+        description: "Nous n'avons pas pu enregistrer ce fichier. Réessayez plus tard.",
       });
     } finally {
       setDownloadingIds((prev) => {
@@ -138,8 +138,8 @@ export default function Mediatheque() {
         window.URL.revokeObjectURL(blobUrl);
       }, 1000);
     } catch (error) {
-      toast.error("Erreur d'ouverture", {
-        description: error.message || "Impossible de lire le fichier.",
+      toast.error("Impossible d'ouvrir le fichier", {
+        description: "Le fichier semble indisponible ou endommagé.",
       });
     }
   };
@@ -204,8 +204,11 @@ export default function Mediatheque() {
       matchType = ["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext);
     } else if (activeTypeFilter === "videos") {
       matchType = ["mp4", "mkv", "avi", "mov", "webm"].includes(ext);
-    } else if (activeTypeFilter === "archives") {
-      matchType = ["zip", "rar", "7z", "tar", "gz"].includes(ext);
+    } else if (activeTypeFilter === "audio") {
+      matchType = ["mp3", "wav", "ogg", "flac"].includes(ext);
+    } else if (activeTypeFilter === "autres") {
+      // Si on coche 'Autres', on prend tout ce qui ne rentre pas dans les catégories d'au-dessus
+      matchType = !["pdf", "doc", "docx", "txt", "rtf", "odt", "xls", "xlsx", "csv", "png", "jpg", "jpeg", "gif", "svg", "webp", "mp4", "mkv", "avi", "mov", "webm", "mp3", "wav", "ogg", "flac"].includes(ext);
     }
 
     // Cache / Offline status filtering
@@ -221,11 +224,12 @@ export default function Mediatheque() {
   });
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
+    <div className="min-h-screen bg-slate-50 font-sans">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out space-y-6">
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 tracking-tight">
             Médiathèque globale
           </h1>
           <p className="mt-1 text-slate-500 font-medium">
@@ -248,7 +252,7 @@ export default function Mediatheque() {
             onClick={handleDownloadAll}
             disabled={bulkDownloading || loading}
             size="sm"
-            className="bg-primary hover:bg-primary/95 text-white h-10 px-4 rounded-xl font-bold gap-2 shadow-sm"
+            className="bg-[#2A78C2] hover:bg-[#1F69AE] text-white h-10 px-4 rounded-xl font-bold gap-2 shadow-sm transition-colors"
           >
             {bulkDownloading ? (
               <>
@@ -258,7 +262,7 @@ export default function Mediatheque() {
             ) : (
               <>
                 <CloudDownload className="w-4 h-4" />
-                Tout rendre disponible hors-ligne
+                Tout télécharger
               </>
             )}
           </Button>
@@ -266,40 +270,46 @@ export default function Mediatheque() {
       </div>
 
       {/* STATS DE LA MÉDIATHÈQUE */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border border-slate-200/60 rounded-3xl shadow-sm bg-white overflow-hidden p-6 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Fichiers indexés</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-2">{totalFiles}</h3>
-          </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
-            <Server className="w-6 h-6" />
-          </div>
-        </Card>
-
-        <Card className="border border-slate-200/60 rounded-3xl shadow-sm bg-white overflow-hidden p-6 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Dispo hors-ligne</p>
-            <h3 className="text-3xl font-black text-emerald-600 mt-2">{offlineFilesCount}</h3>
-          </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-            <CheckCircle2 className="w-6 h-6" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <Card className="border-0 rounded-2xl shadow-sm bg-white overflow-hidden p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-50/80 text-blue-600 rounded-xl">
+              <Server className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fichiers indexés</p>
+              <h3 className="text-2xl font-bold text-slate-800 mt-0.5">{totalFiles}</h3>
+            </div>
           </div>
         </Card>
 
-        <Card className="border border-slate-200/60 rounded-3xl shadow-sm bg-white overflow-hidden p-6 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">En ligne seulement</p>
-            <h3 className="text-3xl font-black text-slate-600 mt-2">{onlineOnlyCount}</h3>
+        <Card className="border-0 rounded-2xl shadow-sm bg-white overflow-hidden p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-50/80 text-emerald-600 rounded-xl">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Dispo hors-ligne</p>
+              <h3 className="text-2xl font-bold text-slate-800 mt-0.5">{offlineFilesCount}</h3>
+            </div>
           </div>
-          <div className="p-3 bg-slate-50 text-slate-600 rounded-2xl">
-            <Cloud className="w-6 h-6" />
+        </Card>
+
+        <Card className="border-0 rounded-2xl shadow-sm bg-white overflow-hidden p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-slate-100 text-slate-600 rounded-xl">
+              <Cloud className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">En ligne seulement</p>
+              <h3 className="text-2xl font-bold text-slate-800 mt-0.5">{onlineOnlyCount}</h3>
+            </div>
           </div>
         </Card>
       </div>
 
       {/* RECHERCHE ET FILTRES */}
-      <Card className="border border-slate-200/60 rounded-3xl shadow-sm bg-white p-5 md:p-6 space-y-4">
+      <Card className="border-0 rounded-2xl shadow-sm bg-white p-5 md:p-6 space-y-4">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -351,20 +361,20 @@ export default function Mediatheque() {
 
         {/* Type Filter pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Extensions:</span>
           {[
             { id: "all", label: "Tous" },
             { id: "docs", label: "Documents" },
-            { id: "images", label: "Images / Infographies" },
+            { id: "images", label: "Images" },
             { id: "videos", label: "Vidéos" },
-            { id: "archives", label: "Archives ZIP" },
+            { id: "audio", label: "Audio" },
+            { id: "autres", label: "Autres" },
           ].map((type) => (
             <button
               key={type.id}
               onClick={() => setActiveTypeFilter(type.id)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                 activeTypeFilter === type.id
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-[#2A78C2]/10 text-[#2A78C2]"
                   : "bg-transparent text-slate-600 hover:bg-slate-100"
               }`}
             >
@@ -377,19 +387,19 @@ export default function Mediatheque() {
       {/* LISTE DES FICHIERS */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#2A78C2]" />
           <p className="text-sm font-semibold text-slate-500">Médiathèque en cours d'indexation...</p>
         </div>
       ) : filteredFiles.length === 0 ? (
-        <Card className="border border-dashed border-slate-300 rounded-3xl p-16 text-center shadow-none bg-slate-50/50">
-          <CloudOff className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-          <h3 className="text-lg font-bold text-slate-900">Aucun fichier trouvé</h3>
+        <Card className="border-0 rounded-2xl p-16 text-center shadow-none bg-white">
+          <CloudOff className="mx-auto h-12 w-12 text-slate-300 mb-4" />
+          <h3 className="text-lg font-bold text-slate-800">Aucun fichier trouvé</h3>
           <p className="text-sm text-slate-500 max-w-sm mx-auto mt-2">
             Aucun média ne correspond à vos critères ou les répertoires sont actuellement vides.
           </p>
         </Card>
       ) : (
-        <Card className="border border-slate-200/60 rounded-3xl shadow-sm bg-white overflow-hidden">
+        <Card className="border-0 rounded-2xl shadow-sm bg-white overflow-hidden">
           <div className="divide-y divide-slate-100">
             {filteredFiles.map((file) => {
               const fileIdConfig = getFileTypeConfig(file.filename, file.mimeType);
@@ -436,7 +446,7 @@ export default function Mediatheque() {
                         variant="outline"
                         className="h-9 px-4 rounded-xl border-slate-200 text-slate-700 font-bold hover:bg-slate-100 gap-1.5"
                       >
-                        <Eye className="w-4 h-4 text-emerald-500" />
+                        <Eye className="w-4 h-4 text-[#2A78C2]" />
                         Ouvrir
                       </Button>
                     ) : (
@@ -444,7 +454,7 @@ export default function Mediatheque() {
                         onClick={() => handleDownload(file.id)}
                         disabled={isCurrentDownloading}
                         size="sm"
-                        className="h-9 px-4 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold gap-1.5"
+                        className="h-9 px-4 rounded-xl bg-[#2A78C2] hover:bg-[#1F69AE] text-white font-bold gap-1.5 transition-colors shadow-sm"
                       >
                         {isCurrentDownloading ? (
                           <>
@@ -453,7 +463,7 @@ export default function Mediatheque() {
                           </>
                         ) : (
                           <>
-                            <CloudDownload className="w-4 h-4" />
+                            <Download className="w-4 h-4" />
                             Télécharger
                           </>
                         )}
@@ -466,6 +476,7 @@ export default function Mediatheque() {
           </div>
         </Card>
       )}
+      </main>
     </div>
   );
 }

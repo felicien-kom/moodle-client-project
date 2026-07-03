@@ -11,7 +11,7 @@ export function CoursesHeader({ onSearch, onCreateClick, searchValue = "" }) {
   const canCreateCourse = isTeacher || isAdmin;
 
   return (
-    <div className="w-full border-b border-indigo-100 bg-white">
+    <div className="w-full border-b border-[#2A78C2]/30 bg-white">
       <div className="w-full max-w-6xl mx-auto px-4 md:px-8 py-10">
         {/* Titre + Subtitle */}
         <div className="mb-8">
@@ -36,7 +36,7 @@ export function CoursesHeader({ onSearch, onCreateClick, searchValue = "" }) {
               placeholder="Rechercher un cours..."
               value={searchValue}
               onChange={(e) => onSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-900/20 focus:border-indigo-800 transition-all duration-200"
+              className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-900/20 focus:border-indigo-800 transition-all duration-200"
             />
           </div>
 

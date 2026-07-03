@@ -16,7 +16,7 @@ function Settings() {
           >
             <ArrowLeft size={20} className="text-slate-600 dark:text-slate-400" />
           </button>
-          <h1 className="text-2xl font-light text-slate-900 dark:text-slate-50 tracking-tight">
+          <h1 className="text-2xl font-light text-slate-800 dark:text-slate-50 tracking-tight">
             Paramètres
           </h1>
         </div>

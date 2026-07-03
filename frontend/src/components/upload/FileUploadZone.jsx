@@ -131,7 +131,7 @@ export function FileUploadZone({
           children ? "p-0 overflow-hidden" : "px-6 py-8 text-center",
           isInteractive ? "cursor-pointer hover:bg-slate-50" : "cursor-not-allowed opacity-60",
           isDragging
-            ? "border-indigo-500 bg-indigo-50/60"
+            ? "border-indigo-500 bg-[#2A78C2]/10/60"
             : "border-slate-300"
         )}
       >
@@ -140,7 +140,7 @@ export function FileUploadZone({
             <UploadCloud
               className={cn(
                 "mx-auto h-8 w-8 mb-2",
-                isDragging ? "text-indigo-600" : "text-indigo-500"
+                isDragging ? "text-[#2A78C2]" : "text-[#2A78C2]"
               )}
             />
             <p className="text-sm font-medium text-slate-600">{title}</p>
@@ -150,7 +150,7 @@ export function FileUploadZone({
 
         {isUploading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-white/85 backdrop-blur-[1px]">
-            <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mb-2" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#2A78C2] mb-2" />
             <p className="text-xs font-medium text-slate-600">Chargement en cours…</p>
           </div>
         )}

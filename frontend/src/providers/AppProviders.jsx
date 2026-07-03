@@ -1,12 +1,12 @@
 // src/providers/AppProviders.jsx
 import { AuthProvider }  from "@/context/AuthContext";
-import { ThemeProvider } from "@/context/ThemeContext";
+import { ThemeProvider } from "next-themes";
 import { LanguageProvider }  from "@/context/LanguageContext";
 
 export function AppProviders({ children }) {
   return (
     <AuthProvider>
-      <ThemeProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <LanguageProvider>
           {children}
         </LanguageProvider>

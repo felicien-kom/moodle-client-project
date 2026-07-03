@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 export function EmptyState({ title, description, actionLabel, onAction, icon: IconComponent = BookOpen }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4">
-      <div className="rounded-full bg-indigo-50 p-4 mb-6">
-        <IconComponent size={48} className="text-indigo-600" />
+      <div className="rounded-full bg-[#2A78C2]/10 p-4 mb-6">
+        <IconComponent size={48} className="text-[#2A78C2]" />
       </div>
       <h3 className="text-xl font-bold text-indigo-900 mb-2 text-center">
         {title}

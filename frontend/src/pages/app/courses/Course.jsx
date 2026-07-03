@@ -36,7 +36,7 @@ function ContentIcon({ type }) {
     pdf: { icon: <FileText className="w-4 h-4" />, bg: "bg-red-100", text: "text-red-600" },
     video: { icon: <Video className="w-4 h-4" />, bg: "bg-blue-100", text: "text-blue-600" },
     quiz: { icon: <HelpCircle className="w-4 h-4" />, bg: "bg-amber-100", text: "text-amber-600" },
-    link: { icon: <Link className="w-4 h-4" />, bg: "bg-purple-100", text: "text-purple-600" },
+    link: { icon: <Link className="w-4 h-4" />, bg: "bg-[#2A78C2]/10", text: "text-[#2A78C2]" },
     assign: { icon: <ClipboardList className="w-4 h-4" />, bg: "bg-emerald-100", text: "text-emerald-600" },
   };
   const { icon, bg, text } = map[type] || map.link;
@@ -58,10 +58,10 @@ function CourseSection({ section }) {
       >
         <div className="flex items-center gap-3">
           <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white
-            ${section.isFinal ? "bg-red-600" : "bg-indigo-600"}`}>
+            ${section.isFinal ? "bg-red-600" : "bg-[#2A78C2]"}`}>
             {section.isFinal ? "✦" : section.id}
           </span>
-          <span className="text-sm font-semibold text-gray-900">{section.titre}</span>
+          <span className="text-sm font-semibold text-slate-800">{section.titre}</span>
         </div>
         {open
           ? <ChevronUp className="w-4 h-4 text-gray-400" />
@@ -75,7 +75,7 @@ function CourseSection({ section }) {
                 className="flex items-center gap-3 py-3 cursor-pointer group first:pt-2">
                 <ContentIcon type={item.type} />
                 <div>
-                  <p className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">
+                  <p className="text-sm font-medium text-gray-700 group-hover:text-[#2A78C2] transition-colors">
                     {item.nom}
                   </p>
                   <p className="text-xs text-gray-400">{item.detail}</p>
@@ -108,7 +108,7 @@ function CourseCard({ cours, onClick, isExplorer = false }) {
         <div className="w-full h-32 bg-blue-100 flex items-center justify-center text-3xl">🖥️</div>
       )}
       <CardContent className="p-4">
-        <p className="text-sm font-bold text-gray-900 mb-0.5">{cours.title}</p>
+        <p className="text-sm font-bold text-slate-800 mb-0.5">{cours.title}</p>
         <p className="text-xs text-gray-400 mb-2">{cours.categoryName}</p>
       </CardContent>
     </Card>
@@ -201,10 +201,10 @@ function EspaceCours({ onOuvrirCours }) {
   // ─── Afficher spinner pendant chargement ────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des cours...</p>
+          <div className="animate-spin w-12 h-12 border-4 border-[#2A78C2] border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Chargement des cours...</p>
         </div>
       </div>
     );
@@ -213,12 +213,12 @@ function EspaceCours({ onOuvrirCours }) {
   // ─── Afficher message d'erreur ──────────────────────────────────────
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-xl shadow-md">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           <p className="text-red-600 font-semibold mb-4">{error}</p>
           <Button
             onClick={() => loadCourses()}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="bg-[#2A78C2] hover:bg-[#1F69AE] text-white px-6 rounded-xl font-bold shadow-sm"
           >
             Réessayer
           </Button>
@@ -232,50 +232,47 @@ function EspaceCours({ onOuvrirCours }) {
   const explorer = filter(coursExplorer);
   const role = userRole();
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-slate-50 font-sans">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out space-y-6">
         {/* Top bar */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-2 cursor-pointer hover:text-indigo-600">
-              <ArrowLeft className="w-4 h-4" />
-              Retour au tableau de bord
-            </div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">Espace Cours</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#1F69AE] tracking-tight">Espace Cours</h1>
+            <p className="text-sm font-medium text-slate-500 mt-2">
+              Retrouvez l'ensemble de vos modules et accédez à vos leçons.
+            </p>
           </div>
 
-          {role === "teacher" &&(<Button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-5 font-semibold gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Créer un nouveau cours
-          </Button>)}
-
+          {role === "teacher" &&(
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-[#2A78C2] hover:bg-[#1F69AE] text-white rounded-full h-11 px-6 font-bold gap-2 shadow-sm transition-all hover:-translate-y-0.5"
+            >
+              <Plus className="w-5 h-5" />
+              Créer un cours
+            </Button>
+          )}
         </div>
 
         {/* Barre recherche */}
-        <Card className="border border-gray-200 shadow-none rounded-xl mb-8">
-          <CardContent className="p-1 pl-4 flex items-center gap-2">
-            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        <Card className="border-0 rounded-2xl shadow-sm bg-white mb-8 overflow-hidden">
+          <CardContent className="p-1 pl-4 flex items-center gap-3">
+            <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
             <Input
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Rechercher un cours..."
-              className="border-none shadow-none focus-visible:ring-0 text-sm"
+              placeholder="Rechercher par nom de cours ou catégorie..."
+              className="border-none shadow-none focus-visible:ring-0 text-sm h-12"
             />
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-10 px-5">
-              Rechercher
-            </Button>
           </CardContent>
         </Card>
 
         {/* Vos cours créés */}
         {crees && crees.length > 0 && (
           <div className="mb-8">
-            {role === "teacher" &&(<h2 className="text-base font-bold text-gray-900 mb-3">Vos cours créés</h2>)}
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {role === "teacher" &&(<h2 className="text-xl font-bold text-slate-800 mb-3">Vos cours enseignés</h2>)}
+            <Separator className="mb-5 bg-slate-200/60" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
               {crees.map((c, index) => (
                 <CourseCard key={`created-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} />
               ))}
@@ -286,9 +283,9 @@ function EspaceCours({ onOuvrirCours }) {
         {/* Cours inscrits */}
         {inscrits.length > 0 && (
           <div className="mb-8">
-           <h2 className="text-base font-bold text-gray-900 mb-3">Mes cours</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+           <h2 className="text-xl font-bold text-slate-800 mb-3">Vos cours inscrits</h2>
+            <Separator className="mb-5 bg-slate-200/60" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
               {inscrits.map((c, index) => (
                 <CourseCard key={`enrolled-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} />
               ))}
@@ -300,9 +297,9 @@ function EspaceCours({ onOuvrirCours }) {
          
         {explorer.length > 0 && role === "student" && (
           <div className="mb-8">
-            <h2 className="text-base font-bold text-gray-900 mb-3">Explorer d'autres cours</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <h2 className="text-xl font-bold text-slate-800 mb-3">Explorer d'autres cours</h2>
+            <Separator className="mb-5 bg-slate-200/60" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
               {explorer.map((c, index) => (
                 <CourseCard key={`explorer-${c.id || index}`} cours={c} onClick={() => onOuvrirCours(c)} isExplorer={true} />
               ))}
@@ -311,7 +308,7 @@ function EspaceCours({ onOuvrirCours }) {
         )}
         
       
-      </div>
+      </main>
 
       {/* Modal de création de cours */}
       <CreateCourseModal

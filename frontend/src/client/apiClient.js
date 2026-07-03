@@ -53,7 +53,7 @@ async function request(endpoint, {
       throw {
         isApiError: true,
         status:     response.status,
-        message:    errorData?.message ?? errorData?.detail ?? `Erreur ${response.status}`,
+        message:    errorData?.message ?? errorData?.detail ?? "Nous rencontrons des difficultés à joindre le serveur. Veuillez réessayer plus tard.",
         data:       errorData,
       };
     }
