@@ -8,6 +8,7 @@ export const PATHS = {
     about:    "/about",
     contact:  "/contact",
     services: "/services",
+    guest: "/guest",
   },
 
   // Zone auth (sans layout)

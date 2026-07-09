@@ -21,7 +21,8 @@ const Mediatheque = lazy(() => import("@/pages/app/mediatheque/Mediatheque"));
 // const UserDetail= lazy(() => import("@/pages/app/users/UserDetail"));
 
 export const publicRoutes = [
-  { path: PATHS.public.home,     element: <Home />     },
+  { path: PATHS.public.home,     element: <Login />     },
+  { path: PATHS.public.guest,     element: <Home />     },
   { path: PATHS.public.about,    element: <About />    },
   { path: PATHS.public.contact,  element: <Contact />  },
   { path: PATHS.public.services, element: <Services /> },
