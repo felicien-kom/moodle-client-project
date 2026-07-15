@@ -134,7 +134,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
         )}
         
         {item.type === 'assign' && (
-          <Button onClick={(e) => { e.stopPropagation(); console.log("Devoir:", item); }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
+          <Button onClick={(e) => { e.stopPropagation(); window.location.href = "/app/assignment"; }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
             {isTeacher ? "Soumissions" : "Ma remise"}
           </Button>
         )}

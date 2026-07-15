@@ -160,7 +160,7 @@ export default function ProfileSelectionScreen() {
             </div>
 
             <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
-              <div
+              {/* <div
                 className={`flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold shadow-sm backdrop-blur-md transition-all ${
                   isOnline 
                     ? "bg-white/15 text-white ring-1 ring-white/30" 
@@ -169,7 +169,7 @@ export default function ProfileSelectionScreen() {
               >
                 {isOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
                 <span>{isOnline ? "Mode En Ligne" : "Mode Hors Ligne"}</span>
-              </div>
+              </div> */}
               
               <Button 
                 variant="secondary" 
@@ -200,15 +200,15 @@ export default function ProfileSelectionScreen() {
             <ProfileCard key={profile.id} profile={profile} onSelect={() => onSelectProfile(profile)} />
           ))}
 
-          <AddProfileCard onClick={() => setOpenCreate(true)} disabled={!isOnline} />
+          <AddProfileCard onClick={() => setOpenCreate(true)} />
         </div>
 
-        {!isOnline && (
+        {/* {!isOnline && (
           <div className="mx-auto mt-12 max-w-2xl rounded-xl border border-warning/20 bg-warning/5 p-5 text-center text-sm font-medium text-warning-foreground shadow-sm">
             <WifiOff className="mx-auto mb-2 h-6 w-6 text-warning/80" />
             La création de profil nécessite internet. La connexion locale avec un profil existant reste entièrement disponible hors ligne.
           </div>
-        )}
+        )} */}
       </main>
 
       {selectedProfile && (

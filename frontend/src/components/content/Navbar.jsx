@@ -23,6 +23,7 @@ import MainLogo from "@/components/custom/MainLogo";
 import { getLocalUser } from "@/utils/api.utils";
 import { startSync, subscribeSyncProgress } from "@/services/sync.service";
 import { toast } from "sonner";
+import { useUserRole } from "@/hooks";
 
 function initialsFrom(name) {
   if (!name) return "?";
@@ -53,6 +54,8 @@ function avatarColorFrom(name) {
 }
 
 export function Navbar() {
+  const { role } = useUserRole();
+  const isTeacher = role === 'teacher';
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, isMoodleOnline } = useAuth();
@@ -299,6 +302,7 @@ export function Navbar() {
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none text-slate-900">{user.name || "Utilisateur"}</p>
                 <p className="text-xs leading-none text-slate-500">{user.email || user.username || "Connecté"}</p>
+                <p className="text-xs leading-none text-slate-500">{isTeacher ? "Professeur": "Etudiant"}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-slate-100" />

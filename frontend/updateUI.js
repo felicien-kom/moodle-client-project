@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = './src/pages/app/courses/CourseDetail.jsx';
 let content = fs.readFileSync(path, 'utf8');
 
-const replacement = \// ??? Icône colorée selon le type de ressource ???
+const replacement = \// ??? Icï¿½ne colorï¿½e selon le type de ressource ???
 function ContentIcon({ type, isDownloaded }) {
   if (type === 'file') {
     if (isDownloaded) {
@@ -34,7 +34,7 @@ function ContentIcon({ type, isDownloaded }) {
   );
 }
 
-// ??? Élément de contenu avec boutons appropriés ???
+// ??? ï¿½lï¿½ment de contenu avec boutons appropriï¿½s ???
 function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const { isTeacher } = useUserRole();
@@ -94,7 +94,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
             <p className="text-xs font-medium text-slate-500">{item.detail}</p>
             {item.type === 'assign' && (
               <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-semibold bg-orange-100 text-orange-700 hover:bg-orange-100">
-                À rendre
+                ï¿½ rendre
               </Badge>
             )}
             {item.type === 'file' && isFileDownloadedState && (
@@ -121,7 +121,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
             ) : isFileDownloadedState ? (
               <><Eye className="w-3.5 h-3.5 mr-1.5" /> Ouvrir</>
             ) : (
-              <><CloudDownload className="w-3.5 h-3.5 mr-1.5" /> Télécharger</>
+              <><CloudDownload className="w-3.5 h-3.5 mr-1.5" /> Tï¿½lï¿½charger</>
             )}
           </Button>
         )}
@@ -133,7 +133,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
         )}
         
         {item.type === 'assign' && (
-          <Button onClick={(e) => { e.stopPropagation(); console.log("Devoir:", item); }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
+          <Button onClick={(e) => { e.stopPropagation(); window.location.href = "/app/assignment"; }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
             {isTeacher ? "Soumissions" : "Ma remise"}
           </Button>
         )}
@@ -142,7 +142,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
   );
 }
 
-// ??? Section dépliable ???
+// ??? Section dï¿½pliable ???
 function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
   return (
     <AccordionItem value={section.id.toString()} className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white data-[state=open]:rounded-b-none mb-4 last:mb-0">
@@ -173,7 +173,7 @@ function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, dow
   );
 }\;
 
-const regex = /function ContentIcon\(\{ type \}\) \{[\s\S]*?(?=\/\/\s*??? Élément de navigation latérale ???)/;
+const regex = /function ContentIcon\(\{ type \}\) \{[\s\S]*?(?=\/\/\s*??? ï¿½lï¿½ment de navigation latï¿½rale ???)/;
 content = content.replace(regex, replacement + '\n\n');
 
 // AND FINALLY, replace the Accordion mapping in the displaySections logic:

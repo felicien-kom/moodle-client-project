@@ -134,12 +134,12 @@ export function AuthProvider({ children }) {
   }, [refreshProfiles]);
 
   const createProfile = useCallback(async ({ username, email, moodlePassword, localPassword, confirmLocalPassword }) => {
-    if (!navigator.onLine) {
-      const err = new Error("Creation de profil impossible hors ligne.");
-      err.isApiError = true;
-      err.status = 0;
-      throw err;
-    }
+    // if (!navigator.onLine) {
+    //   const err = new Error("Creation de profil impossible hors ligne.");
+    //   err.isApiError = true;
+    //   err.status = 0;
+    //   throw err;
+    // }
 
     if (localPassword !== confirmLocalPassword) {
       const err = new Error("Les mots de passe locaux ne correspondent pas.");

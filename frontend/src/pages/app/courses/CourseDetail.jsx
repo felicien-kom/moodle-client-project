@@ -181,7 +181,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
         )}
 
         {item.type === 'assign' && (
-          <Button onClick={(e) => { e.stopPropagation(); console.log("Devoir:", item); }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
+          <Button onClick={(e) => { e.stopPropagation(); window.location.href = "/app/assignment"; }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
             {isTeacher ? "Soumissions" : "Ma remise"}
           </Button>
         )}
@@ -194,6 +194,8 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
 function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set(), onModuleAdded }) {
   const [open, setOpen] = useState(true);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+  const { role } = useUserRole();
+  const isTeacher = role === 'teacher';
 
   return (
     <div className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white mb-4 last:mb-0">
@@ -209,8 +211,7 @@ function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFil
         </div>
         <div className="flex items-center gap-2">
           {/* Menu déroulant pour ajouter un module */}
-         
-            <DropdownMenu>
+          {isTeacher && (<DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div
                 onClick={(e) => e.stopPropagation()}
@@ -225,7 +226,7 @@ function CourseSection({ section, courseId, onFolderClick, onFileDownload, onFil
                 Ajouter un module
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>)}
          
           {open
             ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />

@@ -1,7 +1,7 @@
-// ??? Icône colorée selon le type de ressource ???
+// ??? Icï¿½ne colorï¿½e selon le type de ressource ???
 function ContentIcon({ type, isDownloaded }) {
   if (type === "file") {
-    // Si hors ligne, encadré vert avec check. Sinon, icône de base (Document)
+    // Si hors ligne, encadrï¿½ vert avec check. Sinon, icï¿½ne de base (Document)
     if (isDownloaded) {
       return (
         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-100 text-emerald-600">
@@ -31,7 +31,7 @@ function ContentIcon({ type, isDownloaded }) {
   );
 }
 
-// ??? Élément de contenu avec boutons appropriés ???
+// ??? ï¿½lï¿½ment de contenu avec boutons appropriï¿½s ???
 function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const { isTeacher } = useUserRole();
@@ -91,7 +91,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
             <p className="text-xs font-medium text-slate-500">{item.detail}</p>
             {item.type === '"assign"' && (
               <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-semibold bg-orange-100 text-orange-700 hover:bg-orange-100">
-                À rendre
+                ï¿½ rendre
               </Badge>
             )}
             {item.type === '"file"' && isFileDownloadedState && (
@@ -118,7 +118,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
             ) : isFileDownloadedState ? (
               <><Eye className="w-3.5 h-3.5 mr-1.5" /> Ouvrir</>
             ) : (
-              <><CloudDownload className="w-3.5 h-3.5 mr-1.5" /> Télécharger</>
+              <><CloudDownload className="w-3.5 h-3.5 mr-1.5" /> Tï¿½lï¿½charger</>
             )}
           </Button>
         )}
@@ -130,7 +130,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
         )}
         
         {item.type === "assign" && (
-          <Button onClick={(e) => { e.stopPropagation(); console.log("Devoir:", item); }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
+          <Button onClick={(e) => { e.stopPropagation(); window.location.href = "/app/assignment"; }} size="sm" className="text-xs h-8 bg-slate-900 text-white hover:bg-slate-800">
             {isTeacher ? "Soumissions" : "Ma remise"}
           </Button>
         )}
@@ -139,7 +139,7 @@ function ContentItem({ item, onFolderClick, onFileDownload, onFileOpen, download
   );
 }
 
-// ??? Section dépliable ???
+// ??? Section dï¿½pliable ???
 function CourseSection({ section, onFolderClick, onFileDownload, onFileOpen, downloadedFiles = new Set() }) {
   return (
     <AccordionItem value={section.id.toString()} className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white data-[state=open]:rounded-b-none mb-4 last:mb-0">

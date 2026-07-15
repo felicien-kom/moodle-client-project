@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { createEvent, updateEvent } from "@/services/events.service";
+import { useUserRole } from "@/hooks";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -155,6 +156,9 @@ export default function Calender({
   onEditEventClose,
   onEventClick
 }) {
+  const { role } = useUserRole();
+  const isTeacher = role === 'teacher';
+
   const today = new Date();
 
   // État navigation
@@ -598,7 +602,9 @@ export default function Calender({
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-200 shadow-sm text-black">
                   <SelectItem value="user">Utilisateur (personnel)</SelectItem>
-                  <SelectItem value="course">Cours</SelectItem>
+                  {isTeacher && (
+                    <SelectItem value="course">Cours</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
