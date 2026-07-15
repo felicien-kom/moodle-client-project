@@ -1,0 +1,451 @@
+import { useState } from "react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import {
+  ClipboardList, Folder, File, Link, Calendar as CalendarIcon, X,
+} from "lucide-react";
+import { FileUploadZone } from "@/components/upload/FileUploadZone";
+import { uploadSuccess, uploadError } from "@/utils/uploadToast";
+import { addModule } from "@/services/courses.service";
+
+const ACTIVITES = [
+  {
+    id: "devoir",
+    label: "Devoir",
+    icon: <ClipboardList size={28} className="text-pink-500" />,
+    type: "activite",
+  },
+];
+
+const RESSOURCES = [
+  {
+    id: "dossier",
+    label: "Dossier",
+    icon: <Folder size={28} className="text-teal-500" />,
+    type: "ressource",
+  },
+  {
+    id: "fichier",
+    label: "Fichier",
+    icon: <File size={28} className="text-blue-500" />,
+    type: "ressource",
+  },
+  {
+    id: "url",
+    label: "URL",
+    icon: <Link size={28} className="text-orange-500" />,
+    type: "ressource",
+  },
+];
+
+const ALL = [...ACTIVITES, ...RESSOURCES];
+
+function ActivityCard({ item, onClick }) {
+  return (
+    <div 
+      onClick={() => onClick(item)}
+      className="flex flex-col items-center justify-center gap-2 p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer min-h-[110px]"
+    >
+      {item.icon}
+      <span className="text-xs font-medium text-center text-gray-700 leading-tight">
+        {item.label}
+      </span>
+    </div>
+  );
+}
+
+function ActivityGrid({ items, onItemClick }) {
+  if (items.length === 0)
+    return (
+      <p className="text-sm text-gray-400 py-6 text-center">
+        Aucun résultat trouvé.
+      </p>
+    );
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      {items.map((item) => (
+        <ActivityCard key={item.id} item={item} onClick={onItemClick} />
+      ))}
+    </div>
+  );
+}
+
+export default function AddActivityModal({ open, onOpenChange, courseId, sectionId, onModuleAdded }) {
+  const [search, setSearch] = useState("");
+  const [selectedFormType, setSelectedFormType] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState({});
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    externalUrl: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const filter = (list) =>
+    list.filter((i) =>
+      i.label.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const handleItemClick = (item) => {
+    setSelectedFormType(item.id);
+    setSelectedFiles({});
+  };
+
+  const handleCloseForm = () => {
+    setSelectedFormType(null);
+    resetForm();
+  };
+
+  const setFormTypeFiles = (formType, files) => {
+    setSelectedFiles((prev) => ({ ...prev, [formType]: files }));
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData({ name: "", description: "", externalUrl: "" });
+    setSelectedFiles({});
+  };
+
+  const handleSubmit = async (formType) => {
+    if (!formData.name.trim()) {
+      alert("Le nom est requis");
+      return;
+    }
+
+    if (formType === "url" && !formData.externalUrl.trim()) {
+      alert("L'URL externe est requise");
+      return;
+    }
+
+    if (!courseId || !sectionId) {
+      alert("courseId et sectionId sont requis");
+      return;
+    }
+
+    // Mapping des types de formulaire vers les modTypes valides de l'API
+    const modTypeMapping = {
+      "fichier": "resource",
+      "dossier": "folder",
+      "devoir": "assign",
+      "url": "url"
+    };
+    const modType = modTypeMapping[formType] || formType;
+
+    try {
+      setIsSubmitting(true);
+      await addModule({
+        courseId,
+        sectionId,
+        modType,
+        name: formData.name,
+        intro: formData.description,
+        externalUrl: formData.externalUrl,
+        files: selectedFiles[formType] || [],
+      });
+      uploadSuccess("Module créé avec succès");
+      handleCloseForm();
+      if (onModuleAdded) {
+        onModuleAdded();
+      }
+    } catch (error) {
+      console.error("Erreur lors de la création du module:", error);
+      uploadError(error.message || "Erreur lors de la création du module");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl w-full p-0 gap-0">
+
+          {/* Header */}
+          <DialogHeader className="px-6 pt-5 pb-3 border-b flex flex-row items-center justify-between">
+            <DialogTitle className="text-base font-semibold">
+              Ajouter une activité ou ressource
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="px-6 pt-4 pb-2">
+            <Input
+              placeholder="Rechercher..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full"
+            />
+          </div>
+
+          {/* Onglets */}
+          <Tabs defaultValue="tout" className="px-6 pb-6">
+            <TabsList className="bg-transparent border-b border-gray-200 rounded-none w-full justify-start gap-0 p-0 h-auto mb-4">
+              {["tout", "activites", "ressources"].map((tab) => (
+                <TabsTrigger
+                  key={tab}
+                  value={tab}
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none bg-transparent px-4 pb-2 capitalize text-sm text-gray-500"
+                >
+                  {tab === "tout" ? "Tout" : tab === "activites" ? "Activités" : "Ressources"}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            <TabsContent value="tout">
+              <ActivityGrid items={filter(ALL)} onItemClick={handleItemClick} />
+            </TabsContent>
+
+            <TabsContent value="activites">
+              <ActivityGrid items={filter(ACTIVITES)} onItemClick={handleItemClick} />
+            </TabsContent>
+
+            <TabsContent value="ressources">
+              <ActivityGrid items={filter(RESSOURCES)} onItemClick={handleItemClick} />
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Ajout Fichier */}
+      <Dialog open={selectedFormType === "fichier"} onOpenChange={handleCloseForm}>
+        <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Ajout Fichier</DialogTitle>
+            <DialogDescription>
+              Ajoutez un fichier à cette section du cours.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="file-name">Nom</Label>
+              <Input 
+                id="file-name" 
+                placeholder="Nom du fichier" 
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="file-description">Description</Label>
+              <Textarea 
+                id="file-description" 
+                placeholder="Description du fichier..."
+                rows={4}
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Sélectionner des fichiers</Label>
+              <FileUploadZone
+                multiple
+                maxFileSize={100 * 1024 * 1024}
+                title="Glissez-déposez des fichiers ici ou cliquez pour sélectionner"
+                hint="Taille maximale : 100 Mo"
+                onFilesSelected={(files) => setFormTypeFiles("fichier", files)}
+              />
+              {selectedFiles.fichier?.length > 0 && (
+                <p className="text-sm text-green-600">
+                  {selectedFiles.fichier.length} fichier(s) sélectionné(s)
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
+              Annuler
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => handleSubmit("fichier")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Ajout..." : "Ajouter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Ajout Dossier */}
+      <Dialog open={selectedFormType === "dossier"} onOpenChange={handleCloseForm}>
+        <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Ajout Dossier</DialogTitle>
+            <DialogDescription>
+              Créez un dossier pour organiser les ressources de cette section.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="folder-name">Nom</Label>
+              <Input 
+                id="folder-name" 
+                placeholder="Nom du dossier" 
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="folder-description">Description</Label>
+              <Textarea 
+                id="folder-description" 
+                placeholder="Description du dossier..."
+                rows={4}
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Contenu du dossier</Label>
+              <FileUploadZone
+                multiple
+                title="Glissez-déposez des fichiers ici ou cliquez pour sélectionner"
+                hint="Ajoutez des fichiers au dossier"
+                onFilesSelected={(files) => setFormTypeFiles("dossier", files)}
+              />
+              {selectedFiles.dossier?.length > 0 && (
+                <p className="text-sm text-green-600">
+                  {selectedFiles.dossier.length} fichier(s) sélectionné(s)
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
+              Annuler
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => handleSubmit("dossier")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Ajout..." : "Ajouter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Ajout URL */}
+      <Dialog open={selectedFormType === "url"} onOpenChange={handleCloseForm}>
+        <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Ajout URL</DialogTitle>
+            <DialogDescription>
+              Ajoutez un lien externe à cette section du cours.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="url-name">Nom</Label>
+              <Input 
+                id="url-name" 
+                placeholder="Nom du lien" 
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="external-url">URL externe</Label>
+              <Input 
+                id="external-url" 
+                placeholder="https://example.com" 
+                value={formData.externalUrl}
+                onChange={(e) => handleInputChange("externalUrl", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="url-description">Description</Label>
+              <Textarea 
+                id="url-description" 
+                placeholder="Description du lien..."
+                rows={4}
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
+              Annuler
+            </Button>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white" 
+              onClick={() => handleSubmit("url")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Ajout..." : "Ajouter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Ajout Devoir */}
+      <Dialog open={selectedFormType === "devoir"} onOpenChange={handleCloseForm}>
+        <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Ajout Devoir</DialogTitle>
+            <DialogDescription>
+              Créez un devoir pour cette section du cours.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="assignment-name">Nom</Label>
+              <Input 
+                id="assignment-name" 
+                placeholder="Nom du devoir" 
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="assignment-description">Description</Label>
+              <Textarea 
+                id="assignment-description" 
+                placeholder="Description du devoir..."
+                rows={4}
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Fichiers de devoir</Label>
+              <FileUploadZone
+                multiple
+                title="Glissez-déposez des fichiers ici ou cliquez pour sélectionner"
+                hint="Ajoutez des fichiers supplémentaires pour le devoir"
+                onFilesSelected={(files) => setFormTypeFiles("devoir", files)}
+              />
+              {selectedFiles.devoir?.length > 0 && (
+                <p className="text-sm text-green-600">
+                  {selectedFiles.devoir.length} fichier(s) sélectionné(s)
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleCloseForm} disabled={isSubmitting}>
+              Annuler
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => handleSubmit("devoir")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Ajout..." : "Ajouter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

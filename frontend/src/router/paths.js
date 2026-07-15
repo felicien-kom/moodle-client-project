@@ -1,4 +1,4 @@
-import Assignment from "@/pages/app/Assignment";
+import Assignment from "@/pages/app/evaluations/Assignment";
 
 export const PATHS = {
 
@@ -24,10 +24,7 @@ export const PATHS = {
     profile:   "/app/profile",
     settings:  "/app/settings",
     assignment: "/app/assignment",
-    // Ex: sous-module
-    // users: {
-    //   list:   "/app/users",
-    //   detail: "/app/users/:id",
-    // },
+    course:"/app/course",
+    mediatheque: "/app/mediatheque"
   },
 };

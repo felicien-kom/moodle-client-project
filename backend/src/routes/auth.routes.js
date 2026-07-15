@@ -27,6 +27,9 @@ router.patch("/me", authenticate, auth.updateMe);
 // POST /api/auth/server-token/refresh → renouveler le token Moodle (internet requis)
 router.post("/server-token/refresh", authenticate, auth.refreshMoodleToken);
 
+// GET /api/auth/moodle-status → vérifier si le serveur Moodle est joignable
+router.get("/moodle-status", authenticate, auth.getMoodleStatus);
+
 // DELETE /api/auth/profile            → supprimer le profil local
 // router.delete("/me", authenticate, auth.deleteProfile);
 

@@ -49,6 +49,86 @@ export const unenrollCourse = async (prisma, token, courseServerId) => {
 
 // ─── OFFLINE (Adapté au nouveau schéma Prisma) ───────────────
 
+import fs from "fs";
+import path from "path";
+import { getUserMediaDir } from "../utils/storage.js";
+
+export const createCourseLocally = async (prisma, userEmail, courseData, file) => {
+  const { title, shortName, summary, categoryId, numSections } = courseData;
+
+  let localImagePath = null;
+
+  if (file) {
+    const mediaDir = getUserMediaDir(userEmail);
+    const coursesSubDir = path.join(mediaDir, "courses");
+    if (!fs.existsSync(coursesSubDir)) {
+      fs.mkdirSync(coursesSubDir, { recursive: true });
+    }
+
+    const filenameRaw = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const relativeFilename = `course_${Date.now()}_${filenameRaw}`;
+    const fullPath = path.join(coursesSubDir, relativeFilename);
+    
+    fs.writeFileSync(fullPath, file.buffer);
+    localImagePath = path.join("courses", relativeFilename).replace(/\\/g, "/");
+  }
+
+  const course = await prisma.course.create({
+    data: {
+      title,
+      shortName: shortName || title.substring(0, 10).trim(),
+      summary,
+      categoryId,
+      imageUrl: localImagePath,
+      visible: true,
+      sync_status: "PENDING_PUSH"
+    }
+  });
+
+  // Création des sections
+  const sectionsData = [];
+  // Section 0 est généralement "Généralités"
+  sectionsData.push({
+    courseId: course.id,
+    name: "Général",
+    sectionIndex: 0,
+    sync_status: "PENDING_PUSH"
+  });
+
+  for (let i = 1; i <= numSections; i++) {
+    sectionsData.push({
+      courseId: course.id,
+      name: `Section ${i}`,
+      sectionIndex: i,
+      sync_status: "PENDING_PUSH"
+    });
+  }
+
+  await prisma.section.createMany({ data: sectionsData });
+
+  // Inscription automatique du créateur pour qu'il voit le cours
+  const user = await prisma.localUser.findUnique({ where: { email: userEmail } });
+  if (user) {
+    await prisma.courseParticipant.create({
+      data: {
+        courseId: course.id,
+        moodleUserId: user.moodleUserId || -1,
+        fullname: user.name,
+        email: user.email
+      }
+    });
+    
+    // Si nous voulons simuler l'enrollment local pour s'assurer qu'il s'affiche dans getLocalCourses
+    // Par contre CourseEnrollment utilise courseServerId, qui est nul pour l'instant !
+    // Donc getLocalCourses doit aussi retourner les cours créés localement (où server_id est null)
+  }
+
+  return prisma.course.findUnique({
+    where: { id: course.id },
+    include: { sections: true }
+  });
+};
+
 export const getLocalCourses = async (prisma) => {
   const enrollments = await prisma.courseEnrollment.findMany({
     where: { syncEnabled: true },
@@ -57,7 +137,12 @@ export const getLocalCourses = async (prisma) => {
   const serverIds = enrollments.map(e => e.courseServerId);
 
   return prisma.course.findMany({
-    where:   { server_id: { in: serverIds } },
+    where: {
+      OR: [
+        { server_id: { in: serverIds } },
+        { server_id: null } // Inclus les cours créés hors-ligne non encore synchronisés
+      ]
+    },
     orderBy: { title: "asc" },
   });
 };
@@ -81,9 +166,11 @@ export const getLocalCourseById = async (prisma, localId) => {
 export const getLocalAssignmentsByCourse = async (prisma, localCourseId) => {
   return prisma.assignment.findMany({
     where:   { courseId: localCourseId },
-    include: { 
-      submissions: true,
-      introFiles: true // Les consignes PDF du prof
+    include: {
+      submissions: {
+        include: { submittedFiles: true },
+      },
+      introFiles: true,
     },
     orderBy: { dueDate: "asc" },
   });
@@ -115,6 +202,14 @@ export const getLocalEventsByCourse = async (prisma, localCourseId) => {
     orderBy: { timeStart: "asc" }
   });
 };
+
+export const getLocalParticipantsByCourse = async (prisma, localCourseId) => {
+  return prisma.courseParticipant.findMany({
+    where: { courseId: localCourseId },
+    orderBy: { fullname: "asc" }
+  });
+};
+
 
 // LE SUPER-ENDPOINT (L'arborescence complète pour le Frontend)
 export const getLocalSectionsByCourse = async (prisma, localCourseId) => {

@@ -1,9 +1,12 @@
 // src/routes/course.routes.js
 import { Router } from "express";
+import multer from "multer";
 import { authenticate } from "../middlewares/authenticate.js";
 import * as course from "../controllers/course.controller.js";
+import * as fileController from "../controllers/file.controller.js";
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(authenticate);
 
@@ -13,6 +16,7 @@ router.post("/:serverId/enroll",     course.enrollCourse);
 router.delete("/:serverId/enroll",   course.unenrollCourse);
 
 // ── Offline (lecture locale) ─────────────────────────────────
+router.post("/", upload.single("image"), course.createLocalCourse); // Nouveau: CRUD Enseignant avec image
 router.get("/",                      course.getLocalCourses);
 router.get("/:id",                   course.getLocalCourseById);
 router.get("/:id/assignments",       course.getLocalAssignments);
@@ -20,9 +24,6 @@ router.get("/:id/files",             course.getLocalFiles);   // Remplace /resou
 router.get("/:id/sections",          course.getLocalSections); // Le Super-Endpoint
 router.get("/:id/grades",            course.getLocalGrades);
 router.get("/:id/events",            course.getLocalEvents);  // Nouveau
-
-// ── Futures routes de téléchargement binaire ─────────────────
-// router.get("/:id/files/:fileId/download", file.downloadFromMoodle);
-// router.get("/:id/files/:fileId/serve",    file.serveLocalBlob);
+router.get("/:id/participants",      course.getLocalParticipants); // Participants
 
 export default router;

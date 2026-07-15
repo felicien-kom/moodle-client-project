@@ -8,6 +8,7 @@
 **/prisma/*/generated/
 **/uploads/
 **/coverage/
+**/media/
 
 # Frontend
 

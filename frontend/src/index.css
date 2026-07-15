@@ -251,3 +251,96 @@
 @utility flex-center-center {
     @apply flex items-center justify-center;
 }
+
+@keyframes auth-shake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    20% {
+        transform: translateX(-6px);
+    }
+    40% {
+        transform: translateX(6px);
+    }
+    60% {
+        transform: translateX(-4px);
+    }
+    80% {
+        transform: translateX(4px);
+    }
+}
+
+@utility animate-shake {
+    animation: auth-shake 0.42s ease-in-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* ANIMATIONS PROFESSIONNELLES POUR LA BARRE DE PROGRESSION        */
+/* ═══════════════════════════════════════════════════════════════ */
+
+@keyframes shimmer-pro {
+    0% {
+        background-position: -200% center;
+    }
+    50% {
+        background-position: 200% center;
+    }
+    100% {
+        background-position: -200% center;
+    }
+}
+
+@utility animate-shimmer {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer-pro 3s ease-in-out infinite;
+}
+
+@keyframes slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@utility animate-fade-in {
+    animation: slide-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes progress-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+@utility animate-progress-glow {
+    animation: progress-pulse 2s ease-in-out infinite;
+}
+
+@keyframes smooth-expand {
+    from {
+        max-height: 0;
+        opacity: 0;
+    }
+    to {
+        max-height: 100px;
+        opacity: 1;
+    }
+}
+
+@utility animate-expand {
+    animation: smooth-expand 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

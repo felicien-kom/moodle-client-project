@@ -1,37 +1,38 @@
 // src/sync/push/index.js
-// Orchestre le PUSH dans l'ordre des dépendances.
-// moodleFetch lit MOODLE_URL depuis env — pas de moodleSiteUrl dans ctx.
-//
-// Annotations : local-only par conception, jamais pushées vers Moodle
-// Pas de code nécessaire ici - elles sont générées uniquement par leurs endpoints CRUD locaux.
-
-import { pushProfile }     from "./pushProfile.js";
-import { pushAttempts }    from "./pushAttempts.js";
-import { pushAssignments } from "./pushAssignments.js";
-
+import { pushProfile }                 from "./pushProfile.js";
+import { pushCalendarEvents }          from "./pushCalendarEvents.js";
+import { pushAssignmentSubmissions }   from "./pushAssignmentSubmissions.js"; 
+import { pushAssignmentGrades }        from "./pushAssignmentGrades.js"; 
+import { pushCourses }                 from "./pushCourses.js"; 
+import { pushCourseModules }           from "./pushCourseModules.js"; 
 export const pushAll = async (ctx) => {
   let pushed = 0;
   let conflicts = 0;
 
+  // 1. Profil
   const r1 = await pushProfile(ctx);
   pushed += r1.pushed; conflicts += r1.conflicts;
 
-  const r2 = await pushAttempts(ctx);
+  // 2. Événements du calendrier
+  const r2 = await pushCalendarEvents(ctx);
   pushed += r2.pushed; conflicts += r2.conflicts;
 
-  const r3 = await pushAssignments(ctx);
+  // 3. Soumissions de devoirs (Côté ÉTUDIANT)
+  // (Assurez-vous d'ajouter if(user.role === 'TEACHER') return; dans ce script !)
+  const r3 = await pushAssignmentSubmissions(ctx); 
   pushed += r3.pushed; conflicts += r3.conflicts;
 
-  // // Annotations : local seulement, jamais pushées vers Moodle
-  // const pendingAnnotations = await ctx.prisma.annotation.count();
-  // if (pendingAnnotations > 0) {
-  //   ctx.emitter.emit("progress", {
-  //     step:   "PUSH",
-  //     entity: "annotations",
-  //     status: "local_only",
-  //     note:   "Annotations are local-only and never synced to Moodle",
-  //   });
-  // }
+  // 4. Notes et Corrections (Côté PROFESSEUR)
+  const r4 = await pushAssignmentGrades(ctx); 
+  pushed += r4.pushed; conflicts += r4.conflicts;
+
+  // 5. Création de Cours (Côté PROFESSEUR)
+  const r5 = await pushCourses(ctx);
+  pushed += r5.pushed; conflicts += r5.conflicts;
+
+  // 6. Création de modules de cours (Côté PROFESSEUR)
+  const r6 = await pushCourseModules(ctx);
+  pushed += r6.pushed; conflicts += r6.conflicts;
 
   return { pushed, conflicts };
 };

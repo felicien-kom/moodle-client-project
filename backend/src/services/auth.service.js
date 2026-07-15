@@ -13,7 +13,7 @@
 import bcrypt from "bcrypt";
 import { masterDb, getDb, buildDbRelPath } from "../config/db.js";
 import { signJwt } from "../utils/jwt.js";
-import { getMoodleToken, moodleFetch } from "../config/moodleApi.js";
+import { getMoodleToken, moodleFetch, checkMoodleReachable as checkMoodleApiReachable } from "../config/moodleApi.js";
 import { migrateUserDb } from "../scripts/migrate-user.js";
 
 const BCRYPT_ROUNDS = 12;
@@ -23,7 +23,6 @@ const BCRYPT_ROUNDS = 12;
 export const createProfile = async ({ email, username, serverPassword, clientPassword }) => {
 
   // 1. Vérifier unicité AVANT tout appel réseau
-  //    Rapide, local, évite de contacter Moodle pour rien
   const existing = await masterDb.profile.findFirst({
     where: { OR: [{ email }, { username }] },
   });
@@ -44,28 +43,72 @@ export const createProfile = async ({ email, username, serverPassword, clientPas
     moodleToken
   );
 
+  // ─── NOUVEAU : 3b. Détection Intelligente du Rôle ─────────────
+  let detectedRole = "STUDENT"; // Étudiant par défaut
+  
+  try {
+    const { data: courses } = await moodleFetch(
+      "core_enrol_get_users_courses",
+      { userid: siteInfo.userid },
+      moodleToken
+    );
+
+    if (Array.isArray(courses) && courses.length > 0) {
+      for (const course of courses) {
+        try {
+          // On tente d'obtenir les détails des inscrits sur ce cours
+          const { data: enrolledUsers } = await moodleFetch(
+            "core_enrol_get_enrolled_users",
+            { courseid: course.id },
+            moodleToken
+          );
+
+          // On cherche notre utilisateur dans la liste
+          const meInCourse = enrolledUsers?.find(u => u.id === siteInfo.userid);
+          
+          if (meInCourse && Array.isArray(meInCourse.roles)) {
+            const isTeacher = meInCourse.roles.some(r => 
+              r.shortname === "editingteacher" || 
+              r.shortname === "teacher" || 
+              r.shortname === "manager"
+            );
+            
+            if (isTeacher) {
+              detectedRole = "TEACHER";
+              break; // On a trouvé un cours où il est prof, on arrête la boucle
+            }
+          }
+        } catch (e) {
+          // Si Moodle refuse l'accès (capacité insuffisante), c'est qu'il est 
+          // fort probablement juste étudiant sur CE cours. On ignore et on continue.
+          continue; 
+        }
+      }
+    }
+  } catch (error) {
+    // Si la récupération des cours plante, on reste en STUDENT par défaut.
+    console.warn("[AUTH] Impossible de récupérer les cours pour détection du rôle", error.message);
+  }
+  // ─────────────────────────────────────────────────────────────
+
   // 4. Préparer le chemin RELATIF de la base user
-  //    "data/alice_universite_fr.db" — relatif à la racine du projet
-  //    Jamais le chemin absolu : non portable entre machines
   const dbRelPath = buildDbRelPath(email);
 
   // 5. Appliquer les migrations sur la nouvelle base user
-  //    AVANT d'écrire dans master.db : si ça échoue, rien n'est enregistré
   migrateUserDb(dbRelPath);
 
   // 6. Enregistrer dans master.db (registre des profils)
-  //    Seulement si la migration a réussi
   await masterDb.profile.create({
     data: {
       email,
       username,
       name:      siteInfo.fullname,
-      role:      "STUDENT",
-      dbPath:    dbRelPath,          // chemin relatif — ex: "data/alice_universite_fr.db"
+      role:      detectedRole,       // <-- AJUSTEMENT ICI
+      dbPath:    dbRelPath,          
     },
   });
 
-  // 7. Créer LocalUser dans la base dédiée (tables créées à l'étape 5)
+  // 7. Créer LocalUser dans la base dédiée
   const userPrisma = getDb(email, dbRelPath);
   const clientPasswordHash = await bcrypt.hash(clientPassword, BCRYPT_ROUNDS);
 
@@ -74,6 +117,7 @@ export const createProfile = async ({ email, username, serverPassword, clientPas
       email,
       username,
       name:               siteInfo.fullname,
+      role:               detectedRole,      // <-- AJUSTEMENT ICI
       clientPasswordHash,
       moodleToken,
       moodleUserId:       siteInfo.userid,
@@ -87,7 +131,7 @@ export const createProfile = async ({ email, username, serverPassword, clientPas
       id:       localUser.id,
       email:    localUser.email,
       username: localUser.username,
-      role:     localUser.role,
+      role:     localUser.role, // Le JWT contiendra automatiquement "TEACHER" ou "STUDENT"
     }),
     user: _safeUser(localUser),
   };
@@ -106,7 +150,6 @@ export const login = async ({ username, clientPassword }) => {
     throw err;
   }
 
-  // Utiliser le chemin relatif stocké en base pour charger la bonne base user
   const userPrisma = getDb(profile.email, profile.dbPath);
   const localUser  = await userPrisma.localUser.findFirst();
 
@@ -204,25 +247,15 @@ export const listProfiles = async () => {
       role:        true,
       createdAt:   true,
       lastLoginAt: true,
-      // dbPath non exposé — donnée interne
     },
   });
 };
 
-// ─── deleteProfile ───────────────────────────────────────────
+// ─── checkMoodleReachable ─────────────────────────────────────
 
-// export const deleteProfile = async (email) => {
-//   const profile = await masterDb.profile.findUnique({ where: { email } });
-//   if (!profile) {
-//     const err = new Error("Profile not found");
-//     err.statusCode = 404;
-//     throw err;
-//   }
-
-//   await masterDb.profile.delete({ where: { email } });
-
-//   return { message: "Local profile deleted. Your Moodle account is unaffected." };
-// };
+export const checkMoodleReachable = async () => {
+  return await checkMoodleApiReachable();
+};
 
 // ─── Helper ──────────────────────────────────────────────────
 

@@ -6,6 +6,9 @@ export const pullGrades = async ({ prisma, token, moodleUserId, servertime, emit
 
   if (!moodleUserId) return { pulled: 0, conflicts: 0 };
 
+  const localUser = await prisma.localUser.findFirst();
+  if (!localUser) return { pulled: 0, conflicts: 0 };
+
   const enrollments = await prisma.courseEnrollment.findMany({ where: { syncEnabled: true } });
   if (enrollments.length === 0) return { pulled: 0, conflicts: 0 };
 
@@ -16,75 +19,116 @@ export const pullGrades = async ({ prisma, token, moodleUserId, servertime, emit
     if (!localCourse) continue;
 
     try {
-      // Récupération du carnet de notes pour ce cours et cet utilisateur
-      const { data: result } = await moodleFetch(
-        "gradereport_user_get_grade_items",
-        { courseid: enrollment.courseServerId, userid: moodleUserId },
-        token
-      );
+      // ─── L'ASTUCE ADAPTATIVE EST ICI ─────────────────────────────────
+      const params = { courseid: enrollment.courseServerId };
+      
+      // Si c'est un étudiant, on ne demande que SES notes.
+      // Si c'est un prof, on omet 'userid' et Moodle renvoie toute la classe !
+      if (localUser.role === "STUDENT") {
+        params.userid = moodleUserId; 
+      }
+      // ─────────────────────────────────────────────────────────────────
 
-      const userGrades = result.usergrades?.[0]; // Moodle renvoie un tableau par utilisateur
-      if (!userGrades || !userGrades.gradeitems) continue;
+      const { data: result } = await moodleFetch("gradereport_user_get_grade_items", params, token);
 
-      for (const item of userGrades.gradeitems) {
-        // Ignorer les éléments purement structurels sans ID (comme les catégories vides)
-        if (!item.id) continue;
+      const userGrades = result.usergrades || []; 
 
-        // Moodle différencie les modules (ex: assign) du total du cours (course)
-        const itemType = item.itemmodule || item.itemtype || "unknown";
-        const gradeValue = item.graderaw !== undefined ? parseFloat(item.graderaw) : null;
-        const maxGradeValue = item.grademax !== undefined ? parseFloat(item.grademax) : null;
-        
-        // Moodle renvoie parfois "85.00 %" ou juste un nombre
-        let percentageValue = null;
-        if (item.percentageformatted) {
-          percentageValue = parseFloat(item.percentageformatted.replace("%", "").trim());
-        }
+      // On boucle sur tous les utilisateurs retournés (1 pour l'étudiant, N pour le prof)
+      for (const userRecord of userGrades) {
+        if (!userRecord.gradeitems) continue;
 
-        // Le timestamp de notation (s'il existe) sinon on prend le servertime
-        const serverTimemodified = item.gradedategraded || servertime;
+        for (const item of userRecord.gradeitems) {
+          if (!item.id) continue;
 
-        // Stratégie d'évitement d'écriture (Read-before-write)
-        const existingGrade = await prisma.grade.findUnique({
-          where: { server_id: item.id }
-        });
+          const itemType = item.itemmodule || item.itemtype || "unknown";
+          const gradeValue = item.graderaw !== undefined ? parseFloat(item.graderaw) : null;
+          const maxGradeValue = item.grademax !== undefined ? parseFloat(item.grademax) : null;
+          
+          let percentageValue = null;
+          if (item.percentageformatted) {
+            percentageValue = parseFloat(item.percentageformatted.replace("%", "").trim());
+          }
 
-        const gradeChanged = !existingGrade ||
-          existingGrade.grade !== gradeValue ||
-          existingGrade.maxGrade !== maxGradeValue ||
-          existingGrade.percentage !== percentageValue ||
-          existingGrade.itemName !== item.itemname ||
-          existingGrade.courseId !== localCourse.id;
+          const serverTimemodified = item.gradedategraded || servertime;
 
-        if (gradeChanged) {
-          await prisma.grade.upsert({
-            where: { server_id: item.id },
-            update: {
-              itemName:            item.itemname || "Total",
-              itemType:            itemType,
-              itemInstance:        item.iteminstance ?? null,
-              grade:               gradeValue,
-              maxGrade:            maxGradeValue,
-              percentage:          percentageValue,
-              server_timemodified: serverTimemodified,
-              sync_status:         "SYNCED",
-              last_synced_at:      servertime,
-            },
-            create: {
-              courseId:            localCourse.id,
-              server_id:           item.id,
-              itemName:            item.itemname || "Total",
-              itemType:            itemType,
-              itemInstance:        item.iteminstance ?? null,
-              grade:               gradeValue,
-              maxGrade:            maxGradeValue,
-              percentage:          percentageValue,
-              server_timemodified: serverTimemodified,
-              sync_status:         "SYNCED",
-              last_synced_at:      servertime,
-            }
+          // Clé unique pour éviter les doublons : ID de l'item Moodle + ID de l'utilisateur
+          // Note : Il faudra ajuster le @unique dans schema.prisma si le grade appartient à plusieurs utilisateurs.
+          // Mais pour l'instant, on gère la soumission, qui elle est unique.
+          
+          const existingGrade = await prisma.grade.findFirst({
+            where: { server_id: item.id } 
           });
-          pulled++;
+
+          const gradeChanged = !existingGrade ||
+            existingGrade.grade !== gradeValue ||
+            existingGrade.maxGrade !== maxGradeValue ||
+            existingGrade.percentage !== percentageValue ||
+            existingGrade.itemName !== item.itemname ||
+            existingGrade.courseId !== localCourse.id;
+
+          if (gradeChanged) {
+            await prisma.grade.upsert({
+              where: { id: existingGrade?.id || -1 }, // Upsert sécurisé sans violer d'éventuelles contraintes d'unicité
+              update: {
+                itemName:            item.itemname || "Total",
+                itemType:            itemType,
+                itemInstance:        item.iteminstance ?? null,
+                grade:               gradeValue,
+                maxGrade:            maxGradeValue,
+                percentage:          percentageValue,
+                server_timemodified: serverTimemodified,
+                sync_status:         "SYNCED",
+                last_synced_at:      servertime,
+              },
+              create: {
+                courseId:            localCourse.id,
+                server_id:           item.id,
+                itemName:            item.itemname || "Total",
+                itemType:            itemType,
+                itemInstance:        item.iteminstance ?? null,
+                grade:               gradeValue,
+                maxGrade:            maxGradeValue,
+                percentage:          percentageValue,
+                server_timemodified: serverTimemodified,
+                sync_status:         "SYNCED",
+                last_synced_at:      servertime,
+              }
+            });
+
+            // Mettre à jour la table AssignmentSubmission en parallèle si c'est un devoir
+            if (itemType === "assign" && item.iteminstance) {
+              const localAssign = await prisma.assignment.findFirst({
+                where: { server_id: item.iteminstance }
+              });
+
+              if (localAssign) {
+                // Trouver la soumission de cet utilisateur
+                const recordUserId = userRecord.userid;
+                if (recordUserId) {
+                  const existingSub = await prisma.assignmentSubmission.findFirst({
+                    where: { assignmentId: localAssign.id, moodleUserId: recordUserId }
+                  });
+
+                  if (existingSub) {
+                    // Update only if it's SYNCED or if the server grade is newer
+                    if (existingSub.sync_status === "SYNCED" || existingSub.server_timemodified < serverTimemodified) {
+                      await prisma.assignmentSubmission.update({
+                        where: { id: existingSub.id },
+                        data: {
+                          grade: gradeValue,
+                          feedback: item.feedback || null,
+                          gradedAt: item.gradedategraded || servertime,
+                          state: gradeValue !== null ? "GRADED" : existingSub.state
+                        }
+                      });
+                    }
+                  }
+                }
+              }
+            }
+
+            pulled++;
+          }
         }
       }
     } catch (err) {

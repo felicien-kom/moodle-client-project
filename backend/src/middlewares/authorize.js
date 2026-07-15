@@ -8,10 +8,12 @@ export const authorize = (...roles) =>
     if (!req.user) {
       return res.status(401).json({ error: "Not authenticated" });
     }
-    if (!roles.includes(req.user.role)) {
+    const userRole = String(req.user.role || "").toUpperCase();
+    const allowed = roles.map((r) => String(r).toUpperCase());
+    if (!allowed.includes(userRole)) {
       return res.status(403).json({
         error: `Access denied. Required role: ${roles.join(" or ")}`,
       });
     }
     next();
-};
+  };
